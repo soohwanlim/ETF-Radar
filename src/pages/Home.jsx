@@ -1,22 +1,10 @@
 import React, { useState } from 'react';
-import { TrendingUp, RefreshCw, AlertCircle, Search, Star, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { TrendingUp, RefreshCw, Search, Star, ArrowUpRight, ArrowDownRight, Loader2 } from 'lucide-react';
 import { useWatchlistStore } from '../store/watchlistStore';
 import { useCompareStore } from '../store/compareStore';
-
-// Dummy data for initial UI render
-const DUMMY_ETFS = [
-  { code: '379800', name: 'KODEX 미국S&P500핵심소비재', price: 15420, change: 1.25, rate1w: 2.3, rate1m: 4.8, rate3m: 12.5, rate1y: 28.4, aum: 4200, fee: 0.05, volume: 150000 },
-  { code: '305540', name: 'TIGER 2차전지테마', price: 23150, change: -2.45, rate1w: -1.2, rate1m: -3.5, rate3m: -8.4, rate1y: -15.2, aum: 9800, fee: 0.45, volume: 850000 },
-  { code: '453950', name: 'SOL 반도체소부장Fn', price: 12890, change: 3.15, rate1w: 4.5, rate1m: 8.2, rate3m: 15.6, rate1y: 34.2, aum: 3100, fee: 0.30, volume: 450000 },
-  { code: '417630', name: 'ACE 미국S&P500', price: 17820, change: 0.85, rate1w: 1.5, rate1m: 3.2, rate3m: 8.9, rate1y: 22.1, aum: 15200, fee: 0.07, volume: 1200000 },
-  { code: '448880', name: 'TIGER 미국테크TOP10 INDXX', price: 24130, change: 1.95, rate1w: 3.1, rate1m: 6.8, rate3m: 14.2, rate1y: 39.8, aum: 18400, fee: 0.49, volume: 980000 }
-];
-
-const DUMMY_CHANGES = [
-  { code: '453950', etfName: 'SOL 반도체소부장Fn', type: 'swap', message: '1위 종목 교체: 한미반도체 ➡️ SK하이닉스', date: '2026-06-02', badge: '🔄 변경' },
-  { code: '379800', etfName: 'KODEX 미국S&P500핵심소비재', type: 'new', message: '신규 편입: 코스트코 (비중 3.5%)', date: '2026-06-02', badge: '🆕 편입' },
-  { code: '305540', etfName: 'TIGER 2차전지테마', type: 'out', message: '완전 편출: 엘앤에프', date: '2026-06-01', badge: '❌ 편출' }
-];
+import { useETFData } from '../hooks/useETFData';
+import { useChanges } from '../hooks/useChanges';
 
 export default function Home() {
   const [period, setPeriod] = useState('1m'); // 1w, 1m, 3m, 1y
@@ -24,6 +12,11 @@ export default function Home() {
   
   const { watchlist, toggleWatchlist } = useWatchlistStore();
   const { selectedEtfs, addEtf, removeEtf } = useCompareStore();
+
+  // Fetch live crawled ETF list & rankings
+  const { etfs, loading: etfsLoading, error: etfsError } = useETFData(period);
+  // Fetch live daily changes
+  const { changes, loading: changesLoading, error: changesError } = useChanges();
 
   const handleCompareToggle = (code) => {
     if (selectedEtfs.includes(code)) {
@@ -33,7 +26,7 @@ export default function Home() {
     }
   };
 
-  const filteredEtfs = DUMMY_ETFS.filter(etf => 
+  const filteredEtfs = etfs.filter(etf => 
     etf.name.toLowerCase().includes(search.toLowerCase()) || 
     etf.code.includes(search)
   );
@@ -78,25 +71,42 @@ export default function Home() {
           </div>
 
           <div className="space-y-4">
-            {DUMMY_CHANGES.map((change, idx) => (
-              <div key={idx} className="glass p-5 rounded-2xl glow-violet hover:scale-[1.02] transition-transform duration-300">
-                <div className="flex justify-between items-start gap-2 mb-2">
-                  <span className="text-sm font-semibold text-slate-200 truncate">{change.etfName}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                    change.type === 'new' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                    change.type === 'out' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
-                    'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                  }`}>
-                    {change.badge}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-400">{change.message}</p>
-                <div className="mt-3 flex justify-between items-center text-[10px] text-slate-500">
-                  <span>코드: {change.code}</span>
-                  <span>{change.date}</span>
-                </div>
+            {changesLoading ? (
+              <div className="glass p-12 rounded-2xl flex flex-col items-center justify-center text-slate-500 space-y-3">
+                <Loader2 className="animate-spin text-violet-400" />
+                <span className="text-xs">실시간 변동 정보 로딩 중...</span>
               </div>
-            ))}
+            ) : changesError ? (
+              <div className="glass p-8 rounded-2xl text-center text-slate-500 text-xs">
+                데이터 로딩 실패: {changesError}
+              </div>
+            ) : changes.length > 0 ? (
+              changes.map((change, idx) => (
+                <div key={idx} className="glass p-5 rounded-2xl glow-violet hover:scale-[1.02] transition-transform duration-300">
+                  <div className="flex justify-between items-start gap-2 mb-2">
+                    <Link to={`/etf/${change.code}`} className="text-sm font-semibold text-slate-200 hover:text-violet-400 truncate">
+                      {change.etfName}
+                    </Link>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                      change.type === 'new' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                      change.type === 'out' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
+                      'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                    }`}>
+                      {change.badge}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400">{change.message}</p>
+                  <div className="mt-3 flex justify-between items-center text-[10px] text-slate-500">
+                    <span>코드: {change.code}</span>
+                    <span>{change.date}</span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="glass p-8 rounded-2xl text-center text-slate-500 text-xs">
+                오늘의 구성종목 변동 내역이 없습니다.
+              </div>
+            )}
           </div>
         </div>
 
@@ -152,7 +162,22 @@ export default function Home() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/40 text-sm">
-                {filteredEtfs.length > 0 ? (
+                {etfsLoading ? (
+                  <tr>
+                    <td colSpan="6" className="py-20 text-center">
+                      <div className="flex flex-col items-center justify-center space-y-3 text-slate-400">
+                        <Loader2 className="animate-spin text-blue-500" />
+                        <span className="text-xs">실시간 네이버 금융 ETF 목록 크롤링 중...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : etfsError ? (
+                  <tr>
+                    <td colSpan="6" className="py-12 text-center text-rose-500 text-xs font-semibold">
+                      에러 발생: {etfsError}
+                    </td>
+                  </tr>
+                ) : filteredEtfs.length > 0 ? (
                   filteredEtfs.map((etf) => {
                     const rate = getPeriodRate(etf);
                     const isPositive = rate >= 0;
@@ -160,7 +185,9 @@ export default function Home() {
                     return (
                       <tr key={etf.code} className="hover:bg-slate-900/20 transition-colors">
                         <td className="py-4 px-5">
-                          <div className="font-semibold text-slate-200 hover:text-blue-400 cursor-pointer">{etf.name}</div>
+                          <Link to={`/etf/${etf.code}`} className="font-semibold text-slate-200 hover:text-blue-400 block">
+                            {etf.name}
+                          </Link>
                           <span className="text-xs text-slate-500 font-mono">{etf.code}</span>
                         </td>
                         <td className="py-4 px-4 text-right font-mono text-slate-300">
