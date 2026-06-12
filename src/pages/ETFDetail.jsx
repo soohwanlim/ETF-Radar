@@ -13,20 +13,20 @@ export default function ETFDetail() {
   const { holdings, loading: holdingsLoading, error: holdingsError } = useETFHoldings(code);
   const { history, loading: historyLoading, error: historyError } = useETFHistory(code);
 
-  if (detailLoading || holdingsLoading) {
+  if (detailLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[500px] text-slate-400 space-y-4">
         <Loader2 className="animate-spin text-blue-500" size={36} />
-        <span>ETF 상세 정보 및 KRX 자산구성내역 조회 중...</span>
+        <span>ETF 상세 정보와 구성종목 조회 중...</span>
       </div>
     );
   }
 
-  if (detailError || holdingsError) {
+  if (detailError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[500px] text-rose-500 space-y-4">
         <h2 className="text-xl font-bold">오류가 발생했습니다</h2>
-        <p className="text-sm text-slate-400">{detailError || holdingsError}</p>
+        <p className="text-sm text-slate-400">{detailError}</p>
         <Link to="/" className="text-xs px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-300">
           홈으로 돌아가기
         </Link>
@@ -68,17 +68,32 @@ export default function ETFDetail() {
                   <span className="text-slate-300 font-semibold">{detail.listingDate || '-'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">순자산 (AUM)</span>
-                  <span className="text-slate-300 font-semibold">{detail.aum == null ? '-' : `${detail.aum.toLocaleString()}억원`}</span>
+                  <span className="text-slate-500">순자산총액</span>
+                  <span className="text-slate-300 font-semibold">{detail.netAssets == null ? 'KRX 승인 후 제공' : `${detail.netAssets.toLocaleString()}억원`}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">시가총액</span>
+                  <span className="text-slate-300 font-semibold">{detail.marketCap == null ? '-' : `${detail.marketCap.toLocaleString()}억원`}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">총보수 (수수료)</span>
                   <span className="text-slate-300 font-semibold text-emerald-400">{detail.fee == null ? '-' : `연 ${detail.fee}%`}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">분배금 주기</span>
-                  <span className="text-slate-300 font-semibold">{detail.distributionCycle || '-'}</span>
+                  <span className="text-slate-500">기초지수</span>
+                  <span className="text-slate-300 font-semibold text-right max-w-[160px]">{detail.benchmark || '-'}</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">유형</span>
+                  <span className="text-slate-300 font-semibold text-right">{detail.fundType || '-'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">NAV</span>
+                  <span className="text-slate-300 font-semibold">{detail.nav == null ? '-' : `${detail.nav.toLocaleString()}원`}</span>
+                </div>
+              </div>
+              <div className="pt-3 border-t border-slate-800/80 text-[10px] text-slate-500">
+                기준일 {detail.asOf} · 출처 {detail.source}
               </div>
             </div>
           )}
@@ -87,7 +102,7 @@ export default function ETFDetail() {
           <div className="glass p-6 rounded-3xl space-y-5">
             <h2 className="text-lg font-bold text-slate-200 flex items-center gap-2 border-b border-slate-800/80 pb-3">
               <RefreshCw size={16} className="text-violet-400 animate-spin-slow" />
-              구성종목 변경 이력 (최근 90일)
+              구성종목 변경 이력 (최근 1년)
             </h2>
             
             {historyLoading ? (
@@ -114,7 +129,7 @@ export default function ETFDetail() {
                 ))}
               </div>
             ) : (
-              <div className="text-xs text-slate-500 py-4 text-center">최근 90일간 큰 변동 사항이 없습니다.</div>
+              <div className="text-xs text-slate-500 py-4 text-center">최근 1년간 큰 변동 사항이 없습니다.</div>
             )}
           </div>
         </div>
@@ -128,6 +143,15 @@ export default function ETFDetail() {
               <BarChart2 size={18} className="text-blue-400" />
               구성종목 및 비중
             </h2>
+            {holdingsLoading ? (
+              <div className="h-[280px] flex items-center justify-center gap-2 text-sm text-slate-500">
+                <Loader2 className="animate-spin text-blue-400" size={18} /> 구성종목 불러오는 중...
+              </div>
+            ) : holdingsError ? (
+              <div className="h-[180px] flex items-center justify-center text-sm text-slate-500">
+                구성종목을 불러오지 못했습니다: {holdingsError}
+              </div>
+            ) : (
             <div className="h-[280px] w-full pt-4">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={holdings} layout="vertical" margin={{ top: 0, right: 10, left: 30, bottom: 0 }}>
@@ -146,18 +170,30 @@ export default function ETFDetail() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
+            )}
+            {holdings.length > 0 && (
+              <div className="text-[10px] text-slate-500 text-right">
+                기준일 {holdings[0].asOf} · 출처 {holdings[0].source}
+                {holdings[0].coverage === 'top10' ? ' (상위 10개 구성자산)' : ' (전체 PDF)'}
+              </div>
+            )}
           </div>
 
-          {/* KRX PDF에는 섹터 분류가 없어 임의 데이터로 채우지 않습니다. */}
+          {/* 원천 데이터에 섹터 분류가 없어 임의 데이터로 채우지 않습니다. */}
           <div className="glass p-6 rounded-3xl space-y-4">
             <h2 className="text-lg font-bold text-slate-200 flex items-center gap-2">
               <Info size={18} className="text-emerald-400" />
               데이터 기준
             </h2>
             <div className="text-sm text-slate-400 leading-relaxed">
-              구성종목과 비중은 KRX 자산구성내역(PDF)을 기준으로 합니다. 섹터 분류는 원천 데이터에 포함되지 않아 임의로 추정하지 않습니다.
-              KRX 수집이 불가능한 경우 네이버 금융의 전일 기준 상위 10개 구성자산으로 대체됩니다.
+              구성종목은 네이버 금융의 전일 기준 상위 10개 구성자산입니다. 공식 KRX Open API는 ETF 구성종목을 제공하지 않으므로,
+              전체 PDF 기반 변경 감지는 향후 운용사별 데이터 연동이 필요합니다.
             </div>
+            {detail?.description && (
+              <div className="text-sm text-slate-400 leading-relaxed pt-4 border-t border-slate-800/70">
+                {detail.description}
+              </div>
+            )}
           </div>
 
         </div>

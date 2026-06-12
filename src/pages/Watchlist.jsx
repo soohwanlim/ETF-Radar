@@ -72,9 +72,9 @@ export default function Watchlist() {
               <thead>
                 <tr className="border-b border-slate-800 bg-slate-900/40 text-slate-400 text-xs font-semibold">
                   <th className="py-4 px-5">ETF 명</th>
-                  <th className="py-4 px-4 text-right">전일 종가</th>
+                  <th className="py-4 px-4 text-right">현재가</th>
                   <th className="py-4 px-4 text-right">{PERIODS.find(item => item.id === period)?.label} 수익률</th>
-                  <th className="py-4 px-4 text-right">순자산 (AUM)</th>
+                  <th className="py-4 px-4 text-right">ETF 규모</th>
                   <th className="py-4 px-5 text-center">액션</th>
                 </tr>
               </thead>
@@ -100,7 +100,10 @@ export default function Watchlist() {
                           {hasRate ? `${positive ? '+' : ''}${rate}%` : '-'}
                         </span>
                       </td>
-                      <td className="py-4 px-4 text-right font-mono text-slate-400">{etf.aum.toLocaleString()}억</td>
+                      <td className="py-4 px-4 text-right font-mono text-slate-400">
+                        {etf.aum == null ? '-' : `${etf.aum.toLocaleString()}억`}
+                        <span className="block text-[9px] text-slate-600">{etf.assetValueType === 'netAssets' ? '순자산' : '시가총액'}</span>
+                      </td>
                       <td className="py-4 px-5">
                         <div className="flex items-center justify-center gap-2">
                           <button onClick={() => toggleWatchlist(etf.code)} className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400" title="즐겨찾기 해제">

@@ -240,7 +240,7 @@ export default function Changes() {
           변경 감지 레이더
         </h1>
         <p className="text-slate-400 max-w-xl mx-auto text-base">
-          국내 주식형 현물 ETF의 KRX 자산구성내역을 거래일마다 비교합니다.
+          국내 주식형 현물 ETF의 상위 구성종목을 거래일마다 비교합니다.
           신규 편입·편출·비중 변동을 누구보다 빠르게 확인하세요.
         </p>
         {lastUpdated && (
@@ -380,7 +380,7 @@ export default function Changes() {
           <p className="font-semibold text-slate-300">데이터 수집 안내</p>
           <p>
             구성종목 변경 데이터는 <strong className="text-slate-200">매일 오후 4시 (KST)</strong>,
-            장 마감 후 KRX 자산구성내역을 수집해 최근 거래일 데이터와 비교합니다. KRX 수집 실패 시 네이버 금융의 상위 10개 구성자산을 사용합니다.
+            장 마감 후 네이버 금융의 상위 10개 구성자산을 수집해 최근 거래일 데이터와 비교합니다.
             해외·채권·원자재·레버리지·인버스·커버드콜 ETF는 현재 지원하지 않습니다.
           </p>
         </div>

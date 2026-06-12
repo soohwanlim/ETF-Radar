@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "backfill:prices": "node scripts/build-price-backfill.mjs",
+    "test": "node scripts/test-worker.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },

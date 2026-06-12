@@ -1,7 +1,5 @@
 // workers/index.js
-// Cloudflare Workers — ETF Radar 통합 엔트리포인트
-// - fetch: API 프록시 (기존 proxy.js 내용)
-// - scheduled: Cron 스케줄러 (평일 오후 4시 KST = UTC 07:00)
+// Cloudflare Worker entry point for ETF Radar APIs and the weekday close scheduler.
 
 // ─── 상수 ──────────────────────────────────────────────────────────────
 
@@ -20,6 +18,7 @@ const PRICE_PERIOD_DAYS = {
   '1y': 365,
   '10y': 3650,
 };
+const KRX_ETF_DAILY_URL = 'https://data-dbg.krx.co.kr/svc/apis/etp/etf_bydd_trd';
 
 const DOMESTIC_EQUITY_TAB_CODES = new Set([1, 2]);
 const EXCLUDED_ETF_NAME_PATTERNS = [
@@ -66,6 +65,82 @@ async function fetchNaverEtfItems() {
   return (data?.result?.etfItemList || []).filter(isSupportedDomesticSpotEtf);
 }
 
+function normalizeNaverEtf(item) {
+  return {
+    code: item.itemcode,
+    name: item.itemname,
+    price: Number(item.nowVal) || 0,
+    change: Number(item.changeVal) * (item.risefall === '5' || item.risefall === '4' ? -1 : 1),
+    changeRate: Number(item.changeRate) || 0,
+    nav: Number(item.nav) || null,
+    marketCap: Math.round(Number(item.marketSum) || 0),
+    netAssets: null,
+    volume: Number(item.quant) || 0,
+    benchmark: null,
+    rate3m: Number(item.threeMonthEarnRate) || null,
+    source: 'Naver Finance',
+  };
+}
+
+export function normalizeKrxEtf(row) {
+  const name = row.ISU_NM || '';
+  return {
+    code: String(row.ISU_CD || '').trim(),
+    name,
+    price: parseNumber(row.TDD_CLSPRC),
+    change: parseNumber(row.CMPPREVDD_PRC),
+    changeRate: parseNumber(row.FLUC_RT),
+    nav: parseNumber(row.NAV) || null,
+    marketCap: Math.round(parseNumber(row.MKTCAP) / 100000000),
+    netAssets: Math.round(parseNumber(row.INVSTASST_NETASST_TOTAMT) / 100000000),
+    volume: parseNumber(row.ACC_TRDVOL),
+    benchmark: row.IDX_IND_NM || null,
+    rate3m: null,
+    source: 'KRX Open API',
+  };
+}
+
+function getKstDateDaysAgo(days) {
+  return getDateDaysAgo(days).replaceAll('-', '');
+}
+
+export async function fetchKrxEtfItems(env) {
+  if (!env.KRX_API_KEY) throw new Error('KRX_API_KEY_NOT_CONFIGURED');
+
+  for (let offset = 0; offset < 10; offset++) {
+    const basDd = getKstDateDaysAgo(offset);
+    const response = await fetch(`${KRX_ETF_DAILY_URL}?basDd=${basDd}`, {
+      headers: { AUTH_KEY: env.KRX_API_KEY },
+    });
+    const data = await response.json().catch(() => ({}));
+    if (response.status === 401 || data.respCode === '401') throw new Error('KRX_API_UNAUTHORIZED');
+    if (!response.ok) throw new Error(`KRX_API_HTTP_${response.status}`);
+
+    const rows = data.OutBlock_1 || data.output || [];
+    if (rows.length > 0) {
+      return {
+        items: rows
+          .map(normalizeKrxEtf)
+          .filter(item => item.code && item.price > 0)
+          .filter(item => isSupportedDomesticSpotEtf({ etfTabCode: 1, itemname: item.name })),
+        source: 'KRX Open API',
+        asOf: `${basDd.slice(0, 4)}-${basDd.slice(4, 6)}-${basDd.slice(6, 8)}`,
+      };
+    }
+  }
+  throw new Error('KRX_API_NO_RECENT_DATA');
+}
+
+export async function fetchMarketEtfItems(env) {
+  try {
+    return await fetchKrxEtfItems(env);
+  } catch (error) {
+    console.warn(`KRX Open API 사용 불가, Naver로 대체: ${error.message}`);
+    const items = (await fetchNaverEtfItems()).map(normalizeNaverEtf);
+    return { items, source: 'Naver Finance', asOf: getToday(), fallbackReason: error.message };
+  }
+}
+
 function getDateDaysAgo(days) {
   const date = new Date(Date.now() + 9 * 60 * 60 * 1000 - days * 24 * 60 * 60 * 1000);
   return date.toISOString().slice(0, 10);
@@ -91,21 +166,21 @@ async function storeDailyPriceSnapshot(items, env) {
   if (!env.KV) return;
 
   const today = getToday();
-  const prices = Object.fromEntries(items.map(item => [item.itemcode, item.nowVal]));
+  const prices = Object.fromEntries(items.map(item => [item.code, item.price]));
   const dates = await env.KV.get('prices:dates', 'json') || [];
   const updatedDates = [...new Set([...dates, today])].sort().slice(-3700);
   const series = await env.KV.get('prices:series', 'json') || {};
 
   for (const item of items) {
-    const points = series[item.itemcode] || [];
+    const points = series[item.code] || [];
     const withoutToday = points.filter(point => point[0] !== today);
-    const updated = [...withoutToday, [today, item.nowVal]].sort((a, b) => a[0].localeCompare(b[0]));
+    const updated = [...withoutToday, [today, item.price]].sort((a, b) => a[0].localeCompare(b[0]));
     const recentCutoff = getDateDaysAgo(400);
     const monthEnds = new Map();
     for (const point of updated) {
       if (point[0] < recentCutoff) monthEnds.set(point[0].slice(0, 7), point);
     }
-    series[item.itemcode] = [
+    series[item.code] = [
       ...monthEnds.values(),
       ...updated.filter(point => point[0] >= recentCutoff),
     ].sort((a, b) => a[0].localeCompare(b[0]));
@@ -143,43 +218,10 @@ const WATCHED_ETF_CODES = [
 
 // ─── KRX 크롤링 ──────────────────────────────────────────────────────────
 
-/**
- * KRX 데이터시스템에서 ETF 구성종목을 가져옵니다 (2-step OTP 방식).
- * @param {string} etfCode - ETF 단축코드 (6자리)
- * @returns {Array} holdings - [{ name, code, weight, shares, value }]
- */
 function parseNumber(value) {
   const normalized = String(value ?? '').replace(/,/g, '').trim();
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function normalizeKrxHoldings(items) {
-  const normalized = items.map(item => ({
-    name: item.COMPST_ISU_NM || item.ISU_NM || item.isuNm || '',
-    code: item.COMPST_ISU_SRT_CD || item.ISU_SRT_CD || item.isuSrtCd || '',
-    explicitWeight: parseNumber(item.COMPST_RTO || item.WGHT || item.wghtRt),
-    shares: parseNumber(item.COMPST_ISU_CU1_SHRS || item.STRT_VALU || item.CU1_SHRS),
-    amount: parseNumber(item.VALU_AMT || item.EVLU_AMT || item.AMT),
-  })).filter(item => item.name && (item.code || item.amount > 0 || item.explicitWeight > 0));
-
-  const totalAmount = normalized.reduce((sum, item) => sum + item.amount, 0);
-
-  return normalized.map(item => {
-    const weight = item.explicitWeight > 0
-      ? item.explicitWeight
-      : totalAmount > 0 ? (item.amount / totalAmount) * 100 : 0;
-
-    return {
-      name: item.name,
-      code: item.code,
-      weight: Number(weight.toFixed(4)),
-      shares: item.shares,
-      amount: item.amount,
-      source: 'KRX PDF',
-      coverage: 'full',
-    };
-  }).filter(item => item.weight > 0).sort((a, b) => b.weight - a.weight);
 }
 
 function toPublicHoldings(holdings, asOf = getToday()) {
@@ -190,8 +232,8 @@ function toPublicHoldings(holdings, asOf = getToday()) {
     weight: item.weight,
     shares: item.shares,
     amount: item.amount,
-    source: item.source || 'KRX PDF',
-    coverage: item.coverage || 'full',
+    source: item.source || 'Naver Finance',
+    coverage: item.coverage || 'top10',
     asOf: item.asOf || asOf,
   }));
 }
@@ -204,6 +246,42 @@ function decodeHtmlText(value) {
     .replace(/&#39;/g, "'")
     .replace(/&nbsp;/g, ' ')
     .trim();
+}
+
+function extractNaverTableValue(html, label) {
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = html.match(new RegExp(`<th[^>]*scope="row"[^>]*>\\s*${escaped}\\s*<\\/th>\\s*<td[^>]*>([\\s\\S]*?)<\\/td>`));
+  return match ? decodeHtmlText(match[1]) : null;
+}
+
+function normalizeKoreanDate(value) {
+  const match = value?.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+  return match ? `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}` : null;
+}
+
+async function fetchNaverEtfDetail(etfCode) {
+  const response = await fetch(`https://finance.naver.com/item/main.naver?code=${etfCode}`, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      'Referer': 'https://finance.naver.com/',
+    },
+  });
+  if (!response.ok) throw new Error(`Naver ETF 상세 요청 실패: ${response.status}`);
+
+  const html = new TextDecoder('utf-8').decode(await response.arrayBuffer());
+  const feeMatch = html.match(/summary="펀드보수 정보"[\s\S]*?<td>\s*연\s*<em>([\d.]+)%<\/em>/);
+  const providerMatch = html.match(/<th[^>]*>자산운용사<\/th>\s*<td>\s*<span[^>]*>([\s\S]*?)<\/span>/);
+  const descriptionMatch = html.match(/<div id="summary_info"[^>]*>[\s\S]*?<h4>ETF개요<\/h4>\s*<p>([\s\S]*?)<\/p>/);
+
+  return {
+    benchmark: extractNaverTableValue(html, '기초지수'),
+    fundType: extractNaverTableValue(html, '유형'),
+    listingDate: normalizeKoreanDate(extractNaverTableValue(html, '상장일')),
+    fee: feeMatch ? Number(feeMatch[1]) : null,
+    provider: providerMatch ? decodeHtmlText(providerMatch[1]) : null,
+    description: descriptionMatch ? decodeHtmlText(descriptionMatch[1]) : null,
+    source: 'Naver Finance / FnGuide',
+  };
 }
 
 async function fetchHoldingsFromNaver(etfCode) {
@@ -239,98 +317,7 @@ async function fetchHoldingsFromNaver(etfCode) {
 }
 
 async function fetchSupportedHoldings(etfCode) {
-  try {
-    return await fetchHoldingsFromKRX(etfCode);
-  } catch (krxError) {
-    console.warn(`[${etfCode}] KRX PDF 실패, Naver 상위 구성종목으로 대체: ${krxError.message}`);
-    return fetchHoldingsFromNaver(etfCode);
-  }
-}
-
-async function fetchHoldingsFromKRX(etfCode) {
-  const KRX_BASE = 'https://data.krx.co.kr';
-
-  // Step 1: OTP 토큰 획득
-  const otpForm = new URLSearchParams({
-    locale: 'ko_KR',
-    tboxisuCd_finder_secuprodisu1_1: etfCode,
-    isuCd: etfCode,
-    isuCd2: '',
-    mdcMenuId: 'MDC0201020506',
-    bldId: 'dbms/MDC/STAT/standard/MDCSTAT61101',
-    codeNm: '',
-    param1isuCd_finder_secuprodisu1_1: '',
-    pagePath: '/contents/MDC/STAT/standard/MDCSTAT61101.cmd',
-    bld: 'dbms/MDC/STAT/standard/MDCSTAT61101',
-  });
-
-  const otpRes = await fetch(`${KRX_BASE}/comm/bldAttendant/getJsonData.cmd`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-      'Referer': `${KRX_BASE}/contents/MDC/STAT/standard/MDCSTAT61101.cmd`,
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Accept': 'application/json, text/javascript, */*; q=0.01',
-      'X-Requested-With': 'XMLHttpRequest',
-    },
-    body: otpForm.toString(),
-  });
-
-  if (!otpRes.ok) {
-    throw new Error(`KRX OTP 요청 실패: ${otpRes.status}`);
-  }
-
-  const otpData = await otpRes.json();
-
-  // Step 2: OTP 토큰 없이 직접 JSON 데이터 파싱 (KRX는 실제로 OTP 없이도 응답)
-  // KRX API는 bld 파라미터로 직접 데이터를 반환하는 경우가 많음
-  const items = otpData?.output || otpData?.OutBlock_1 || [];
-
-  if (!Array.isArray(items) || items.length === 0) {
-    // Fallback: 다른 KRX 엔드포인트 시도
-    return await fetchHoldingsFromKRXAlt(etfCode);
-  }
-
-  const holdings = normalizeKrxHoldings(items);
-  if (holdings.length === 0) throw new Error('KRX PDF 응답에 유효한 구성종목이 없습니다.');
-  return holdings;
-}
-
-/**
- * KRX 대체 엔드포인트: ETF 구성종목 (ETF PDF 기준)
- */
-async function fetchHoldingsFromKRXAlt(etfCode) {
-  const today = getToday().replace(/-/g, '');
-
-  const body = new URLSearchParams({
-    bld: 'dbms/MDC/STAT/standard/MDCSTAT61101',
-    locale: 'ko_KR',
-    isuCd: etfCode,
-    trdDd: today,
-    share: '1',
-    money: '1',
-    csvxls_isNo: 'false',
-  });
-
-  const res = await fetch('https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-      'Referer': 'https://data.krx.co.kr/contents/MDC/STAT/standard/MDCSTAT61101.cmd',
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      'X-Requested-With': 'XMLHttpRequest',
-    },
-    body: body.toString(),
-  });
-
-  if (!res.ok) throw new Error(`KRX 대체 요청 실패: ${res.status}`);
-
-  const data = await res.json();
-  const items = data?.output || data?.OutBlock_1 || [];
-
-  const holdings = normalizeKrxHoldings(items);
-  if (holdings.length === 0) throw new Error('KRX PDF 응답에 유효한 구성종목이 없습니다.');
-  return holdings;
+  return fetchHoldingsFromNaver(etfCode);
 }
 
 // ─── Diff 계산 ──────────────────────────────────────────────────────────
@@ -692,37 +679,41 @@ async function handleFetch(request, env) {
       const period = url.searchParams.get('period') || '1m';
 
       if (env.KV) {
-        const cached = await env.KV.get(`etf:price_list:domestic-spot:v4:${period}`);
+        const cached = await env.KV.get(`etf:price_list:domestic-spot:v5:${period}`);
         if (cached) return new Response(cached, { headers: CORS_HEADERS });
       }
 
-      const naverItems = await fetchNaverEtfItems();
+      const marketData = await fetchMarketEtfItems(env);
       const baseline = await getPriceBaseline(period, env);
 
-      const mappedEtfs = naverItems.map(item => {
-        const rate3m = item.threeMonthEarnRate || 0;
-        const changeRate = item.changeRate || 0;
-        const baselinePrice = baseline?.prices?.[item.itemcode];
+      const mappedEtfs = marketData.items.map(item => {
+        const baselinePrice = baseline?.prices?.[item.code];
         const historicalRate = baselinePrice > 0
-          ? Number((((item.nowVal - baselinePrice) / baselinePrice) * 100).toFixed(2))
+          ? Number((((item.price - baselinePrice) / baselinePrice) * 100).toFixed(2))
           : null;
         return {
-          code: item.itemcode,
-          name: item.itemname,
+          code: item.code,
+          name: item.name,
           marketScope: 'domestic-equity-spot',
-          price: item.nowVal,
-          change: item.changeVal * (item.risefall === '5' || item.risefall === '4' ? -1 : 1),
-          changeRate,
-          rate1d: parseFloat(changeRate.toFixed(2)),
+          price: item.price,
+          change: item.change,
+          changeRate: item.changeRate,
+          rate1d: Number(item.changeRate.toFixed(2)),
           rate1w: period === '1w' ? historicalRate : null,
           rate1m: period === '1m' ? historicalRate : null,
-          rate3m: parseFloat(rate3m.toFixed(2)),
+          rate3m: period === '3m' ? (historicalRate ?? item.rate3m) : null,
           rate1y: period === '1y' ? historicalRate : null,
           rate10y: period === '10y' ? historicalRate : null,
           baselineDate: baseline?.date || null,
-          aum: Math.round(item.marketSum || 100),
+          aum: item.netAssets ?? item.marketCap,
+          assetValueType: item.netAssets != null ? 'netAssets' : 'marketCap',
+          marketCap: item.marketCap,
+          nav: item.nav,
+          benchmark: item.benchmark,
           fee: null,
-          volume: item.quant || 0
+          volume: item.volume,
+          source: item.source,
+          asOf: marketData.asOf,
         };
       });
 
@@ -731,10 +722,23 @@ async function handleFetch(request, env) {
       const responseJson = JSON.stringify(sortedEtfs);
 
       if (env.KV) {
-        await env.KV.put(`etf:price_list:domestic-spot:v4:${period}`, responseJson, { expirationTtl: 300 });
+        await env.KV.put(`etf:price_list:domestic-spot:v5:${period}`, responseJson, { expirationTtl: 300 });
       }
 
       return new Response(responseJson, { headers: CORS_HEADERS });
+    }
+
+    if (path === '/api/health/data-source') {
+      const configured = Boolean(env.KRX_API_KEY);
+      if (!configured) {
+        return new Response(JSON.stringify({ configured: false, authorized: false, source: 'Naver Finance' }), { headers: CORS_HEADERS });
+      }
+      try {
+        const data = await fetchKrxEtfItems(env);
+        return new Response(JSON.stringify({ configured: true, authorized: true, source: data.source, asOf: data.asOf, count: data.items.length }), { headers: CORS_HEADERS });
+      } catch (error) {
+        return new Response(JSON.stringify({ configured: true, authorized: false, source: 'Naver Finance', reason: error.message }), { headers: CORS_HEADERS });
+      }
     }
 
     // GET /api/compare?codes=069500,102110&period=1y
@@ -892,39 +896,41 @@ async function handleFetch(request, env) {
       return new Response(JSON.stringify(allHistory), { headers: CORS_HEADERS });
     }
 
-    // GET /api/themes
-    if (path === '/api/themes') {
-      const themes = [
-        { id: 'semi', name: '반도체', etfs: ['453950', '463810', '091160'] },
-        { id: 'nuclear', name: '원자력', etfs: ['427110', '455500'] },
-        { id: 'battery', name: '2차전지', etfs: ['305540', '261240'] }
-      ];
-      return new Response(JSON.stringify(themes), { headers: CORS_HEADERS });
-    }
-
     // GET /api/etf/:code
     const detailMatch = path.match(/^\/api\/etf\/([0-9a-zA-Z]+)$/);
     if (detailMatch) {
       const code = detailMatch[1];
-      const item = (await fetchNaverEtfItems()).find(etf => etf.itemcode === code);
+      const marketData = await fetchMarketEtfItems(env);
+      const item = marketData.items.find(etf => etf.code === code);
       if (!item) {
         return new Response(JSON.stringify({ error: '지원 대상 ETF를 찾지 못했습니다.', code }), {
           status: 404,
           headers: CORS_HEADERS,
         });
       }
+      let naverDetail = {};
+      try {
+        naverDetail = await fetchNaverEtfDetail(code);
+      } catch (error) {
+        console.warn(`[${code}] Naver 상세정보 조회 실패: ${error.message}`);
+      }
       const details = {
         code,
-        name: item.itemname,
-        provider: getProviderFromName(item.itemname),
-        listingDate: null,
-        fee: null,
-        aum: Math.round(item.marketSum || 0),
-        price: item.nowVal,
+        name: item.name,
+        provider: naverDetail.provider || getProviderFromName(item.name),
+        listingDate: naverDetail.listingDate || null,
+        fee: naverDetail.fee ?? null,
+        aum: item.netAssets,
+        netAssets: item.netAssets,
+        marketCap: item.marketCap,
+        price: item.price,
         nav: item.nav,
         changeRate: item.changeRate,
-        distributionCycle: null,
-        asOf: getToday(),
+        benchmark: item.benchmark || naverDetail.benchmark || null,
+        fundType: naverDetail.fundType || null,
+        description: naverDetail.description || null,
+        source: `${marketData.source} + ${naverDetail.source || 'Naver Finance'}`,
+        asOf: marketData.asOf,
       };
       return new Response(JSON.stringify(details), { headers: CORS_HEADERS });
     }
@@ -948,9 +954,9 @@ async function handleScheduled(event, env) {
   console.log(`[Cron] ETF 구성종목 변경 감지 시작: ${getToday()}`);
 
   try {
-    const priceItems = await fetchNaverEtfItems();
-    await storeDailyPriceSnapshot(priceItems, env);
-    console.log(`[Cron] 국내 현물 ETF 종가 스냅샷 저장: ${priceItems.length}개`);
+    const marketData = await fetchMarketEtfItems(env);
+    await storeDailyPriceSnapshot(marketData.items, env);
+    console.log(`[Cron] 국내 현물 ETF 종가 스냅샷 저장: ${marketData.items.length}개 (${marketData.source})`);
   } catch (error) {
     console.error(`[Cron] 종가 스냅샷 저장 실패: ${error.message}`);
   }

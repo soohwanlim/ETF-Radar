@@ -40,8 +40,8 @@ function CompareCard({ etf, period, onRemove }) {
         <Link to={`/etf/${etf.code}`} className="font-extrabold text-slate-200 pr-6 hover:text-blue-400 block truncate">{etf.name}</Link>
       </div>
       <div className="grid grid-cols-2 gap-4 text-xs font-mono border-y border-slate-800/60 py-4">
-        <div><span className="text-[10px] text-slate-500 block">전일 종가</span><span className="font-semibold text-slate-300 text-sm">{(etf.price || 0).toLocaleString()}원</span></div>
-        <div><span className="text-[10px] text-slate-500 block">AUM</span><span className="font-semibold text-slate-300 text-sm">{(etf.aum || 0).toLocaleString()}억</span></div>
+        <div><span className="text-[10px] text-slate-500 block">현재가</span><span className="font-semibold text-slate-300 text-sm">{(etf.price || 0).toLocaleString()}원</span></div>
+        <div><span className="text-[10px] text-slate-500 block">{etf.assetValueType === 'netAssets' ? '순자산' : '시가총액'}</span><span className="font-semibold text-slate-300 text-sm">{etf.aum == null ? '-' : `${etf.aum.toLocaleString()}억`}</span></div>
         <div><span className="text-[10px] text-slate-500 block">총보수</span><span className="font-semibold text-slate-300 text-sm">{etf.fee == null ? '-' : `${etf.fee}%`}</span></div>
         <div>
           <span className="text-[10px] text-slate-500 block">선택 기간 수익률</span>

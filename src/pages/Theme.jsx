@@ -72,7 +72,7 @@ function ThemeEtfCard({ etf, period }) {
         </div>
         <div className="flex items-center gap-5 text-sm font-mono">
           <div className="text-right">
-            <span className="text-[11px] text-slate-500 block">전일 종가</span>
+            <span className="text-[11px] text-slate-500 block">현재가</span>
             <span className="font-semibold text-slate-300">{etf.price.toLocaleString()}원</span>
           </div>
           <div className="text-right">

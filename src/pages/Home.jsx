@@ -156,9 +156,9 @@ export default function Home() {
               <thead>
                 <tr className="border-b border-slate-800 bg-slate-900/40 text-slate-400 text-xs font-semibold">
                   <th className="py-4 px-5">ETF 명</th>
-                  <th className="py-4 px-4 text-right">전일 종가</th>
+                  <th className="py-4 px-4 text-right">현재가</th>
                   <th className="py-4 px-4 text-right">수익률 ({period === '1d' ? '당일' : period === '1w' ? '1주' : period === '1m' ? '1개월' : period === '3m' ? '3개월' : period === '1y' ? '1년' : '10년'})</th>
-                  <th className="py-4 px-4 text-right">순자산 (AUM)</th>
+                  <th className="py-4 px-4 text-right">ETF 규모</th>
                   <th className="py-4 px-4 text-center">보수</th>
                   <th className="py-4 px-5 text-center">액션</th>
                 </tr>
@@ -203,7 +203,8 @@ export default function Home() {
                           </span>
                         </td>
                         <td className="py-4 px-4 text-right font-mono text-slate-400">
-                          {etf.aum.toLocaleString()}억
+                          {etf.aum == null ? '-' : `${etf.aum.toLocaleString()}억`}
+                          <span className="block text-[9px] text-slate-600">{etf.assetValueType === 'netAssets' ? '순자산' : '시가총액'}</span>
                         </td>
                         <td className="py-4 px-4 text-center text-slate-400 font-mono">
                           {etf.fee == null ? '-' : `${etf.fee}%`}
