@@ -41,6 +41,17 @@ function isSupportedDomesticSpotEtf(item) {
     && !EXCLUDED_ETF_NAME_PATTERNS.some(pattern => pattern.test(name));
 }
 
+function getProviderFromName(name) {
+  const providers = [
+    ['KODEX', '삼성자산운용'], ['TIGER', '미래에셋자산운용'], ['RISE', 'KB자산운용'],
+    ['ACE', '한국투자신탁운용'], ['SOL', '신한자산운용'], ['PLUS', '한화자산운용'],
+    ['HANARO', 'NH-Amundi자산운용'], ['KIWOOM', '키움투자자산운용'], ['KoAct', '삼성액티브자산운용'],
+    ['TIME', '타임폴리오자산운용'], ['WON', '우리자산운용'], ['1Q', '하나자산운용'],
+    ['BNK', 'BNK자산운용'], ['DAISHIN343', '대신자산운용'], ['IBK', 'IBK자산운용'],
+  ];
+  return providers.find(([brand]) => name.startsWith(brand))?.[1] || null;
+}
+
 async function fetchNaverEtfItems() {
   const response = await fetch('https://finance.naver.com/api/sise/etfItemList.nhn', {
     headers: {
@@ -895,14 +906,25 @@ async function handleFetch(request, env) {
     const detailMatch = path.match(/^\/api\/etf\/([0-9a-zA-Z]+)$/);
     if (detailMatch) {
       const code = detailMatch[1];
+      const item = (await fetchNaverEtfItems()).find(etf => etf.itemcode === code);
+      if (!item) {
+        return new Response(JSON.stringify({ error: '지원 대상 ETF를 찾지 못했습니다.', code }), {
+          status: 404,
+          headers: CORS_HEADERS,
+        });
+      }
       const details = {
         code,
-        name: ETF_NAME_MAP[code] || 'KODEX 200',
-        provider: code === '453950' ? '신한자산운용' : code.startsWith('4') ? '삼성자산운용' : '미래에셋자산운용',
-        listingDate: '2023-04-25',
-        fee: code === '453950' ? 0.30 : 0.45,
-        aum: 3120,
-        distributionCycle: '연 1회 (4월)'
+        name: item.itemname,
+        provider: getProviderFromName(item.itemname),
+        listingDate: null,
+        fee: null,
+        aum: Math.round(item.marketSum || 0),
+        price: item.nowVal,
+        nav: item.nav,
+        changeRate: item.changeRate,
+        distributionCycle: null,
+        asOf: getToday(),
       };
       return new Response(JSON.stringify(details), { headers: CORS_HEADERS });
     }

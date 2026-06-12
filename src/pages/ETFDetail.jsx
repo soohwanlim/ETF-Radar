@@ -61,23 +61,23 @@ export default function ETFDetail() {
               <div className="space-y-4 text-xs font-mono">
                 <div className="flex justify-between">
                   <span className="text-slate-500">운용사</span>
-                  <span className="text-slate-300 font-semibold">{detail.provider}</span>
+                  <span className="text-slate-300 font-semibold">{detail.provider || '-'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">상장일</span>
-                  <span className="text-slate-300 font-semibold">{detail.listingDate}</span>
+                  <span className="text-slate-300 font-semibold">{detail.listingDate || '-'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">순자산 (AUM)</span>
-                  <span className="text-slate-300 font-semibold">{detail.aum.toLocaleString()}억원</span>
+                  <span className="text-slate-300 font-semibold">{detail.aum == null ? '-' : `${detail.aum.toLocaleString()}억원`}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">총보수 (수수료)</span>
-                  <span className="text-slate-300 font-semibold text-emerald-400">연 {detail.fee}%</span>
+                  <span className="text-slate-300 font-semibold text-emerald-400">{detail.fee == null ? '-' : `연 ${detail.fee}%`}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">분배금 주기</span>
-                  <span className="text-slate-300 font-semibold">{detail.distributionCycle}</span>
+                  <span className="text-slate-300 font-semibold">{detail.distributionCycle || '-'}</span>
                 </div>
               </div>
             </div>
