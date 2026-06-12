@@ -1,10 +1,11 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { ArrowLeftRight, LayoutGrid, ShieldAlert, TrendingUp, RefreshCw, X } from 'lucide-react';
+import { ArrowLeftRight, LayoutGrid, ShieldAlert, TrendingUp, RefreshCw, Star, X } from 'lucide-react';
 import Home from './pages/Home';
 import Theme from './pages/Theme';
 import Compare from './pages/Compare';
 import ETFDetail from './pages/ETFDetail';
 import Changes from './pages/Changes';
+import Watchlist from './pages/Watchlist';
 import { useCompareStore } from './store/compareStore';
 
 function FloatingCompareBar() {
@@ -105,6 +106,17 @@ function Navigation() {
             비교분석
           </Link>
           <Link
+            to="/watchlist"
+            className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl transition-all ${
+              isActive('/watchlist')
+                ? 'bg-slate-900 text-amber-400'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Star size={14} />
+            즐겨찾기
+          </Link>
+          <Link
             to="/changes"
             className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl transition-all ${
               isActive('/changes')
@@ -136,6 +148,7 @@ export default function App() {
             <Route path="/theme" element={<Theme />} />
             <Route path="/compare" element={<Compare />} />
             <Route path="/changes" element={<Changes />} />
+            <Route path="/watchlist" element={<Watchlist />} />
             <Route path="/etf/:code" element={<ETFDetail />} />
           </Routes>
         </main>
