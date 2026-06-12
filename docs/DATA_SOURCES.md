@@ -32,3 +32,11 @@ Naver Finance ETF detail page. The page attributes the product description to Fn
 The official KRX Open API currently does not expose ETF holdings. ETF Radar therefore uses Naver Finance's
 previous-day top 10 holdings for the monitored ETFs. This is not a complete portfolio composition file.
 Full holdings detection requires a future adapter for each asset manager's PDF or CSV data.
+
+The weekday scheduler runs at 18:10 KST and retries at 19:10 KST. The retry is skipped when the first run
+has already stored the current KRX business date. Each ETF keeps only one latest TOP 10 snapshot; a new
+snapshot and structured history entries are written only when the observed composition changes.
+
+The MVP monitors nine representative domestic equity ETFs. Monitoring every listed ETF requires batching
+or an external scheduled job because fetching one Naver detail page per ETF can exceed a single Worker
+invocation's subrequest budget.

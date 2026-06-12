@@ -8,4 +8,4 @@ id = "dummy-kv-id-for-local-dev-best-etf"
 preview_id = "dummy-kv-preview-id-best-etf"
 
 [triggers]
-crons = ["10 7 * * MON-FRI"]
+crons = ["10 9 * * MON-FRI", "10 10 * * MON-FRI"]

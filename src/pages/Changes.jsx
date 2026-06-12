@@ -379,8 +379,9 @@ export default function Changes() {
         <div className="text-xs text-slate-400 leading-relaxed space-y-1">
           <p className="font-semibold text-slate-300">데이터 수집 안내</p>
           <p>
-            구성종목 변경 데이터는 <strong className="text-slate-200">매일 오후 4시 (KST)</strong>,
-            장 마감 후 네이버 금융의 상위 10개 구성자산을 수집해 최근 거래일 데이터와 비교합니다.
+            구성종목 변경 데이터는 <strong className="text-slate-200">평일 오후 6시 10분 (KST)</strong>에 수집하며,
+            종가 데이터가 늦으면 오후 7시 10분에 한 번 더 확인합니다. 네이버 금융의 상위 10개 구성자산만 비교하므로
+            전체 편입·편출 내역과는 다를 수 있으며, 현재는 주요 국내 ETF 9개를 감시합니다.
             해외·채권·원자재·레버리지·인버스·커버드콜 ETF는 현재 지원하지 않습니다.
           </p>
         </div>

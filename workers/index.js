@@ -11,6 +11,8 @@ const CORS_HEADERS = {
 };
 
 const CHANGE_RETENTION_DAYS = 365;
+const SCHEDULER_STATUS_KEY = 'scheduler:close-update';
+const LATEST_CHANGES_KEY = 'changes:latest-date';
 const PRICE_PERIOD_DAYS = {
   '1w': 7,
   '1m': 30,
@@ -162,19 +164,19 @@ async function getPriceBaseline(period, env) {
   return prices ? { date: snapshotDate, prices } : null;
 }
 
-async function storeDailyPriceSnapshot(items, env) {
+async function storeDailyPriceSnapshot(items, env, asOf) {
   if (!env.KV) return;
 
-  const today = getToday();
+  const snapshotDate = asOf || getToday();
   const prices = Object.fromEntries(items.map(item => [item.code, item.price]));
   const dates = await env.KV.get('prices:dates', 'json') || [];
-  const updatedDates = [...new Set([...dates, today])].sort().slice(-3700);
+  const updatedDates = [...new Set([...dates, snapshotDate])].sort().slice(-3700);
   const series = await env.KV.get('prices:series', 'json') || {};
 
   for (const item of items) {
     const points = series[item.code] || [];
-    const withoutToday = points.filter(point => point[0] !== today);
-    const updated = [...withoutToday, [today, item.price]].sort((a, b) => a[0].localeCompare(b[0]));
+    const withoutSnapshotDate = points.filter(point => point[0] !== snapshotDate);
+    const updated = [...withoutSnapshotDate, [snapshotDate, item.price]].sort((a, b) => a[0].localeCompare(b[0]));
     const recentCutoff = getDateDaysAgo(400);
     const monthEnds = new Map();
     for (const point of updated) {
@@ -186,20 +188,19 @@ async function storeDailyPriceSnapshot(items, env) {
     ].sort((a, b) => a[0].localeCompare(b[0]));
   }
 
-  await env.KV.put(`prices:${today}`, JSON.stringify(prices), {
+  await env.KV.put(`prices:${snapshotDate}`, JSON.stringify(prices), {
     expirationTtl: 11 * 365 * 24 * 60 * 60,
   });
   await env.KV.put('prices:dates', JSON.stringify(updatedDates));
   await env.KV.put('prices:series', JSON.stringify(series));
 }
 
-async function storeChangesHistory(changes, env) {
+async function storeChangesHistory(changes, env, asOf) {
   if (!env.KV || changes.length === 0) return;
 
   const existing = await env.KV.get('changes:history', 'json') || [];
-  const today = getToday();
   const cutoff = getDateDaysAgo(CHANGE_RETENTION_DAYS - 1);
-  const retained = existing.filter(change => change.date !== today && change.date >= cutoff);
+  const retained = existing.filter(change => change.date !== asOf && change.date >= cutoff);
   await env.KV.put('changes:history', JSON.stringify([...changes, ...retained].slice(0, 5000)));
 }
 
@@ -407,20 +408,18 @@ function getPreviousWeekday() {
   return date.toISOString().slice(0, 10);
 }
 
-async function getLatestPreviousSnapshot(etfCode, today, env) {
+async function getLatestHoldingsSnapshot(etfCode, env) {
   if (!env.KV) return null;
+  return env.KV.get(`snapshot:latest:${etfCode}`, 'json');
+}
 
-  const prefix = `snapshot:${etfCode}:`;
-  const listed = await env.KV.list({ prefix, limit: 100 });
-  const previousKey = listed.keys
-    .map(item => item.name)
-    .filter(name => name.slice(prefix.length) < today)
-    .sort()
-    .at(-1);
-
-  if (!previousKey) return null;
-  const holdings = await env.KV.get(previousKey, 'json');
-  return holdings ? { key: previousKey, holdings } : null;
+async function storeLatestHoldingsSnapshot(etfCode, holdings, asOf, env) {
+  if (!env.KV) return;
+  const normalized = holdings.map(item => ({ ...item, asOf }));
+  await env.KV.put(`snapshot:latest:${etfCode}`, JSON.stringify({ asOf, holdings: normalized }));
+  await env.KV.put(`etf:holdings:v3:${etfCode}`, JSON.stringify(toPublicHoldings(normalized, asOf)), {
+    expirationTtl: 24 * 60 * 60,
+  });
 }
 
 // ─── 스케줄러 핵심 로직 ───────────────────────────────────────────────────
@@ -428,10 +427,8 @@ async function getLatestPreviousSnapshot(etfCode, today, env) {
 /**
  * 특정 ETF의 구성종목 변경을 감지하고 KV에 저장합니다.
  */
-async function detectChanges(etfCode, env) {
-  const today = getToday();
-
-  const todayHoldings = await fetchSupportedHoldings(etfCode);
+export async function detectChanges(etfCode, env, asOf = getToday()) {
+  const todayHoldings = (await fetchSupportedHoldings(etfCode)).map(item => ({ ...item, asOf }));
 
   if (!todayHoldings || todayHoldings.length === 0) {
     console.log(`[${etfCode}] 오늘 구성종목 없음 — 스킵`);
@@ -439,35 +436,24 @@ async function detectChanges(etfCode, env) {
   }
 
   // 월요일과 휴장일을 고려해 가장 최근 거래일 스냅샷을 조회합니다.
-  const prevSnapshot = await getLatestPreviousSnapshot(etfCode, today, env);
+  const prevSnapshot = await getLatestHoldingsSnapshot(etfCode, env);
 
   if (!prevSnapshot) {
-    // 첫 실행 — 스냅샷만 저장
-    if (env.KV) {
-      await env.KV.put(`snapshot:${etfCode}:${today}`, JSON.stringify(todayHoldings), {
-        expirationTtl: CHANGE_RETENTION_DAYS * 24 * 60 * 60
-      });
-      await env.KV.put(`etf:holdings:v3:${etfCode}`, JSON.stringify(toPublicHoldings(todayHoldings, today)), {
-        expirationTtl: 3600
-      });
-    }
+    await storeLatestHoldingsSnapshot(etfCode, todayHoldings, asOf, env);
     console.log(`[${etfCode}] 첫 스냅샷 저장 완료`);
-    return null;
+    return { etfCode, asOf, changed: false, changes: [] };
   }
 
-  const previousFeed = `${prevSnapshot.holdings[0]?.source || 'unknown'}:${prevSnapshot.holdings[0]?.coverage || 'unknown'}`;
+  if (prevSnapshot.asOf >= asOf) {
+    return { etfCode, asOf, changed: false, skipped: 'already-checked', changes: [] };
+  }
+
+  const previousFeed = `${prevSnapshot.holdings?.[0]?.source || 'unknown'}:${prevSnapshot.holdings?.[0]?.coverage || 'unknown'}`;
   const currentFeed = `${todayHoldings[0]?.source || 'unknown'}:${todayHoldings[0]?.coverage || 'unknown'}`;
   if (previousFeed !== currentFeed) {
-    if (env.KV) {
-      await env.KV.put(`snapshot:${etfCode}:${today}`, JSON.stringify(todayHoldings), {
-        expirationTtl: CHANGE_RETENTION_DAYS * 24 * 60 * 60
-      });
-      await env.KV.put(`etf:holdings:v3:${etfCode}`, JSON.stringify(toPublicHoldings(todayHoldings, today)), {
-        expirationTtl: 3600
-      });
-    }
+    await storeLatestHoldingsSnapshot(etfCode, todayHoldings, asOf, env);
     console.log(`[${etfCode}] 데이터 범위 변경(${previousFeed} -> ${currentFeed}) — 기준 스냅샷 재설정`);
-    return null;
+    return { etfCode, asOf, changed: false, reset: true, changes: [] };
   }
 
   const diff = compareHoldings(prevSnapshot.holdings, todayHoldings);
@@ -478,12 +464,21 @@ async function detectChanges(etfCode, env) {
       ...diff.newEntries,
       ...diff.removedEntries,
       ...diff.weightChanges,
+      ...diff.rankChanges,
     ].map(c => ({
       code: etfCode,
-      date: today,
+      date: asOf,
       type: c.type,
       message: c.message,
-      badge: c.type === 'new' ? '🆕 편입' : c.type === 'out' ? '❌ 편출' : '⚖️ 비중변동',
+      holdingCode: c.code,
+      holdingName: c.name,
+      previousWeight: c.prevWeight ?? (c.type === 'out' ? c.weight : null),
+      weight: c.type === 'out' ? 0 : c.weight,
+      previousRank: c.prevRank ?? null,
+      rank: c.curRank ?? null,
+      coverage: c.coverage || 'top10',
+      source: c.source || 'Naver Finance',
+      badge: c.type === 'new' ? '🆕 편입' : c.type === 'out' ? '❌ 편출' : c.type === 'rank' ? '↕️ 순위변동' : '⚖️ 비중변동',
     }));
 
     // ETF별 이력은 ETF마다 별도 키를 사용하므로 여기서 안전하게 갱신합니다.
@@ -492,11 +487,10 @@ async function detectChanges(etfCode, env) {
       const existingHistory = await env.KV.get(historyKey);
       const history = existingHistory ? JSON.parse(existingHistory) : [];
       const newHistoryEntries = allChanges.map(c => ({
-        date: today,
-        type: c.type,
-        message: c.message,
+        ...c,
       }));
-      const updatedHistory = [...newHistoryEntries, ...history].slice(0, 1000);
+      const retainedHistory = history.filter(item => item.date !== asOf);
+      const updatedHistory = [...newHistoryEntries, ...retainedHistory].slice(0, 1000);
       await env.KV.put(historyKey, JSON.stringify(updatedHistory), {
         expirationTtl: CHANGE_RETENTION_DAYS * 24 * 60 * 60
       });
@@ -505,19 +499,9 @@ async function detectChanges(etfCode, env) {
     console.log(`[${etfCode}] 변경사항 감지: 신규 ${diff.newEntries.length}, 편출 ${diff.removedEntries.length}, 비중변동 ${diff.weightChanges.length}`);
   }
 
-  // 오늘 스냅샷 저장 & 90일 이전 삭제
-  if (env.KV) {
-    await env.KV.put(`snapshot:${etfCode}:${today}`, JSON.stringify(todayHoldings), {
-      expirationTtl: CHANGE_RETENTION_DAYS * 24 * 60 * 60
-    });
+  if (hasSignificantChange(diff)) await storeLatestHoldingsSnapshot(etfCode, todayHoldings, asOf, env);
 
-    // holdings 캐시 갱신
-    await env.KV.put(`etf:holdings:v3:${etfCode}`, JSON.stringify(toPublicHoldings(todayHoldings, today)), {
-      expirationTtl: 3600
-    });
-  }
-
-  return { etfCode, diff, changes: allChanges };
+  return { etfCode, asOf, changed: allChanges.length > 0, diff, changes: allChanges };
 }
 
 // ─── 더미 Fallback 데이터 ────────────────────────────────────────────────
@@ -730,14 +714,15 @@ async function handleFetch(request, env) {
 
     if (path === '/api/health/data-source') {
       const configured = Boolean(env.KRX_API_KEY);
+      const scheduler = env.KV ? await env.KV.get(SCHEDULER_STATUS_KEY, 'json') : null;
       if (!configured) {
-        return new Response(JSON.stringify({ configured: false, authorized: false, source: 'Naver Finance' }), { headers: CORS_HEADERS });
+        return new Response(JSON.stringify({ configured: false, authorized: false, source: 'Naver Finance', scheduler }), { headers: CORS_HEADERS });
       }
       try {
         const data = await fetchKrxEtfItems(env);
-        return new Response(JSON.stringify({ configured: true, authorized: true, source: data.source, asOf: data.asOf, count: data.items.length }), { headers: CORS_HEADERS });
+        return new Response(JSON.stringify({ configured: true, authorized: true, source: data.source, asOf: data.asOf, count: data.items.length, scheduler }), { headers: CORS_HEADERS });
       } catch (error) {
-        return new Response(JSON.stringify({ configured: true, authorized: false, source: 'Naver Finance', reason: error.message }), { headers: CORS_HEADERS });
+        return new Response(JSON.stringify({ configured: true, authorized: false, source: 'Naver Finance', reason: error.message, scheduler }), { headers: CORS_HEADERS });
       }
     }
 
@@ -797,17 +782,17 @@ async function handleFetch(request, env) {
 
       let holdings = [];
       try {
-        // 실제 KRX 데이터시스템에서 실시간 구성종목 크롤링 시도
+        // 네이버 금융이 공개하는 전일 기준 TOP 10 구성종목을 조회합니다.
         holdings = await fetchSupportedHoldings(code);
       } catch (err) {
-        console.error(`실시간 KRX 구성종목 조회 실패 [${code}]:`, err);
+        console.error(`Naver TOP 10 구성종목 조회 실패 [${code}]:`, err);
       }
 
       if (!holdings || holdings.length === 0) {
         return new Response(JSON.stringify({
           error: '구성종목 데이터를 가져오지 못했습니다.',
           code,
-          source: 'KRX PDF / Naver Finance',
+          source: 'Naver Finance TOP 10',
         }), { status: 502, headers: CORS_HEADERS });
       }
 
@@ -838,8 +823,8 @@ async function handleFetch(request, env) {
     if (path === '/api/changes') {
       // KV에서 실제 변경사항 조회
       if (env.KV) {
-        const today = getToday();
-        const kvChanges = await env.KV.get(`changes:${today}`);
+        const latestDate = await env.KV.get(LATEST_CHANGES_KEY);
+        const kvChanges = latestDate ? await env.KV.get(`changes:${latestDate}`) : null;
         if (kvChanges) {
           const parsed = JSON.parse(kvChanges);
           // ETF 이름 보강
@@ -951,20 +936,57 @@ async function handleFetch(request, env) {
 // ─── scheduled 핸들러 (Cron) ─────────────────────────────────────────────
 
 async function handleScheduled(event, env) {
-  console.log(`[Cron] ETF 구성종목 변경 감지 시작: ${getToday()}`);
+  const expectedDate = getToday();
+  const trigger = event?.cron || 'manual';
+  const previousStatus = env.KV ? await env.KV.get(SCHEDULER_STATUS_KEY, 'json') : null;
+  console.log(`[Cron] 종가 및 TOP 10 변경 수집 시작: ${expectedDate} (${trigger})`);
 
+  if (previousStatus?.lastSuccessDate === expectedDate) {
+    console.log(`[Cron] ${expectedDate} 수집이 이미 완료되어 재시도를 건너뜁니다.`);
+    return;
+  }
+
+  let marketData;
   try {
-    const marketData = await fetchMarketEtfItems(env);
-    await storeDailyPriceSnapshot(marketData.items, env);
+    marketData = await fetchMarketEtfItems(env);
+    if (env.KRX_API_KEY && marketData.source !== 'KRX Open API') {
+      throw new Error(`KRX_FALLBACK_${marketData.fallbackReason || 'UNKNOWN'}`);
+    }
+    if (marketData.asOf !== expectedDate) {
+      if (env.KV) {
+        await env.KV.put(SCHEDULER_STATUS_KEY, JSON.stringify({
+          state: 'waiting-for-close',
+          trigger,
+          expectedDate,
+          marketAsOf: marketData.asOf,
+          lastAttemptAt: new Date().toISOString(),
+          lastSuccessDate: previousStatus?.lastSuccessDate || null,
+        }));
+      }
+      console.log(`[Cron] KRX 최신 기준일 ${marketData.asOf}; ${expectedDate} 데이터 게시 전이므로 재시도를 기다립니다.`);
+      return;
+    }
+    await storeDailyPriceSnapshot(marketData.items, env, marketData.asOf);
     console.log(`[Cron] 국내 현물 ETF 종가 스냅샷 저장: ${marketData.items.length}개 (${marketData.source})`);
   } catch (error) {
     console.error(`[Cron] 종가 스냅샷 저장 실패: ${error.message}`);
+    if (env.KV) {
+      await env.KV.put(SCHEDULER_STATUS_KEY, JSON.stringify({
+        state: 'failed',
+        trigger,
+        expectedDate,
+        reason: error.message,
+        lastAttemptAt: new Date().toISOString(),
+        lastSuccessDate: previousStatus?.lastSuccessDate || null,
+      }));
+    }
+    return;
   }
 
   const results = [];
   for (const code of WATCHED_ETF_CODES) {
     try {
-      results.push({ status: 'fulfilled', value: await detectChanges(code, env) });
+      results.push({ status: 'fulfilled', value: await detectChanges(code, env, marketData.asOf) });
     } catch (reason) {
       results.push({ status: 'rejected', reason });
     }
@@ -984,10 +1006,26 @@ async function handleScheduled(event, env) {
     const changes = results
       .filter(result => result.status === 'fulfilled')
       .flatMap(result => result.value?.changes || []);
-    await env.KV.put(`changes:${getToday()}`, JSON.stringify(changes), {
-      expirationTtl: CHANGE_RETENTION_DAYS * 24 * 60 * 60,
-    });
-    await storeChangesHistory(changes, env);
+    if (changes.length > 0) {
+      await env.KV.put(`changes:${marketData.asOf}`, JSON.stringify(changes), {
+        expirationTtl: CHANGE_RETENTION_DAYS * 24 * 60 * 60,
+      });
+      await env.KV.put(LATEST_CHANGES_KEY, marketData.asOf);
+      await storeChangesHistory(changes, env, marketData.asOf);
+    }
+    await env.KV.put(SCHEDULER_STATUS_KEY, JSON.stringify({
+      state: failed === 0 ? 'success' : 'partial',
+      trigger,
+      expectedDate,
+      marketAsOf: marketData.asOf,
+      source: marketData.source,
+      etfCount: marketData.items.length,
+      holdingsSucceeded: succeeded,
+      holdingsFailed: failed,
+      changes: changes.length,
+      lastAttemptAt: new Date().toISOString(),
+      lastSuccessDate: marketData.asOf,
+    }));
   }
 
   console.log(`[Cron] 완료 — 성공: ${succeeded}, 실패: ${failed}`);
