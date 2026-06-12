@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 const API_BASE = '/api';
 
-export function useETFData(period = '1m') {
+export function useETFData(period = '3m') {
   const [etfs, setEtfs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

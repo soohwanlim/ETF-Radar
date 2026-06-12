@@ -1,15 +1,7 @@
-import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, BarChart2, PieChart as PieIcon, Loader2 } from 'lucide-react';
+import { ArrowLeft, RefreshCw, BarChart2, Info, Loader2 } from 'lucide-react';
 import { useETFDetail, useETFHoldings, useETFHistory } from '../hooks/useETFData';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from 'recharts';
-
-const DUMMY_SECTORS = [
-  { name: '메모리 반도체', value: 38.2 },
-  { name: '반도체 장비', value: 35.6 },
-  { name: '반도체 소재', value: 14.8 },
-  { name: '반도체 부품/테스트', value: 11.4 }
-];
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
 
 const COLORS = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#EC4899', '#14B8A6'];
 
@@ -25,7 +17,7 @@ export default function ETFDetail() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[500px] text-slate-400 space-y-4">
         <Loader2 className="animate-spin text-blue-500" size={36} />
-        <span>실시간 ETF 상세 정보 및 포트폴리오(PDF) 조회 중...</span>
+        <span>ETF 상세 정보 및 KRX 자산구성내역 조회 중...</span>
       </div>
     );
   }
@@ -41,11 +33,6 @@ export default function ETFDetail() {
       </div>
     );
   }
-
-  // Calculate sector distribution based on holdings or fallback
-  const sectorData = holdings.length > 0 
-    ? DUMMY_SECTORS // Fallback for beautiful charts since holdings don't map sectors
-    : [];
 
   return (
     <div className="space-y-10 fade-in">
@@ -139,7 +126,7 @@ export default function ETFDetail() {
           <div className="glass p-6 rounded-3xl space-y-4">
             <h2 className="text-lg font-bold text-slate-200 flex items-center gap-2">
               <BarChart2 size={18} className="text-blue-400" />
-              TOP 10 구성종목 및 비중
+              구성종목 및 비중
             </h2>
             <div className="h-[280px] w-full pt-4">
               <ResponsiveContainer width="100%" height="100%">
@@ -161,46 +148,15 @@ export default function ETFDetail() {
             </div>
           </div>
 
-          {/* Sector Pie Chart */}
+          {/* KRX PDF에는 섹터 분류가 없어 임의 데이터로 채우지 않습니다. */}
           <div className="glass p-6 rounded-3xl space-y-4">
             <h2 className="text-lg font-bold text-slate-200 flex items-center gap-2">
-              <PieIcon size={18} className="text-emerald-400" />
-              섹터별 세부 비중
+              <Info size={18} className="text-emerald-400" />
+              데이터 기준
             </h2>
-            <div className="flex flex-col md:flex-row items-center justify-around gap-6 pt-4">
-              <div className="h-[200px] w-[200px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={sectorData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {sectorData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Legends list */}
-              <div className="space-y-3 w-full md:w-auto min-w-[200px]">
-                {sectorData.map((sector, i) => (
-                  <div key={i} className="flex justify-between items-center text-xs font-semibold">
-                    <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                      <span className="text-slate-300">{sector.name}</span>
-                    </div>
-                    <span className="font-mono text-slate-400">{sector.value}%</span>
-                  </div>
-                ))}
-              </div>
+            <div className="text-sm text-slate-400 leading-relaxed">
+              구성종목과 비중은 KRX 자산구성내역(PDF)을 기준으로 합니다. 섹터 분류는 원천 데이터에 포함되지 않아 임의로 추정하지 않습니다.
+              KRX 수집이 불가능한 경우 네이버 금융의 전일 기준 상위 10개 구성자산으로 대체됩니다.
             </div>
           </div>
 

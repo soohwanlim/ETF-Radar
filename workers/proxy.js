@@ -91,7 +91,7 @@ const DUMMY_HISTORY = {
 };
 
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
 

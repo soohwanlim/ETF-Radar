@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { TrendingUp, RefreshCw, Search, Star, ArrowUpRight, ArrowDownRight, Loader2 } from 'lucide-react';
 import { useWatchlistStore } from '../store/watchlistStore';
@@ -7,7 +7,7 @@ import { useETFData } from '../hooks/useETFData';
 import { useChanges } from '../hooks/useChanges';
 
 export default function Home() {
-  const [period, setPeriod] = useState('1m'); // 1w, 1m, 3m, 1y
+  const [period, setPeriod] = useState('3m');
   const [search, setSearch] = useState('');
   
   const { watchlist, toggleWatchlist } = useWatchlistStore();
@@ -33,11 +33,13 @@ export default function Home() {
 
   const getPeriodRate = (etf) => {
     switch (period) {
+      case '1d': return etf.rate1d;
       case '1w': return etf.rate1w;
+      case '1m': return etf.rate1m;
       case '3m': return etf.rate3m;
       case '1y': return etf.rate1y;
-      case '1m':
-      default: return etf.rate1m;
+      case '10y': return etf.rate10y;
+      default: return etf.rate3m;
     }
   };
 
@@ -47,13 +49,13 @@ export default function Home() {
       <div className="text-center py-8 space-y-4">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-medium">
           <TrendingUp size={16} />
-          국내 최초 ETF 구성종목 실시간 감지 레이더
+          국내 주식형 현물 ETF 구성종목 변경 레이더
         </div>
         <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-violet-400 to-emerald-400">
           ETF Radar
         </h1>
         <p className="text-slate-400 max-w-xl mx-auto text-base">
-          토스나 네이버에 없는 "구성종목 실시간 변경 감지" 기능을 제공합니다. 기간별 수익률을 비교하고 스마트하게 투자하세요.
+          KRX 자산구성내역을 거래일마다 비교해 편입·편출과 주요 비중 변화를 보여줍니다.
         </p>
       </div>
 
@@ -65,7 +67,7 @@ export default function Home() {
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold flex items-center gap-2 text-slate-100">
               <RefreshCw size={18} className="text-violet-400 animate-spin-slow" />
-              오늘의 구성종목 변동사항
+              최근 구성종목 변동사항
             </h2>
             <span className="text-xs text-slate-500">전일 종가 기준</span>
           </div>
@@ -74,7 +76,7 @@ export default function Home() {
             {changesLoading ? (
               <div className="glass p-12 rounded-2xl flex flex-col items-center justify-center text-slate-500 space-y-3">
                 <Loader2 className="animate-spin text-violet-400" />
-                <span className="text-xs">실시간 변동 정보 로딩 중...</span>
+                <span className="text-xs">구성종목 변경 정보 로딩 중...</span>
               </div>
             ) : changesError ? (
               <div className="glass p-8 rounded-2xl text-center text-slate-500 text-xs">
@@ -120,7 +122,7 @@ export default function Home() {
             
             {/* Period Tabs */}
             <div className="flex bg-slate-900/80 p-1 rounded-xl border border-slate-800 self-start sm:self-auto">
-              {['1w', '1m', '3m', '1y'].map((p) => (
+              {['1d', '1w', '1m', '3m', '1y', '10y'].map((p) => (
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
@@ -130,7 +132,7 @@ export default function Home() {
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  {p === '1w' ? '1주' : p === '1m' ? '1개월' : p === '3m' ? '3개월' : '1년'}
+                  {p === '1d' ? '당일' : p === '1w' ? '1주' : p === '1m' ? '1개월' : p === '3m' ? '3개월' : p === '1y' ? '1년' : '10년'}
                 </button>
               ))}
             </div>
@@ -155,7 +157,7 @@ export default function Home() {
                 <tr className="border-b border-slate-800 bg-slate-900/40 text-slate-400 text-xs font-semibold">
                   <th className="py-4 px-5">ETF 명</th>
                   <th className="py-4 px-4 text-right">전일 종가</th>
-                  <th className="py-4 px-4 text-right">수익률 ({period === '1w' ? '1주' : period === '1m' ? '1개월' : period === '3m' ? '3개월' : '1년'})</th>
+                  <th className="py-4 px-4 text-right">수익률 ({period === '1d' ? '당일' : period === '1w' ? '1주' : period === '1m' ? '1개월' : period === '3m' ? '3개월' : period === '1y' ? '1년' : '10년'})</th>
                   <th className="py-4 px-4 text-right">순자산 (AUM)</th>
                   <th className="py-4 px-4 text-center">보수</th>
                   <th className="py-4 px-5 text-center">액션</th>
@@ -167,7 +169,7 @@ export default function Home() {
                     <td colSpan="6" className="py-20 text-center">
                       <div className="flex flex-col items-center justify-center space-y-3 text-slate-400">
                         <Loader2 className="animate-spin text-blue-500" />
-                        <span className="text-xs">실시간 네이버 금융 ETF 목록 크롤링 중...</span>
+                        <span className="text-xs">국내 현물 ETF 목록 불러오는 중...</span>
                       </div>
                     </td>
                   </tr>
@@ -180,7 +182,8 @@ export default function Home() {
                 ) : filteredEtfs.length > 0 ? (
                   filteredEtfs.map((etf) => {
                     const rate = getPeriodRate(etf);
-                    const isPositive = rate >= 0;
+                    const hasRate = rate != null;
+                    const isPositive = hasRate && rate >= 0;
                     
                     return (
                       <tr key={etf.code} className="hover:bg-slate-900/20 transition-colors">
@@ -195,15 +198,15 @@ export default function Home() {
                         </td>
                         <td className={`py-4 px-4 text-right font-semibold font-mono ${isPositive ? 'text-rose-500' : 'text-blue-500'}`}>
                           <span className="flex items-center justify-end gap-0.5">
-                            {isPositive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                            {isPositive ? '+' : ''}{rate}%
+                            {hasRate && (isPositive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />)}
+                            {hasRate ? `${isPositive ? '+' : ''}${rate}%` : '-'}
                           </span>
                         </td>
                         <td className="py-4 px-4 text-right font-mono text-slate-400">
                           {etf.aum.toLocaleString()}억
                         </td>
                         <td className="py-4 px-4 text-center text-slate-400 font-mono">
-                          {etf.fee}%
+                          {etf.fee == null ? '-' : `${etf.fee}%`}
                         </td>
                         <td className="py-4 px-5 text-center">
                           <div className="flex items-center justify-center gap-2">

@@ -14,7 +14,7 @@ export function useChanges() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`${API_BASE}/changes`);
+        const response = await fetch(`${API_BASE}/changes/recent?days=90&limit=10`);
         if (!response.ok) {
           throw new Error('구성종목 변경사항을 불러오는 중 오류가 발생했습니다.');
         }

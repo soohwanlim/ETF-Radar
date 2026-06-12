@@ -1,14 +1,14 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { ArrowLeftRight, LayoutGrid, Star, ShieldAlert, TrendingUp } from 'lucide-react';
+import { ArrowLeftRight, LayoutGrid, ShieldAlert, TrendingUp, RefreshCw, X } from 'lucide-react';
 import Home from './pages/Home';
 import Theme from './pages/Theme';
 import Compare from './pages/Compare';
 import ETFDetail from './pages/ETFDetail';
+import Changes from './pages/Changes';
 import { useCompareStore } from './store/compareStore';
 
 function FloatingCompareBar() {
-  const { selectedEtfs, removeEtf } = useCompareStore();
+  const { selectedEtfs, clearSelected } = useCompareStore();
   const location = useLocation();
 
   if (selectedEtfs.length === 0 || location.pathname === '/compare') return null;
@@ -33,6 +33,15 @@ function FloatingCompareBar() {
           <ArrowLeftRight size={14} />
           비교분석 시작
         </Link>
+        <button
+          type="button"
+          onClick={clearSelected}
+          className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-rose-400 px-3 py-2 rounded-xl hover:bg-slate-800 transition-all"
+          title="비교 목록 전체 해제"
+        >
+          <X size={14} />
+          전체 해제
+        </button>
       </div>
     </div>
   );
@@ -95,6 +104,17 @@ function Navigation() {
             <ArrowLeftRight size={14} />
             비교분석
           </Link>
+          <Link
+            to="/changes"
+            className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl transition-all ${
+              isActive('/changes')
+                ? 'bg-slate-900 text-violet-400'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <RefreshCw size={14} />
+            변경 감지
+          </Link>
         </nav>
       </div>
     </header>
@@ -115,6 +135,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/theme" element={<Theme />} />
             <Route path="/compare" element={<Compare />} />
+            <Route path="/changes" element={<Changes />} />
             <Route path="/etf/:code" element={<ETFDetail />} />
           </Routes>
         </main>
