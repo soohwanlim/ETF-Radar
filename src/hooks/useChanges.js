@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-
-const API_BASE = '/api';
+import { loadChangesHistory } from '../data/staticData';
 
 export function useChanges() {
   const [changes, setChanges] = useState([]);
@@ -14,11 +13,9 @@ export function useChanges() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`${API_BASE}/changes/recent?days=90&limit=10`);
-        if (!response.ok) {
-          throw new Error('구성종목 변경사항을 불러오는 중 오류가 발생했습니다.');
-        }
-        const data = await response.json();
+        const history = await loadChangesHistory();
+        const latestDate = history[0]?.date;
+        const data = latestDate ? history.filter(change => change.date === latestDate).slice(0, 10) : [];
         if (active) {
           setChanges(data);
         }

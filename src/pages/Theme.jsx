@@ -5,6 +5,7 @@ import {
   Landmark, Car, Zap, MonitorPlay, Building2, Loader2, TrendingUp,
 } from 'lucide-react';
 import { useETFData } from '../hooks/useETFData';
+import { loadHoldings } from '../data/staticData';
 
 const PERIODS = [
   { id: '1w', label: '1주' },
@@ -53,8 +54,7 @@ function ThemeEtfCard({ etf, period }) {
 
   useEffect(() => {
     let active = true;
-    fetch(`/api/etf/${etf.code}/holdings`)
-      .then(response => response.ok ? response.json() : [])
+    loadHoldings(etf.code)
       .then(data => active && setHoldings(data.slice(0, 5)))
       .catch(() => active && setHoldings([]))
       .finally(() => active && setLoading(false));
@@ -72,7 +72,7 @@ function ThemeEtfCard({ etf, period }) {
         </div>
         <div className="flex items-center gap-5 text-sm font-mono">
           <div className="text-right">
-            <span className="text-[11px] text-slate-500 block">현재가</span>
+            <span className="text-[11px] text-slate-500 block">기준일 종가</span>
             <span className="font-semibold text-slate-300">{etf.price.toLocaleString()}원</span>
           </div>
           <div className="text-right">

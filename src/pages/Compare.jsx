@@ -4,6 +4,7 @@ import { ArrowLeftRight, Trash2, TrendingUp, Loader2 } from 'lucide-react';
 import { useCompareStore } from '../store/compareStore';
 import { useETFData } from '../hooks/useETFData';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { loadCompareData, loadHoldings } from '../data/staticData';
 
 const PERIODS = [
   { id: '1d', label: '당일' }, { id: '1w', label: '1주' }, { id: '1m', label: '1개월' },
@@ -22,8 +23,7 @@ function CompareCard({ etf, period, onRemove }) {
 
   useEffect(() => {
     let active = true;
-    fetch(`/api/etf/${etf.code}/holdings`)
-      .then(response => response.ok ? response.json() : [])
+    loadHoldings(etf.code)
       .then(data => active && setHoldings(data.slice(0, 5)))
       .catch(() => active && setHoldings([]))
       .finally(() => active && setLoading(false));
@@ -40,7 +40,7 @@ function CompareCard({ etf, period, onRemove }) {
         <Link to={`/etf/${etf.code}`} className="font-extrabold text-slate-200 pr-6 hover:text-blue-400 block truncate">{etf.name}</Link>
       </div>
       <div className="grid grid-cols-2 gap-4 text-xs font-mono border-y border-slate-800/60 py-4">
-        <div><span className="text-[10px] text-slate-500 block">현재가</span><span className="font-semibold text-slate-300 text-sm">{(etf.price || 0).toLocaleString()}원</span></div>
+        <div><span className="text-[10px] text-slate-500 block">기준일 종가</span><span className="font-semibold text-slate-300 text-sm">{(etf.price || 0).toLocaleString()}원</span></div>
         <div><span className="text-[10px] text-slate-500 block">{etf.assetValueType === 'netAssets' ? '순자산' : '시가총액'}</span><span className="font-semibold text-slate-300 text-sm">{etf.aum == null ? '-' : `${etf.aum.toLocaleString()}억`}</span></div>
         <div><span className="text-[10px] text-slate-500 block">총보수</span><span className="font-semibold text-slate-300 text-sm">{etf.fee == null ? '-' : `${etf.fee}%`}</span></div>
         <div>
@@ -75,9 +75,8 @@ export default function Compare() {
     let active = true;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setChartLoading(true);
-    fetch(`/api/compare?codes=${selectedEtfs.join(',')}&period=${period}`)
-      .then(response => response.ok ? response.json() : { data: [] })
-      .then(result => active && setChartData(result.data || []))
+    loadCompareData(selectedEtfs, period)
+      .then(data => active && setChartData(data))
       .catch(() => active && setChartData([]))
       .finally(() => active && setChartLoading(false));
     return () => { active = false; };

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-
-const API_BASE = '/api';
+import { loadEtf, loadEtfHistory, loadEtfs, loadHoldings } from '../data/staticData';
 
 export function useETFData(period = '3m') {
   const [etfs, setEtfs] = useState([]);
@@ -13,13 +12,11 @@ export function useETFData(period = '3m') {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`${API_BASE}/rankings?period=${period}`);
-        if (!response.ok) {
-          throw new Error('ETF 데이터를 불러오는 중 요류가 발생했습니다.');
-        }
-        const data = await response.json();
+        const data = await loadEtfs();
+        const rateKey = `rate${period}`;
+        const sorted = [...data].sort((a, b) => (b[rateKey] ?? -Infinity) - (a[rateKey] ?? -Infinity));
         if (active) {
-          setEtfs(data);
+          setEtfs(sorted);
         }
       } catch (err) {
         if (active) {
@@ -55,11 +52,8 @@ export function useETFDetail(code) {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`${API_BASE}/etf/${code}`);
-        if (!response.ok) {
-          throw new Error('ETF 상세 정보를 불러오는 중 오류가 발생했습니다.');
-        }
-        const data = await response.json();
+        const data = await loadEtf(code);
+        if (!data) throw new Error('ETF 상세 정보를 찾지 못했습니다.');
         if (active) {
           setDetail(data);
         }
@@ -97,11 +91,7 @@ export function useETFHoldings(code) {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`${API_BASE}/etf/${code}/holdings`);
-        if (!response.ok) {
-          throw new Error('구성종목 정보를 불러오는 중 오류가 발생했습니다.');
-        }
-        const data = await response.json();
+        const data = await loadHoldings(code);
         if (active) {
           setHoldings(data);
         }
@@ -139,11 +129,7 @@ export function useETFHistory(code) {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`${API_BASE}/etf/${code}/changes`);
-        if (!response.ok) {
-          throw new Error('변경 이력을 불러오는 중 오류가 발생했습니다.');
-        }
-        const data = await response.json();
+        const data = await loadEtfHistory(code);
         if (active) {
           setHistory(data);
         }

@@ -13,9 +13,9 @@ export default function Home() {
   const { watchlist, toggleWatchlist } = useWatchlistStore();
   const { selectedEtfs, addEtf, removeEtf } = useCompareStore();
 
-  // Fetch live crawled ETF list & rankings
+  // Load the latest daily static ETF snapshot.
   const { etfs, loading: etfsLoading, error: etfsError } = useETFData(period);
-  // Fetch live daily changes
+  // Load the latest daily static holdings changes.
   const { changes, loading: changesLoading, error: changesError } = useChanges();
 
   const handleCompareToggle = (code) => {
@@ -55,7 +55,7 @@ export default function Home() {
           ETF Radar
         </h1>
         <p className="text-slate-400 max-w-xl mx-auto text-base">
-          KRX 자산구성내역을 거래일마다 비교해 편입·편출과 주요 비중 변화를 보여줍니다.
+          매일 종가와 네이버 금융 TOP 10 구성자산을 비교해 주요 변화를 보여줍니다.
         </p>
       </div>
 
@@ -69,7 +69,7 @@ export default function Home() {
               <RefreshCw size={18} className="text-violet-400 animate-spin-slow" />
               최근 구성종목 변동사항
             </h2>
-            <span className="text-xs text-slate-500">전일 종가 기준</span>
+            <span className="text-xs text-slate-500">최근 수집 기준</span>
           </div>
 
           <div className="space-y-4">
@@ -106,7 +106,7 @@ export default function Home() {
               ))
             ) : (
               <div className="glass p-8 rounded-2xl text-center text-slate-500 text-xs">
-                오늘의 구성종목 변동 내역이 없습니다.
+                최근 수집일의 구성종목 변동 내역이 없습니다.
               </div>
             )}
           </div>
@@ -156,7 +156,7 @@ export default function Home() {
               <thead>
                 <tr className="border-b border-slate-800 bg-slate-900/40 text-slate-400 text-xs font-semibold">
                   <th className="py-4 px-5">ETF 명</th>
-                  <th className="py-4 px-4 text-right">현재가</th>
+                  <th className="py-4 px-4 text-right">기준일 종가</th>
                   <th className="py-4 px-4 text-right">수익률 ({period === '1d' ? '당일' : period === '1w' ? '1주' : period === '1m' ? '1개월' : period === '3m' ? '3개월' : period === '1y' ? '1년' : '10년'})</th>
                   <th className="py-4 px-4 text-right">ETF 규모</th>
                   <th className="py-4 px-4 text-center">보수</th>

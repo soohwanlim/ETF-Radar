@@ -8,7 +8,7 @@ const COLORS = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#EC4899'
 export default function ETFDetail() {
   const { code } = useParams();
 
-  // Fetch live detail, holdings, and change history
+  // Load detail, holdings, and history from the latest daily static snapshot.
   const { detail, loading: detailLoading, error: detailError } = useETFDetail(code);
   const { holdings, loading: holdingsLoading, error: holdingsError } = useETFHoldings(code);
   const { history, loading: historyLoading, error: historyError } = useETFHistory(code);

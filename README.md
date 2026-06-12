@@ -1,16 +1,21 @@
-# React + Vite
+# ETF Radar
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+국내 주식형 현물 ETF의 종가 수익률과 네이버 금융 TOP 10 구성자산 변화를 보여주는 정적 웹 서비스입니다.
 
-Currently, two official plugins are available:
+## Data flow
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. GitHub Actions runs at 18:10 and 19:10 KST on weekdays.
+2. `npm run collect:data` reads KRX closing data and Naver ETF metadata/holdings.
+3. Generated JSON is committed under `public/data`.
+4. Cloudflare Pages redeploys the static React site.
 
-## React Compiler
+No runtime backend, Cloudflare Worker, or external database is required.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Local commands
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm ci
+npm test
+npm run build
+KRX_API_KEY=your_key npm run collect:data
+```

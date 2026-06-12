@@ -72,7 +72,7 @@ export default function Watchlist() {
               <thead>
                 <tr className="border-b border-slate-800 bg-slate-900/40 text-slate-400 text-xs font-semibold">
                   <th className="py-4 px-5">ETF 명</th>
-                  <th className="py-4 px-4 text-right">현재가</th>
+                  <th className="py-4 px-4 text-right">기준일 종가</th>
                   <th className="py-4 px-4 text-right">{PERIODS.find(item => item.id === period)?.label} 수익률</th>
                   <th className="py-4 px-4 text-right">ETF 규모</th>
                   <th className="py-4 px-5 text-center">액션</th>

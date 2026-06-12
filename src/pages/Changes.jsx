@@ -4,6 +4,7 @@ import {
   RefreshCw, Filter, TrendingUp, TrendingDown,
   ArrowRightLeft, AlertCircle, Clock, ChevronDown, Loader2
 } from 'lucide-react';
+import { loadChangesHistory, loadLatestChanges } from '../data/staticData';
 
 // ─── 데이터 훅 ─────────────────────────────────────────────────────────────
 
@@ -18,18 +19,14 @@ function useAllChanges(days = 7) {
     setError(null);
     try {
       // 오늘 변경사항 + 최근 히스토리 병렬 요청
-      const [todayRes, historyRes] = await Promise.all([
-        fetch('/api/changes'),
-        fetch(`/api/changes/history?days=${days}`)
+      const [todayData, allHistory] = await Promise.all([
+        loadLatestChanges(),
+        loadChangesHistory(),
       ]);
-
-      if (!todayRes.ok) throw new Error('변경사항을 불러오지 못했습니다.');
-
-      const todayData = await todayRes.json();
-      let historyData = [];
-      if (historyRes.ok) {
-        historyData = await historyRes.json();
-      }
+      const cutoff = new Date();
+      cutoff.setUTCDate(cutoff.getUTCDate() - days + 1);
+      const cutoffDate = cutoff.toISOString().slice(0, 10);
+      const historyData = allHistory.filter(change => change.date >= cutoffDate);
 
       // 중복 제거 (오늘 데이터 우선, 날짜+코드+타입으로 dedup)
       const seen = new Set();

@@ -23,9 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
-# Wrangler local files
+# Local secrets
 .wrangler
-.dev.vars
 .env
 .env.*
 !.env.example
