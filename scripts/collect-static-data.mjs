@@ -146,6 +146,7 @@ async function main() {
   const series = { ...existingSeries };
   const changes = [];
   const etfs = [];
+  const failures = [];
 
   for (const [index, universeItem] of universe.entries()) {
     const code = universeItem.itemcode;
@@ -194,6 +195,7 @@ async function main() {
       console.log(`[${index + 1}/${universe.length}] ${code} ${current.name}`);
     } catch (error) {
       console.warn(`[skip] ${code} ${current.name}: ${error.message}`);
+      failures.push({ code, name: current.name, reason: error.message });
       if (existingEtfMap.has(code)) etfs.push(existingEtfMap.get(code));
       if (existingHoldings[code]) holdings[code] = existingHoldings[code];
     }
@@ -206,8 +208,39 @@ async function main() {
   const history = [...changes, ...retainedHistory].slice(0, 10000);
   etfs.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
+  const minimumSafeCount = existingEtfs.length > 0
+    ? Math.floor(existingEtfs.length * 0.9)
+    : Math.floor(marketRows.length * 0.9);
+  if (etfs.length < minimumSafeCount) {
+    throw new Error(`Collection safety check failed: ${etfs.length}/${minimumSafeCount} ETFs`);
+  }
+
+  const generatedAt = new Date().toISOString();
+  const collectionState = failures.length === 0 ? 'success' : 'partial';
+  const status = {
+    generatedAt,
+    asOf: market.asOf,
+    state: collectionState,
+    etfCount: etfs.length,
+    marketRowCount: marketRows.length,
+    holdingsCount: Object.keys(holdings).length,
+    changeCount: changes.length,
+    failedCount: failures.length,
+    failures,
+    source: 'KRX Open API / Naver Finance TOP 10',
+  };
+
   await Promise.all([
-    writeJson('manifest.json', { generatedAt: new Date().toISOString(), asOf: market.asOf, etfCount: etfs.length, source: 'KRX Open API / Naver Finance TOP 10' }),
+    writeJson('manifest.json', {
+      generatedAt,
+      asOf: market.asOf,
+      etfCount: etfs.length,
+      status: collectionState,
+      failedCount: failures.length,
+      changeCount: changes.length,
+      source: 'KRX Open API / Naver Finance TOP 10',
+    }),
+    writeJson('status.json', status),
     writeJson('etfs.json', etfs),
     writeJson('holdings.json', holdings),
     writeJson('price-series.json', series),

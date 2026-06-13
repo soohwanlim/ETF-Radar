@@ -14,6 +14,10 @@ export function loadEtfs() {
   return loadJson('/data/etfs.json');
 }
 
+export function loadDataStatus() {
+  return loadJson('/data/status.json');
+}
+
 export async function loadEtf(code) {
   const etfs = await loadEtfs();
   return etfs.find(etf => etf.code === code) || null;

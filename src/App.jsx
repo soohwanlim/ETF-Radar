@@ -1,12 +1,15 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { ArrowLeftRight, LayoutGrid, ShieldAlert, TrendingUp, RefreshCw, Star, X } from 'lucide-react';
-import Home from './pages/Home';
-import Theme from './pages/Theme';
-import Compare from './pages/Compare';
-import ETFDetail from './pages/ETFDetail';
-import Changes from './pages/Changes';
-import Watchlist from './pages/Watchlist';
 import { useCompareStore } from './store/compareStore';
+import DataStatus from './components/DataStatus';
+
+const Home = lazy(() => import('./pages/Home'));
+const Theme = lazy(() => import('./pages/Theme'));
+const Compare = lazy(() => import('./pages/Compare'));
+const ETFDetail = lazy(() => import('./pages/ETFDetail'));
+const Changes = lazy(() => import('./pages/Changes'));
+const Watchlist = lazy(() => import('./pages/Watchlist'));
 
 function FloatingCompareBar() {
   const { selectedEtfs, clearSelected } = useCompareStore();
@@ -140,17 +143,20 @@ export default function App() {
         
         {/* Navigation */}
         <Navigation />
+        <DataStatus />
 
         {/* Main Content */}
         <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-10 relative">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/theme" element={<Theme />} />
-            <Route path="/compare" element={<Compare />} />
-            <Route path="/changes" element={<Changes />} />
-            <Route path="/watchlist" element={<Watchlist />} />
-            <Route path="/etf/:code" element={<ETFDetail />} />
-          </Routes>
+          <Suspense fallback={<div className="py-24 text-center text-sm text-slate-500">페이지를 불러오는 중입니다.</div>}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/theme" element={<Theme />} />
+              <Route path="/compare" element={<Compare />} />
+              <Route path="/changes" element={<Changes />} />
+              <Route path="/watchlist" element={<Watchlist />} />
+              <Route path="/etf/:code" element={<ETFDetail />} />
+            </Routes>
+          </Suspense>
         </main>
 
         {/* Floating Compare Bar */}

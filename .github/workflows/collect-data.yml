@@ -16,6 +16,7 @@ concurrency:
 jobs:
   collect:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
         with:
@@ -31,6 +32,13 @@ jobs:
       - run: npm run collect:data
         env:
           KRX_API_KEY: ${{ secrets.KRX_API_KEY }}
+
+      - name: Write collection summary
+        shell: bash
+        run: |
+          if [ -f public/data/status.json ]; then
+            node -e "const s=require('./public/data/status.json'); console.log('## ETF collection\n\n- Date: '+s.asOf+'\n- State: '+s.state+'\n- ETFs: '+s.etfCount+'\n- Changes: '+s.changeCount+'\n- Failures: '+s.failedCount)" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Commit changed data
         shell: bash
