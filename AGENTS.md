@@ -27,6 +27,7 @@ public/data/manifest.json
 public/data/etfs.json
 public/data/holdings.json
 public/data/price-series.json
+public/data/theme-signals.json
 public/data/changes/latest.json
 public/data/changes/history.json
 ```
@@ -34,6 +35,7 @@ public/data/changes/history.json
 - `etfs.json`: 종가, NAV, 순자산, 기본정보, 기간 수익률
 - `holdings.json`: ETF별 네이버 금융 TOP 10 최신 스냅샷
 - `price-series.json`: 최근 400일 일별 + 이전 월말 가격
+- `theme-signals.json`: 테마 내 2개 이상 ETF에서 같은 방향으로 발생한 TOP 10 공통 변화
 - `changes/history.json`: 최근 1년간 TOP 10 진입/이탈과 주요 비중 변화
 - 최초 수집에서는 변경 이력을 만들지 않고 기준 스냅샷만 저장한다.
 

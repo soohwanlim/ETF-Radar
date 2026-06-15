@@ -10,6 +10,7 @@ import {
   parseNaverHoldings,
   parseNumber,
 } from './static-data-lib.mjs';
+import { buildThemeSignals } from './theme-signals.mjs';
 
 const KRX_URL = 'https://data-dbg.krx.co.kr/svc/apis/etp/etf_bydd_trd';
 const NAVER_LIST_URL = 'https://finance.naver.com/api/sise/etfItemList.nhn';
@@ -206,6 +207,7 @@ async function main() {
   cutoff.setUTCDate(cutoff.getUTCDate() - RETENTION_DAYS);
   const retainedHistory = existingHistory.filter(item => item.date !== market.asOf && item.date >= formatDate(cutoff));
   const history = [...changes, ...retainedHistory].slice(0, 10000);
+  const themeSignals = buildThemeSignals(etfs, changes);
   etfs.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
   const minimumSafeCount = existingEtfs.length > 0
@@ -225,6 +227,7 @@ async function main() {
     marketRowCount: marketRows.length,
     holdingsCount: Object.keys(holdings).length,
     changeCount: changes.length,
+    themeSignalCount: themeSignals.length,
     failedCount: failures.length,
     failures,
     source: 'KRX Open API / Naver Finance TOP 10',
@@ -238,6 +241,7 @@ async function main() {
       status: collectionState,
       failedCount: failures.length,
       changeCount: changes.length,
+      themeSignalCount: themeSignals.length,
       source: 'KRX Open API / Naver Finance TOP 10',
     }),
     writeJson('status.json', status),
@@ -246,6 +250,7 @@ async function main() {
     writeJson('price-series.json', series),
     writeJson('changes/latest.json', changes),
     writeJson('changes/history.json', history),
+    writeJson('theme-signals.json', themeSignals),
   ]);
   console.log(`완료: ${market.asOf}, ETF ${etfs.length}개, 변경 ${changes.length}건`);
 }

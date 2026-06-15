@@ -1,11 +1,11 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  LayoutGrid, Cpu, BatteryCharging, Bot, Shield, Ship, HeartPulse,
+  LayoutGrid, Cpu, BatteryCharging, Bot, Shield, Ship, HeartPulse, ArrowDownRight, ArrowUpRight,
   Landmark, Car, Zap, MonitorPlay, Building2, ChevronDown, Loader2, TrendingUp,
 } from 'lucide-react';
 import { useETFData } from '../hooks/useETFData';
-import { loadHoldings } from '../data/staticData';
+import { loadHoldings, loadThemeSignals } from '../data/staticData';
 import ETFIcon from '../components/ETFIcon';
 
 const PERIODS = [
@@ -118,14 +118,78 @@ function ThemeEtfCard({ etf, period }) {
   );
 }
 
+function ThemeSignalPanel({ signals, themeId }) {
+  const themeSignals = signals.filter(signal => signal.themeId === themeId).slice(0, 5);
+  if (themeSignals.length === 0) return null;
+
+  return (
+    <section className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4">
+      <div className="mb-3">
+        <div className="text-sm font-bold text-slate-900">공통 구성종목 신호</div>
+        <div className="mt-1 text-xs text-slate-500">같은 테마 ETF 2개 이상에서 같은 방향으로 변한 종목입니다.</div>
+      </div>
+      <div className="space-y-2">
+        {themeSignals.map(signal => {
+          const increase = signal.direction === 'increase';
+          const Icon = increase ? ArrowUpRight : ArrowDownRight;
+          return (
+            <details key={`${signal.holdingCode}-${signal.direction}`} className="rounded-xl border border-blue-100 bg-white px-3 py-3">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className={`rounded-full p-1.5 ${increase ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}><Icon size={15} /></span>
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-bold text-slate-900">{signal.holdingName}</div>
+                    <div className="text-[11px] text-slate-500">{signal.etfCount}개 ETF에서 공통 {increase ? '증가' : '감소'}</div>
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  {signal.averageWeightDelta != null && (
+                    <div className={`text-xs font-bold ${increase ? 'text-red-600' : 'text-blue-600'}`}>
+                      평균 {signal.averageWeightDelta > 0 ? '+' : ''}{signal.averageWeightDelta}%p
+                    </div>
+                  )}
+                  <div className="text-[10px] text-slate-400">테마 ETF의 {signal.coverageRate}%</div>
+                </div>
+              </summary>
+              <div className="mt-3 border-t border-slate-100 pt-3">
+                <div className="mb-2 flex flex-wrap gap-1.5 text-[10px] font-semibold text-slate-500">
+                  {signal.newCount > 0 && <span className="rounded-full bg-emerald-50 px-2 py-1 text-emerald-700">TOP 10 진입 {signal.newCount}</span>}
+                  {signal.outCount > 0 && <span className="rounded-full bg-rose-50 px-2 py-1 text-rose-700">TOP 10 이탈 {signal.outCount}</span>}
+                  {signal.weightCount > 0 && <span className="rounded-full bg-slate-100 px-2 py-1">비중 변화 {signal.weightCount}</span>}
+                </div>
+                <div className="space-y-1.5">
+                  {signal.etfs.map(etf => (
+                    <Link key={etf.code} to={`/etf/${etf.code}`} className="flex items-center justify-between gap-3 text-xs text-slate-600 hover:text-blue-600">
+                      <span className="truncate">{etf.name}</span>
+                      <span className="shrink-0 font-mono">{etf.delta > 0 ? '+' : ''}{etf.delta}%p</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </details>
+          );
+        })}
+      </div>
+      <p className="mt-3 text-[10px] leading-relaxed text-slate-400">네이버 금융 TOP 10 구성자산 기준 신호이며 전체 편입·편출을 의미하지 않습니다.</p>
+    </section>
+  );
+}
+
 export default function Theme() {
   const [period, setPeriod] = useState('1w');
   const [selectedTheme, setSelectedTheme] = useState(null);
+  const [signals, setSignals] = useState([]);
   const { etfs, loading, error } = useETFData(period);
   const isDesktop = useDesktopLayout();
   const themes = useMemo(() => buildHotThemes(etfs, period), [etfs, period]);
   const activeTheme = themes.find(theme => theme.id === selectedTheme)
     || (selectedTheme === '__closed__' && !isDesktop ? null : themes[0]);
+
+  useEffect(() => {
+    let active = true;
+    loadThemeSignals().then(data => active && setSignals(data)).catch(() => active && setSignals([]));
+    return () => { active = false; };
+  }, []);
 
   return (
     <div className="space-y-8 fade-in">
@@ -187,6 +251,7 @@ export default function Theme() {
                   <p className="text-xs text-slate-600 mt-1">{period === '1w' ? '최근 1주' : '최근 1개월'} 수익률이 높은 순서입니다.</p>
                 </div>
                 <div className="space-y-4">
+                  <ThemeSignalPanel signals={signals} themeId={activeTheme.id} />
                   {activeTheme.members.slice(0, 5).map(etf => <ThemeEtfCard key={etf.code} etf={etf} period={period} />)}
                 </div>
               </>
@@ -226,6 +291,7 @@ export default function Theme() {
                     <div className="px-1 pt-1 text-xs font-semibold text-slate-500">
                       {period === '1w' ? '최근 1주' : '최근 1개월'} 수익률 상위 ETF
                     </div>
+                    <ThemeSignalPanel signals={signals} themeId={theme.id} />
                     {theme.members.slice(0, 5).map(etf => <ThemeEtfCard key={etf.code} etf={etf} period={period} />)}
                   </div>
                 )}

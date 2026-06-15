@@ -41,6 +41,10 @@ export function loadChangesHistory() {
   return loadJson('/data/changes/history.json');
 }
 
+export function loadThemeSignals() {
+  return loadJson('/data/theme-signals.json');
+}
+
 function getCutoffDate(days) {
   const date = new Date();
   date.setUTCDate(date.getUTCDate() - days);

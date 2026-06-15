@@ -6,6 +6,7 @@ import {
   isSupportedDomesticSpotEtf,
   parseNaverHoldings,
 } from './static-data-lib.mjs';
+import { buildThemeSignals } from './theme-signals.mjs';
 
 assert.equal(isSupportedDomesticSpotEtf({ etfTabCode: 1, itemname: 'KODEX 200' }), true);
 assert.equal(isSupportedDomesticSpotEtf({ etfTabCode: 1, itemname: 'KODEX 미국S&P500' }), false);
@@ -25,5 +26,20 @@ const changes = compareHoldings(
 );
 assert.deepEqual(changes.map(change => change.type).sort(), ['new', 'out', 'weight']);
 assert.match(formatChange(changes.find(change => change.type === 'new')), /TOP 10 신규 진입/);
+
+const signals = buildThemeSignals(
+  [
+    { code: 'A', name: 'KODEX 반도체' },
+    { code: 'B', name: 'TIGER 반도체TOP10' },
+    { code: 'C', name: 'SOL 자동차TOP3' },
+  ],
+  [
+    { code: 'A', etfName: 'KODEX 반도체', date: '2026-06-12', type: 'weight', holdingCode: '005930', holdingName: '삼성전자', previousWeight: 20, weight: 23 },
+    { code: 'B', etfName: 'TIGER 반도체TOP10', date: '2026-06-12', type: 'new', holdingCode: '005930', holdingName: '삼성전자', previousWeight: null, weight: 12 },
+  ],
+);
+assert.equal(signals.length, 1);
+assert.equal(signals[0].direction, 'increase');
+assert.equal(signals[0].etfCount, 2);
 
 console.log('Static data tests passed');
