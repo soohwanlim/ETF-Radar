@@ -68,11 +68,11 @@ const TYPE_CONFIG = {
 };
 
 const COLOR_CLASSES = {
-  emerald: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-400', ring: 'ring-emerald-500/30' },
-  rose:    { bg: 'bg-rose-500/10',    border: 'border-rose-500/20',    text: 'text-rose-400',    ring: 'ring-rose-500/30'    },
-  amber:   { bg: 'bg-amber-500/10',   border: 'border-amber-500/20',   text: 'text-amber-400',   ring: 'ring-amber-500/30'   },
-  violet:  { bg: 'bg-violet-500/10',  border: 'border-violet-500/20',  text: 'text-violet-400',  ring: 'ring-violet-500/30'  },
-  blue:    { bg: 'bg-blue-500/10',    border: 'border-blue-500/20',    text: 'text-blue-400',    ring: 'ring-blue-500/30'    },
+  emerald: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-600', ring: 'ring-emerald-500/30' },
+  rose:    { bg: 'bg-rose-500/10',    border: 'border-rose-500/20',    text: 'text-rose-600',    ring: 'ring-rose-500/30'    },
+  amber:   { bg: 'bg-amber-500/10',   border: 'border-amber-500/20',   text: 'text-amber-600',   ring: 'ring-amber-500/30'   },
+  violet:  { bg: 'bg-violet-500/10',  border: 'border-violet-500/20',  text: 'text-violet-600',  ring: 'ring-violet-500/30'  },
+  blue:    { bg: 'bg-blue-500/10',    border: 'border-blue-500/20',    text: 'text-blue-600',    ring: 'ring-blue-500/30'    },
 };
 
 function TypeBadge({ type }) {
@@ -96,7 +96,7 @@ function StatCard({ type, count }) {
         <Icon size={18} className={cls.text} />
       </div>
       <div>
-        <p className="text-2xl font-extrabold text-slate-100">{count}</p>
+        <p className="text-2xl font-extrabold text-slate-950">{count}</p>
         <p className={`text-xs font-semibold ${cls.text}`}>{cfg.label}</p>
       </div>
     </div>
@@ -115,10 +115,10 @@ function DateGroup({ date, children }) {
         onClick={() => setOpen(o => !o)}
         className="w-full flex items-center gap-3 py-2 group"
       >
-        <span className="text-xs font-mono font-bold text-slate-500 group-hover:text-slate-300 transition-colors">
+        <span className="text-xs font-mono font-bold text-slate-500 group-hover:text-slate-700 transition-colors">
           {label}
         </span>
-        <div className="flex-1 h-px bg-slate-800/80" />
+        <div className="flex-1 h-px bg-slate-100" />
         <ChevronDown
           size={14}
           className={`text-slate-600 transition-transform ${open ? 'rotate-0' : '-rotate-90'}`}
@@ -153,17 +153,17 @@ function ChangeCard({ change }) {
             <div className="flex items-center gap-2 mb-1">
               <Link
                 to={`/etf/${change.code}`}
-                className="text-sm font-bold text-slate-200 hover:text-blue-400 transition-colors truncate"
+                className="text-sm font-bold text-slate-900 hover:text-blue-600 transition-colors truncate"
               >
                 {change.etfName || change.code}
               </Link>
-              <span className="text-[10px] font-mono text-slate-500 bg-slate-900/60 px-1.5 py-0.5 rounded shrink-0">
+              <span className="text-[10px] font-mono text-slate-500 bg-white px-1.5 py-0.5 rounded shrink-0">
                 {change.code}
               </span>
             </div>
 
             {/* 메시지 */}
-            <p className="text-xs text-slate-300 leading-relaxed">{change.message}</p>
+            <p className="text-xs text-slate-700 leading-relaxed">{change.message}</p>
           </div>
         </div>
 
@@ -229,14 +229,14 @@ export default function Changes() {
 
       {/* 헤더 */}
       <div className="text-center py-8 space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 text-sm font-medium">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-600 text-sm font-medium">
           <RefreshCw size={16} className="animate-spin-slow" />
           거래일별 구성종목 변경 감지
         </div>
         <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-violet-400 via-blue-400 to-emerald-400">
           변경 감지 레이더
         </h1>
-        <p className="text-slate-400 max-w-xl mx-auto text-base">
+        <p className="text-slate-600 max-w-xl mx-auto text-base">
           국내 주식형 현물 ETF의 상위 구성종목을 거래일마다 비교합니다.
           신규 편입·편출·비중 변동을 누구보다 빠르게 확인하세요.
         </p>
@@ -267,12 +267,12 @@ export default function Changes() {
               placeholder="ETF 코드 또는 이름 검색..."
               value={searchCode}
               onChange={e => setSearchCode(e.target.value)}
-              className="w-full bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 transition-all"
+              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 transition-all"
             />
           </div>
 
           {/* 기간 선택 */}
-          <div className="flex items-center gap-2 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+          <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-200">
             {DAYS_OPTIONS.map(opt => (
               <button
                 key={opt.value}
@@ -280,7 +280,7 @@ export default function Changes() {
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   selectedDays === opt.value
                     ? 'bg-gradient-to-r from-violet-500 to-blue-500 text-white shadow-md'
-                    : 'text-slate-400 hover:text-slate-200'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 {opt.label}
@@ -292,7 +292,7 @@ export default function Changes() {
           <button
             onClick={refetch}
             disabled={loading}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 text-xs font-semibold transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 text-xs font-semibold transition-all disabled:opacity-50"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             새로고침
@@ -316,12 +316,12 @@ export default function Changes() {
                 className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-full font-semibold border transition-all ${
                   isOn
                     ? `${cls.bg} ${cls.border} ${cls.text}`
-                    : 'bg-transparent border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-400'
+                    : 'bg-transparent border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-600'
                 }`}
               >
                 {cfg.badge} {cfg.label}
                 {stats[type] > 0 && (
-                  <span className="ml-1 bg-slate-900/80 rounded-full px-1.5 py-0.5 text-[10px] font-mono">
+                  <span className="ml-1 bg-white rounded-full px-1.5 py-0.5 text-[10px] font-mono">
                     {stats[type]}
                   </span>
                 )}
@@ -333,17 +333,17 @@ export default function Changes() {
 
       {/* 콘텐츠 영역 */}
       {loading ? (
-        <div className="glass rounded-2xl p-16 flex flex-col items-center justify-center space-y-4 text-slate-400">
-          <Loader2 className="animate-spin text-violet-400" size={32} />
+        <div className="glass rounded-2xl p-16 flex flex-col items-center justify-center space-y-4 text-slate-600">
+          <Loader2 className="animate-spin text-violet-600" size={32} />
           <span className="text-sm">변경사항 로딩 중...</span>
         </div>
       ) : error ? (
         <div className="glass rounded-2xl p-12 flex flex-col items-center justify-center space-y-4">
           <AlertCircle className="text-rose-500" size={32} />
-          <p className="text-sm text-rose-400 font-semibold">{error}</p>
+          <p className="text-sm text-rose-600 font-semibold">{error}</p>
           <button
             onClick={refetch}
-            className="text-xs px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-300 hover:text-slate-100"
+            className="text-xs px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 hover:text-slate-950"
           >
             다시 시도
           </button>
@@ -371,12 +371,12 @@ export default function Changes() {
       )}
 
       {/* 안내 배너 */}
-      <div className="glass rounded-2xl p-5 border border-slate-800/50 flex gap-4 items-start">
-        <AlertCircle size={18} className="text-amber-400 shrink-0 mt-0.5" />
-        <div className="text-xs text-slate-400 leading-relaxed space-y-1">
-          <p className="font-semibold text-slate-300">데이터 수집 안내</p>
+      <div className="glass rounded-2xl p-5 border border-slate-200 flex gap-4 items-start">
+        <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+        <div className="text-xs text-slate-600 leading-relaxed space-y-1">
+          <p className="font-semibold text-slate-700">데이터 수집 안내</p>
           <p>
-            구성종목 변경 데이터는 <strong className="text-slate-200">평일 오후 6시 10분 (KST)</strong>에 수집하며,
+            구성종목 변경 데이터는 <strong className="text-slate-900">평일 오후 6시 10분 (KST)</strong>에 수집하며,
             종가 데이터가 늦으면 오후 7시 10분에 한 번 더 확인합니다. 네이버 금융의 상위 10개 구성자산만 비교하므로
             전체 편입·편출 내역과는 다를 수 있으며, 현재는 주요 국내 ETF 9개를 감시합니다.
             해외·채권·원자재·레버리지·인버스·커버드콜 ETF는 현재 지원하지 않습니다.

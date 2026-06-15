@@ -15,7 +15,7 @@ export default function ETFDetail() {
 
   if (detailLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[500px] text-slate-400 space-y-4">
+      <div className="flex flex-col items-center justify-center min-h-[500px] text-slate-600 space-y-4">
         <Loader2 className="animate-spin text-blue-500" size={36} />
         <span>ETF 상세 정보와 구성종목 조회 중...</span>
       </div>
@@ -26,8 +26,8 @@ export default function ETFDetail() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[500px] text-rose-500 space-y-4">
         <h2 className="text-xl font-bold">오류가 발생했습니다</h2>
-        <p className="text-sm text-slate-400">{detailError}</p>
-        <Link to="/" className="text-xs px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-300">
+        <p className="text-sm text-slate-600">{detailError}</p>
+        <Link to="/" className="text-xs px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-700">
           홈으로 돌아가기
         </Link>
       </div>
@@ -39,13 +39,13 @@ export default function ETFDetail() {
       
       {/* Back button & Title */}
       <div className="flex items-center gap-4 py-4">
-        <Link to="/" className="p-2 bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 rounded-xl transition-all">
+        <Link to="/" className="p-2 bg-white border border-slate-200 text-slate-600 hover:text-slate-900 rounded-xl transition-all">
           <ArrowLeft size={16} />
         </Link>
         {detail && (
           <div>
             <span className="text-xs font-mono text-slate-500">{detail.code}</span>
-            <h1 className="text-3xl font-extrabold text-slate-100">{detail.name} 상세</h1>
+            <h1 className="text-3xl font-extrabold text-slate-950">{detail.name} 상세</h1>
           </div>
         )}
       </div>
@@ -57,42 +57,42 @@ export default function ETFDetail() {
         <div className="lg:col-span-1 space-y-6">
           {detail && (
             <div className="glass p-6 rounded-3xl space-y-5">
-              <h2 className="text-lg font-bold text-slate-200 border-b border-slate-800/80 pb-3">ETF 기본정보</h2>
+              <h2 className="text-lg font-bold text-slate-900 border-b border-slate-200 pb-3">ETF 기본정보</h2>
               <div className="space-y-4 text-xs font-mono">
                 <div className="flex justify-between">
                   <span className="text-slate-500">운용사</span>
-                  <span className="text-slate-300 font-semibold">{detail.provider || '-'}</span>
+                  <span className="text-slate-700 font-semibold">{detail.provider || '-'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">상장일</span>
-                  <span className="text-slate-300 font-semibold">{detail.listingDate || '-'}</span>
+                  <span className="text-slate-700 font-semibold">{detail.listingDate || '-'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">순자산총액</span>
-                  <span className="text-slate-300 font-semibold">{detail.netAssets == null ? 'KRX 승인 후 제공' : `${detail.netAssets.toLocaleString()}억원`}</span>
+                  <span className="text-slate-700 font-semibold">{detail.netAssets == null ? 'KRX 승인 후 제공' : `${detail.netAssets.toLocaleString()}억원`}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">시가총액</span>
-                  <span className="text-slate-300 font-semibold">{detail.marketCap == null ? '-' : `${detail.marketCap.toLocaleString()}억원`}</span>
+                  <span className="text-slate-700 font-semibold">{detail.marketCap == null ? '-' : `${detail.marketCap.toLocaleString()}억원`}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">총보수 (수수료)</span>
-                  <span className="text-slate-300 font-semibold text-emerald-400">{detail.fee == null ? '-' : `연 ${detail.fee}%`}</span>
+                  <span className="text-slate-700 font-semibold text-emerald-600">{detail.fee == null ? '-' : `연 ${detail.fee}%`}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">기초지수</span>
-                  <span className="text-slate-300 font-semibold text-right max-w-[160px]">{detail.benchmark || '-'}</span>
+                  <span className="text-slate-700 font-semibold text-right max-w-[160px]">{detail.benchmark || '-'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">유형</span>
-                  <span className="text-slate-300 font-semibold text-right">{detail.fundType || '-'}</span>
+                  <span className="text-slate-700 font-semibold text-right">{detail.fundType || '-'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">NAV</span>
-                  <span className="text-slate-300 font-semibold">{detail.nav == null ? '-' : `${detail.nav.toLocaleString()}원`}</span>
+                  <span className="text-slate-700 font-semibold">{detail.nav == null ? '-' : `${detail.nav.toLocaleString()}원`}</span>
                 </div>
               </div>
-              <div className="pt-3 border-t border-slate-800/80 text-[10px] text-slate-500">
+              <div className="pt-3 border-t border-slate-200 text-[10px] text-slate-500">
                 기준일 {detail.asOf} · 출처 {detail.source}
               </div>
             </div>
@@ -100,8 +100,8 @@ export default function ETFDetail() {
 
           {/* Timeline Section */}
           <div className="glass p-6 rounded-3xl space-y-5">
-            <h2 className="text-lg font-bold text-slate-200 flex items-center gap-2 border-b border-slate-800/80 pb-3">
-              <RefreshCw size={16} className="text-violet-400 animate-spin-slow" />
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-200 pb-3">
+              <RefreshCw size={16} className="text-violet-600 animate-spin-slow" />
               구성종목 변경 이력 (최근 1년)
             </h2>
             
@@ -113,18 +113,18 @@ export default function ETFDetail() {
             ) : historyError ? (
               <div className="text-xs text-slate-500">이력을 불러오지 못했습니다.</div>
             ) : history && history.length > 0 ? (
-              <div className="relative pl-6 border-l border-slate-800 space-y-6">
+              <div className="relative pl-6 border-l border-slate-200 space-y-6">
                 {history.map((hist, idx) => (
                   <div key={idx} className="relative">
                     <span className={`absolute -left-[30px] top-1.5 w-2 h-2 rounded-full border-2 ${
                       hist.type === 'swap' ? 'bg-amber-500 border-amber-950 shadow-md shadow-amber-500/20' :
                       hist.type === 'new' ? 'bg-emerald-500 border-emerald-950' :
                       hist.type === 'out' ? 'bg-rose-500 border-rose-950' :
-                      'bg-slate-500 border-slate-950'
+                      'bg-slate-500 border-slate-200'
                     }`} />
                     
                     <span className="text-[10px] text-slate-500 block font-mono font-semibold">{hist.date}</span>
-                    <p className="text-xs text-slate-300 mt-1">{hist.message}</p>
+                    <p className="text-xs text-slate-700 mt-1">{hist.message}</p>
                   </div>
                 ))}
               </div>
@@ -139,13 +139,13 @@ export default function ETFDetail() {
           
           {/* Holdings Bar Chart */}
           <div className="glass p-6 rounded-3xl space-y-4">
-            <h2 className="text-lg font-bold text-slate-200 flex items-center gap-2">
-              <BarChart2 size={18} className="text-blue-400" />
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <BarChart2 size={18} className="text-blue-600" />
               구성종목 및 비중
             </h2>
             {holdingsLoading ? (
               <div className="h-[280px] flex items-center justify-center gap-2 text-sm text-slate-500">
-                <Loader2 className="animate-spin text-blue-400" size={18} /> 구성종목 불러오는 중...
+                <Loader2 className="animate-spin text-blue-600" size={18} /> 구성종목 불러오는 중...
               </div>
             ) : holdingsError ? (
               <div className="h-[180px] flex items-center justify-center text-sm text-slate-500">
@@ -181,16 +181,16 @@ export default function ETFDetail() {
 
           {/* 원천 데이터에 섹터 분류가 없어 임의 데이터로 채우지 않습니다. */}
           <div className="glass p-6 rounded-3xl space-y-4">
-            <h2 className="text-lg font-bold text-slate-200 flex items-center gap-2">
-              <Info size={18} className="text-emerald-400" />
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Info size={18} className="text-emerald-600" />
               데이터 기준
             </h2>
-            <div className="text-sm text-slate-400 leading-relaxed">
+            <div className="text-sm text-slate-600 leading-relaxed">
               구성종목은 네이버 금융의 전일 기준 상위 10개 구성자산입니다. 공식 KRX Open API는 ETF 구성종목을 제공하지 않으므로,
               전체 PDF 기반 변경 감지는 향후 운용사별 데이터 연동이 필요합니다.
             </div>
             {detail?.description && (
-              <div className="text-sm text-slate-400 leading-relaxed pt-4 border-t border-slate-800/70">
+              <div className="text-sm text-slate-600 leading-relaxed pt-4 border-t border-slate-200">
                 {detail.description}
               </div>
             )}

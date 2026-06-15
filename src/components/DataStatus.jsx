@@ -6,12 +6,12 @@ const STATE_STYLE = {
   success: {
     icon: CheckCircle2,
     label: '자동 수집 정상',
-    className: 'border-emerald-500/20 bg-emerald-500/5 text-emerald-300',
+    className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
   },
   partial: {
     icon: AlertTriangle,
     label: '일부 데이터 이전 값 유지',
-    className: 'border-amber-500/20 bg-amber-500/5 text-amber-300',
+    className: 'border-amber-200 bg-amber-50 text-amber-700',
   },
 };
 
@@ -29,7 +29,7 @@ export default function DataStatus() {
 
   if (unavailable) {
     return (
-      <div className="border-b border-amber-500/20 bg-amber-500/5 text-amber-300">
+      <div className="border-b border-amber-200 bg-amber-50 text-amber-700">
         <div className="mx-auto flex max-w-6xl items-center gap-2 px-6 py-2 text-[11px]">
           <Clock3 size={13} />
           데이터 수집 상태를 확인할 수 없습니다.
@@ -48,7 +48,7 @@ export default function DataStatus() {
           <Icon size={13} />
           {config.label}
         </span>
-        <span className="text-slate-400">{status.asOf} 종가 기준</span>
+        <span className="text-slate-600">{status.asOf} 종가 기준</span>
         <span className="text-slate-500">ETF {status.etfCount}개</span>
         <span className="text-slate-500">변경 {status.changeCount}건</span>
         {status.failedCount > 0 && (
