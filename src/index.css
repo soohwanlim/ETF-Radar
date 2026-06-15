@@ -5,11 +5,7 @@
 @layer base {
   body {
     @apply bg-slate-950 text-slate-100 font-sans antialiased scroll-smooth;
-    background-image: 
-      radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.05) 0px, transparent 50%),
-      radial-gradient(at 50% 0%, rgba(139, 92, 246, 0.05) 0px, transparent 50%),
-      radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
-    background-attachment: fixed;
+    min-width: 320px;
   }
 
   /* Custom Scrollbar */
@@ -23,6 +19,14 @@
   ::-webkit-scrollbar-thumb {
     @apply bg-slate-800 rounded-full border-2 border-slate-900 hover:bg-slate-700 transition-colors;
   }
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* Glassmorphism custom classes */

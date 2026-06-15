@@ -1,254 +1,164 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { TrendingUp, RefreshCw, Search, Star, ArrowUpRight, ArrowDownRight, Loader2 } from 'lucide-react';
+import { ArrowDownRight, ArrowRight, ArrowUpRight, Check, Loader2, Search, Star } from 'lucide-react';
 import { useWatchlistStore } from '../store/watchlistStore';
 import { useCompareStore } from '../store/compareStore';
 import { useETFData } from '../hooks/useETFData';
 import { useChanges } from '../hooks/useChanges';
 
+const PERIODS = [
+  ['1d', '오늘'], ['1w', '1주'], ['1m', '1개월'], ['3m', '3개월'], ['1y', '1년'], ['10y', '10년'],
+];
+
+function getRate(etf, period) {
+  return etf[`rate${period}`];
+}
+
+function Rate({ value, large = false }) {
+  if (value == null) return <span className="text-slate-500">-</span>;
+  const positive = value >= 0;
+  const Icon = positive ? ArrowUpRight : ArrowDownRight;
+  return (
+    <span className={`inline-flex items-center justify-end font-bold tabular-nums ${large ? 'text-xl' : 'text-sm'} ${positive ? 'text-red-400' : 'text-blue-400'}`}>
+      <Icon size={large ? 19 : 15} />
+      {positive ? '+' : ''}{value}%
+    </span>
+  );
+}
+
 export default function Home() {
   const [period, setPeriod] = useState('3m');
   const [search, setSearch] = useState('');
-  
   const { watchlist, toggleWatchlist } = useWatchlistStore();
   const { selectedEtfs, addEtf, removeEtf } = useCompareStore();
-
-  // Load the latest daily static ETF snapshot.
   const { etfs, loading: etfsLoading, error: etfsError } = useETFData(period);
-  // Load the latest daily static holdings changes.
-  const { changes, loading: changesLoading, error: changesError } = useChanges();
+  const { changes, loading: changesLoading } = useChanges();
 
-  const handleCompareToggle = (code) => {
-    if (selectedEtfs.includes(code)) {
-      removeEtf(code);
-    } else {
-      addEtf(code);
-    }
-  };
+  const filteredEtfs = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    if (!keyword) return etfs;
+    return etfs.filter(etf => etf.name.toLowerCase().includes(keyword) || etf.code.includes(keyword));
+  }, [etfs, search]);
 
-  const filteredEtfs = etfs.filter(etf => 
-    etf.name.toLowerCase().includes(search.toLowerCase()) || 
-    etf.code.includes(search)
-  );
+  const leaders = etfs.slice(0, 3);
+  const periodLabel = PERIODS.find(([key]) => key === period)?.[1];
 
-  const getPeriodRate = (etf) => {
-    switch (period) {
-      case '1d': return etf.rate1d;
-      case '1w': return etf.rate1w;
-      case '1m': return etf.rate1m;
-      case '3m': return etf.rate3m;
-      case '1y': return etf.rate1y;
-      case '10y': return etf.rate10y;
-      default: return etf.rate3m;
-    }
+  const toggleCompare = code => {
+    if (selectedEtfs.includes(code)) removeEtf(code);
+    else addEtf(code);
   };
 
   return (
     <div className="space-y-10 fade-in">
-      {/* Hero Header */}
-      <div className="text-center py-8 space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-medium">
-          <TrendingUp size={16} />
-          국내 주식형 현물 ETF 구성종목 변경 레이더
-        </div>
-        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-violet-400 to-emerald-400">
-          ETF Radar
-        </h1>
-        <p className="text-slate-400 max-w-xl mx-auto text-base">
-          매일 종가와 네이버 금융 TOP 10 구성자산을 비교해 주요 변화를 보여줍니다.
-        </p>
-      </div>
+      <section className="space-y-2">
+        <p className="text-sm font-semibold text-blue-400">오늘의 ETF</p>
+        <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">어떤 ETF가 오르고 있을까요?</h1>
+        <p className="text-sm leading-relaxed text-slate-400 md:text-base">국내 주식형 현물 ETF의 종가 수익률과 TOP 10 구성자산 변화를 비교합니다.</p>
+      </section>
 
-      {/* Grid: Live Alerts & Rankings */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Left: Component Changes Alerts (P0 Core Feature) */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold flex items-center gap-2 text-slate-100">
-              <RefreshCw size={18} className="text-violet-400 animate-spin-slow" />
-              최근 구성종목 변동사항
-            </h2>
-            <span className="text-xs text-slate-500">최근 수집 기준</span>
+      <section>
+        <div className="mb-4 flex items-end justify-between">
+          <div>
+            <p className="text-sm text-slate-500">{periodLabel} 수익률</p>
+            <h2 className="mt-1 text-xl font-bold text-white">지금 가장 많이 오른 ETF</h2>
+          </div>
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          {leaders.map((etf, index) => (
+            <Link key={etf.code} to={`/etf/${etf.code}`} className="group rounded-3xl bg-slate-900 p-5 transition-colors hover:bg-slate-800">
+              <div className="mb-7 flex items-start justify-between">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-sm font-bold text-slate-300">{index + 1}</span>
+                <Rate value={getRate(etf, period)} large />
+              </div>
+              <h3 className="truncate font-bold text-white group-hover:text-blue-300">{etf.name}</h3>
+              <div className="mt-1 flex justify-between text-xs text-slate-500">
+                <span>{etf.code}</span>
+                <span>{etf.price?.toLocaleString()}원</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0">
+          <div className="mb-5 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white">전체 ETF</h2>
+              <span className="text-xs text-slate-500">{filteredEtfs.length}개</span>
+            </div>
+
+            <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+              {PERIODS.map(([key, label]) => (
+                <button key={key} type="button" onClick={() => setPeriod(key)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${period === key ? 'bg-white text-slate-950' : 'bg-slate-900 text-slate-400 hover:text-white'}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <label className="relative block">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+              <input value={search} onChange={event => setSearch(event.target.value)} placeholder="ETF 이름이나 종목코드 검색" className="w-full rounded-2xl bg-slate-900 py-3.5 pl-11 pr-4 text-sm text-white outline-none ring-blue-500 placeholder:text-slate-600 focus:ring-2" />
+            </label>
           </div>
 
-          <div className="space-y-4">
-            {changesLoading ? (
-              <div className="glass p-12 rounded-2xl flex flex-col items-center justify-center text-slate-500 space-y-3">
-                <Loader2 className="animate-spin text-violet-400" />
-                <span className="text-xs">구성종목 변경 정보 로딩 중...</span>
-              </div>
-            ) : changesError ? (
-              <div className="glass p-8 rounded-2xl text-center text-slate-500 text-xs">
-                데이터 로딩 실패: {changesError}
-              </div>
-            ) : changes.length > 0 ? (
-              changes.map((change, idx) => (
-                <div key={idx} className="glass p-5 rounded-2xl glow-violet hover:scale-[1.02] transition-transform duration-300">
-                  <div className="flex justify-between items-start gap-2 mb-2">
-                    <Link to={`/etf/${change.code}`} className="text-sm font-semibold text-slate-200 hover:text-violet-400 truncate">
-                      {change.etfName}
-                    </Link>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                      change.type === 'new' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                      change.type === 'out' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
-                      'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                    }`}>
-                      {change.badge}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400">{change.message}</p>
-                  <div className="mt-3 flex justify-between items-center text-[10px] text-slate-500">
-                    <span>코드: {change.code}</span>
-                    <span>{change.date}</span>
-                  </div>
-                </div>
-              ))
+          <div className="overflow-hidden rounded-3xl bg-slate-900">
+            {etfsLoading ? (
+              <div className="flex h-52 items-center justify-center gap-2 text-sm text-slate-500"><Loader2 className="animate-spin" size={18} />ETF를 불러오는 중입니다.</div>
+            ) : etfsError ? (
+              <div className="p-12 text-center text-sm text-red-400">데이터를 불러오지 못했습니다: {etfsError}</div>
+            ) : filteredEtfs.length === 0 ? (
+              <div className="p-12 text-center text-sm text-slate-500">검색 결과가 없습니다.</div>
             ) : (
-              <div className="glass p-8 rounded-2xl text-center text-slate-500 text-xs">
-                최근 수집일의 구성종목 변동 내역이 없습니다.
-              </div>
+              filteredEtfs.map((etf, index) => {
+                const isSelected = selectedEtfs.includes(etf.code);
+                const isFavorite = watchlist.includes(etf.code);
+                return (
+                  <div key={etf.code} className={`flex items-center gap-3 px-4 py-4 md:px-5 ${index > 0 ? 'border-t border-slate-800/80' : ''}`}>
+                    <Link to={`/etf/${etf.code}`} className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-bold text-slate-100 md:text-base">{etf.name}</div>
+                      <div className="mt-1 text-xs text-slate-500">{etf.code} · 종가 {etf.price?.toLocaleString()}원</div>
+                    </Link>
+                    <div className="w-20 text-right"><Rate value={getRate(etf, period)} /></div>
+                    <button type="button" onClick={() => toggleWatchlist(etf.code)} className={`hidden rounded-xl p-2 sm:block ${isFavorite ? 'text-amber-400' : 'text-slate-600 hover:text-slate-300'}`} aria-label={`${etf.name} 즐겨찾기`}>
+                      <Star size={18} fill={isFavorite ? 'currentColor' : 'none'} />
+                    </button>
+                    <button type="button" onClick={() => toggleCompare(etf.code)} className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors ${isSelected ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-500 hover:text-white'}`} aria-label={`${etf.name} 비교 선택`}>
+                      {isSelected ? <Check size={17} /> : <span className="text-lg leading-none">+</span>}
+                    </button>
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
 
-        {/* Right: Ranking Table */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h2 className="text-xl font-bold flex items-center gap-2 text-slate-100">
-              <Star size={18} className="text-emerald-400" />
-              수익률 랭킹
-            </h2>
-            
-            {/* Period Tabs */}
-            <div className="flex bg-slate-900/80 p-1 rounded-xl border border-slate-800 self-start sm:self-auto">
-              {['1d', '1w', '1m', '3m', '1y', '10y'].map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPeriod(p)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold uppercase transition-all ${
-                    period === p 
-                      ? 'bg-gradient-to-r from-blue-500 to-violet-500 text-white shadow-md' 
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  {p === '1d' ? '당일' : p === '1w' ? '1주' : p === '1m' ? '1개월' : p === '3m' ? '3개월' : p === '1y' ? '1년' : '10년'}
-                </button>
-              ))}
+        <aside className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-500">TOP 10 기준</p>
+              <h2 className="mt-1 text-xl font-bold text-white">최근 구성 변화</h2>
             </div>
+            <Link to="/changes" className="rounded-full bg-slate-900 p-2 text-slate-400 hover:text-white" aria-label="변경사항 전체 보기"><ArrowRight size={17} /></Link>
           </div>
 
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-            <input
-              type="text"
-              placeholder="ETF 이름 또는 단축코드를 입력하세요..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-slate-900/50 border border-slate-800/80 rounded-2xl pl-12 pr-4 py-3 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all"
-            />
+          <div className="overflow-hidden rounded-3xl bg-slate-900">
+            {changesLoading ? (
+              <div className="flex h-40 items-center justify-center"><Loader2 className="animate-spin text-slate-500" /></div>
+            ) : changes.length > 0 ? changes.slice(0, 5).map((change, index) => (
+              <Link key={`${change.code}-${index}`} to={`/etf/${change.code}`} className={`block p-4 transition-colors hover:bg-slate-800 ${index > 0 ? 'border-t border-slate-800' : ''}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="truncate text-sm font-bold text-slate-200">{change.etfName}</span>
+                  <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${change.type === 'new' ? 'bg-emerald-500/10 text-emerald-400' : change.type === 'out' ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-400'}`}>{change.badge}</span>
+                </div>
+                <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-slate-500">{change.message}</p>
+              </Link>
+            )) : (
+              <div className="p-8 text-center text-sm text-slate-500">최근 변경사항이 없습니다.</div>
+            )}
           </div>
-
-          {/* Table Container */}
-          <div className="glass rounded-2xl overflow-hidden overflow-x-auto glow-blue">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-800 bg-slate-900/40 text-slate-400 text-xs font-semibold">
-                  <th className="py-4 px-5">ETF 명</th>
-                  <th className="py-4 px-4 text-right">기준일 종가</th>
-                  <th className="py-4 px-4 text-right">수익률 ({period === '1d' ? '당일' : period === '1w' ? '1주' : period === '1m' ? '1개월' : period === '3m' ? '3개월' : period === '1y' ? '1년' : '10년'})</th>
-                  <th className="py-4 px-4 text-right">ETF 규모</th>
-                  <th className="py-4 px-4 text-center">보수</th>
-                  <th className="py-4 px-5 text-center">액션</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/40 text-sm">
-                {etfsLoading ? (
-                  <tr>
-                    <td colSpan="6" className="py-20 text-center">
-                      <div className="flex flex-col items-center justify-center space-y-3 text-slate-400">
-                        <Loader2 className="animate-spin text-blue-500" />
-                        <span className="text-xs">국내 현물 ETF 목록 불러오는 중...</span>
-                      </div>
-                    </td>
-                  </tr>
-                ) : etfsError ? (
-                  <tr>
-                    <td colSpan="6" className="py-12 text-center text-rose-500 text-xs font-semibold">
-                      에러 발생: {etfsError}
-                    </td>
-                  </tr>
-                ) : filteredEtfs.length > 0 ? (
-                  filteredEtfs.map((etf) => {
-                    const rate = getPeriodRate(etf);
-                    const hasRate = rate != null;
-                    const isPositive = hasRate && rate >= 0;
-                    
-                    return (
-                      <tr key={etf.code} className="hover:bg-slate-900/20 transition-colors">
-                        <td className="py-4 px-5">
-                          <Link to={`/etf/${etf.code}`} className="font-semibold text-slate-200 hover:text-blue-400 block">
-                            {etf.name}
-                          </Link>
-                          <span className="text-xs text-slate-500 font-mono">{etf.code}</span>
-                        </td>
-                        <td className="py-4 px-4 text-right font-mono text-slate-300">
-                          {etf.price.toLocaleString()}원
-                        </td>
-                        <td className={`py-4 px-4 text-right font-semibold font-mono ${isPositive ? 'text-rose-500' : 'text-blue-500'}`}>
-                          <span className="flex items-center justify-end gap-0.5">
-                            {hasRate && (isPositive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />)}
-                            {hasRate ? `${isPositive ? '+' : ''}${rate}%` : '-'}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 text-right font-mono text-slate-400">
-                          {etf.aum == null ? '-' : `${etf.aum.toLocaleString()}억`}
-                          <span className="block text-[9px] text-slate-600">{etf.assetValueType === 'netAssets' ? '순자산' : '시가총액'}</span>
-                        </td>
-                        <td className="py-4 px-4 text-center text-slate-400 font-mono">
-                          {etf.fee == null ? '-' : `${etf.fee}%`}
-                        </td>
-                        <td className="py-4 px-5 text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => toggleWatchlist(etf.code)}
-                              className={`p-1.5 rounded-lg border transition-colors ${
-                                watchlist.includes(etf.code)
-                                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-                                  : 'border-slate-800 text-slate-500 hover:text-slate-300 hover:bg-slate-800/40'
-                              }`}
-                              title="즐겨찾기"
-                            >
-                              <Star size={14} fill={watchlist.includes(etf.code) ? 'currentColor' : 'none'} />
-                            </button>
-                            <button
-                              onClick={() => handleCompareToggle(etf.code)}
-                              className={`text-xs px-2.5 py-1.5 rounded-lg font-semibold border transition-all ${
-                                selectedEtfs.includes(etf.code)
-                                  ? 'bg-blue-600 border-blue-500 text-white'
-                                  : 'border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-                              }`}
-                            >
-                              {selectedEtfs.includes(etf.code) ? '비교중' : '비교담기'}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan="6" className="py-10 text-center text-slate-500">
-                      검색 결과가 없습니다.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+        </aside>
+      </section>
     </div>
   );
 }
