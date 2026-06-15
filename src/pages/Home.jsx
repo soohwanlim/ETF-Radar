@@ -32,9 +32,10 @@ function selectMainSignals(signals) {
   const selected = [];
   const themeCounts = new Map();
   const ranked = [...signals].sort((a, b) => {
-    return b.etfCount - a.etfCount
+    return (a.signalType === 'per_cu_quantity' ? -1 : 1) - (b.signalType === 'per_cu_quantity' ? -1 : 1)
+      || b.etfCount - a.etfCount
       || b.coverageRate - a.coverageRate
-      || Math.abs(b.averageShareChangeRate || 0) - Math.abs(a.averageShareChangeRate || 0);
+      || Math.abs(b.averageShareChangeRate || b.averageWeightDelta || 0) - Math.abs(a.averageShareChangeRate || a.averageWeightDelta || 0);
   });
 
   for (const signal of ranked) {
@@ -134,6 +135,7 @@ export default function Home() {
           <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1 md:grid md:grid-cols-3 md:overflow-visible">
             {mainSignals.map(signal => {
               const increase = signal.direction === 'increase';
+              const quantitySignal = signal.signalType === 'per_cu_quantity';
               const Icon = increase ? ArrowUpRight : ArrowDownRight;
               return (
                 <Link
@@ -146,14 +148,23 @@ export default function Home() {
                     <span className={`rounded-full p-2 ${increase ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}><Icon size={16} /></span>
                   </div>
                   <h3 className="mt-5 truncate text-lg font-extrabold text-slate-950">{signal.holdingName}</h3>
-                  <p className="mt-1 text-sm font-semibold text-slate-600">{signal.etfCount}개 ETF에서 1CU당 수량 {increase ? '증가' : '감소'}</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-600">
+                    {signal.etfCount}개 ETF에서 {quantitySignal ? '1CU당 수량' : 'TOP 10 공통'} {increase ? '증가' : '감소'}
+                  </p>
                   <div className="mt-5 flex items-end justify-between text-xs text-slate-500">
                     <span>테마 ETF의 {signal.coverageRate}%</span>
-                    {signal.averageShareChangeRate != null && (
+                    {quantitySignal && signal.averageShareChangeRate != null && (
                       <span className={`font-bold ${increase ? 'text-red-600' : 'text-blue-600'}`}>평균 {signal.averageShareChangeRate > 0 ? '+' : ''}{signal.averageShareChangeRate}%</span>
                     )}
+                    {!quantitySignal && signal.averageWeightDelta != null && (
+                      <span className={`font-bold ${increase ? 'text-red-600' : 'text-blue-600'}`}>평균 {signal.averageWeightDelta > 0 ? '+' : ''}{signal.averageWeightDelta}%p</span>
+                    )}
                   </div>
-                  <div className="mt-3 text-[11px] font-semibold text-slate-400">비중 변화 평균 {signal.averageWeightDelta > 0 ? '+' : ''}{signal.averageWeightDelta}%p</div>
+                  <div className="mt-3 text-[11px] font-semibold text-slate-400">
+                    {quantitySignal
+                      ? `비중 변화 평균 ${signal.averageWeightDelta > 0 ? '+' : ''}${signal.averageWeightDelta}%p`
+                      : `TOP 10 진입 ${signal.newCount || 0} · 이탈 ${signal.outCount || 0}`}
+                  </div>
                 </Link>
               );
             })}

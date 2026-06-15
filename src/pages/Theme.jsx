@@ -131,6 +131,7 @@ function ThemeSignalPanel({ signals, themeId }) {
       <div className="space-y-2">
         {themeSignals.map(signal => {
           const increase = signal.direction === 'increase';
+          const quantitySignal = signal.signalType === 'per_cu_quantity';
           const Icon = increase ? ArrowUpRight : ArrowDownRight;
           return (
             <details key={`${signal.holdingCode}-${signal.direction}`} className="rounded-xl border border-blue-100 bg-white px-3 py-3">
@@ -139,25 +140,36 @@ function ThemeSignalPanel({ signals, themeId }) {
                   <span className={`rounded-full p-1.5 ${increase ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}><Icon size={15} /></span>
                   <div className="min-w-0">
                     <div className="truncate text-sm font-bold text-slate-900">{signal.holdingName}</div>
-                    <div className="text-[11px] text-slate-500">{signal.etfCount}개 ETF에서 1CU당 수량 {increase ? '증가' : '감소'}</div>
+                    <div className="text-[11px] text-slate-500">{signal.etfCount}개 ETF에서 {quantitySignal ? '1CU당 수량' : 'TOP 10 공통'} {increase ? '증가' : '감소'}</div>
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
-                  {signal.averageShareChangeRate != null && (
+                  {quantitySignal && signal.averageShareChangeRate != null && (
                     <div className={`text-xs font-bold ${increase ? 'text-red-600' : 'text-blue-600'}`}>
                       평균 {signal.averageShareChangeRate > 0 ? '+' : ''}{signal.averageShareChangeRate}%
+                    </div>
+                  )}
+                  {!quantitySignal && signal.averageWeightDelta != null && (
+                    <div className={`text-xs font-bold ${increase ? 'text-red-600' : 'text-blue-600'}`}>
+                      평균 {signal.averageWeightDelta > 0 ? '+' : ''}{signal.averageWeightDelta}%p
                     </div>
                   )}
                   <div className="text-[10px] text-slate-400">테마 ETF의 {signal.coverageRate}%</div>
                 </div>
               </summary>
               <div className="mt-3 border-t border-slate-100 pt-3">
-                <div className="mb-2 text-[10px] font-semibold text-slate-500">수량 변화 우선 · 비중 변화는 보조 지표</div>
+                <div className="mb-2 text-[10px] font-semibold text-slate-500">
+                  {quantitySignal ? '수량 변화 우선 · 비중 변화는 보조 지표' : `TOP 10 진입 ${signal.newCount || 0} · 이탈 ${signal.outCount || 0}`}
+                </div>
                 <div className="space-y-1.5">
                   {signal.etfs.map(etf => (
                     <Link key={etf.code} to={`/etf/${etf.code}`} className="flex items-center justify-between gap-3 text-xs text-slate-600 hover:text-blue-600">
                       <span className="truncate">{etf.name}</span>
-                      <span className="shrink-0 font-mono">{etf.shareChangeRate > 0 ? '+' : ''}{etf.shareChangeRate}%</span>
+                      <span className="shrink-0 font-mono">
+                        {quantitySignal
+                          ? `${etf.shareChangeRate > 0 ? '+' : ''}${etf.shareChangeRate}%`
+                          : `${etf.delta > 0 ? '+' : ''}${etf.delta}%p`}
+                      </span>
                     </Link>
                   ))}
                 </div>

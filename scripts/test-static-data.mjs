@@ -47,9 +47,11 @@ const signals = buildThemeSignals(
     { code: 'B', etfName: 'TIGER 반도체TOP10', date: '2026-06-12', type: 'weight', classification: 'quantity_increase', holdingCode: '005930', holdingName: '삼성전자', previousWeight: 10, weight: 12, shareChange: 5, shareChangeRate: 5 },
   ],
 );
-assert.equal(signals.length, 1);
+assert.equal(signals.length, 2);
 assert.equal(signals[0].direction, 'increase');
 assert.equal(signals[0].etfCount, 2);
+assert.equal(signals[0].signalType, 'per_cu_quantity');
 assert.equal(signals[0].averageShareChangeRate, 7.5);
+assert.equal(signals[1].signalType, 'top10_common');
 
 console.log('Static data tests passed');

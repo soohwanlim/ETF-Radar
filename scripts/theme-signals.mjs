@@ -77,8 +77,76 @@ export function buildThemeSignals(etfs = [], changes = [], themes = SIGNAL_THEME
     }
   }
 
-  return signals.sort((a, b) => b.etfCount - a.etfCount
+  for (const theme of themes) {
+    const themeEtfs = etfs.filter(etf => theme.pattern.test(etf.name));
+    const themeCodes = new Set(themeEtfs.map(etf => etf.code));
+    const grouped = new Map();
+
+    for (const change of changes) {
+      if (!themeCodes.has(change.code)) continue;
+      const delta = change.type === 'new'
+        ? change.weight
+        : change.type === 'out'
+          ? -change.previousWeight
+          : change.weight - change.previousWeight;
+      if (!Number.isFinite(delta) || delta === 0) continue;
+
+      const direction = delta > 0 ? 'increase' : 'decrease';
+      const key = `${change.holdingCode}:${direction}`;
+      const group = grouped.get(key) || {
+        holdingCode: change.holdingCode,
+        holdingName: change.holdingName,
+        direction,
+        date: change.date,
+        newCount: 0,
+        outCount: 0,
+        weightDeltas: [],
+        etfs: new Map(),
+      };
+      group.etfs.set(change.code, {
+        code: change.code,
+        name: etfMap.get(change.code)?.name || change.etfName,
+        type: change.type,
+        delta: Number(delta.toFixed(2)),
+      });
+      if (change.type === 'new') group.newCount += 1;
+      else if (change.type === 'out') group.outCount += 1;
+      else group.weightDeltas.push(delta);
+      grouped.set(key, group);
+    }
+
+    for (const group of grouped.values()) {
+      const affectedEtfs = [...group.etfs.values()];
+      if (affectedEtfs.length < 2) continue;
+      const ratio = affectedEtfs.length / themeEtfs.length;
+      signals.push({
+        themeId: theme.id,
+        themeName: theme.name,
+        date: group.date,
+        holdingCode: group.holdingCode,
+        holdingName: group.holdingName,
+        direction: group.direction,
+        etfCount: affectedEtfs.length,
+        themeEtfCount: themeEtfs.length,
+        coverageRate: Number((ratio * 100).toFixed(1)),
+        signalType: 'top10_common',
+        newCount: group.newCount,
+        outCount: group.outCount,
+        weightCount: group.weightDeltas.length,
+        averageWeightDelta: group.weightDeltas.length
+          ? Number((group.weightDeltas.reduce((sum, value) => sum + value, 0) / group.weightDeltas.length).toFixed(2))
+          : null,
+        confidence: affectedEtfs.length >= 3 || ratio >= 0.5 ? 'high' : 'medium',
+        etfs: affectedEtfs,
+        coverage: 'top10',
+        source: 'Naver Finance',
+      });
+    }
+  }
+
+  return signals.sort((a, b) => (a.signalType === 'per_cu_quantity' ? -1 : 1) - (b.signalType === 'per_cu_quantity' ? -1 : 1)
+    || b.etfCount - a.etfCount
     || b.coverageRate - a.coverageRate
-    || Math.abs(b.averageShareChangeRate) - Math.abs(a.averageShareChangeRate)
+    || Math.abs(b.averageShareChangeRate || b.averageWeightDelta || 0) - Math.abs(a.averageShareChangeRate || a.averageWeightDelta || 0)
     || a.holdingName.localeCompare(b.holdingName, 'ko'));
 }
