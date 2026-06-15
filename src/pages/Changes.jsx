@@ -60,12 +60,19 @@ function useAllChanges(days = 7) {
 // ─── 유틸 컴포넌트 ────────────────────────────────────────────────────────
 
 const TYPE_CONFIG = {
-  new:    { label: '신규 편입', icon: TrendingUp,       color: 'emerald',  badge: '🆕', dot: '#10B981' },
-  out:    { label: '완전 편출', icon: TrendingDown,     color: 'rose',     badge: '❌', dot: '#EF4444' },
-  weight: { label: '비중 변동', icon: ArrowRightLeft,   color: 'amber',    badge: '⚖️', dot: '#F59E0B' },
-  swap:   { label: '종목 교체', icon: RefreshCw,        color: 'violet',   badge: '🔄', dot: '#8B5CF6' },
-  rank:   { label: '순위 변동', icon: ArrowRightLeft,   color: 'blue',     badge: '📊', dot: '#3B82F6' },
+  top10_new:         { label: 'TOP 10 진입', icon: TrendingUp,     color: 'emerald', badge: 'TOP10' },
+  top10_out:         { label: 'TOP 10 이탈', icon: TrendingDown,   color: 'rose',    badge: 'TOP10' },
+  quantity_increase: { label: '1CU 수량 증가', icon: TrendingUp,   color: 'blue',    badge: '1CU' },
+  quantity_decrease: { label: '1CU 수량 감소', icon: TrendingDown, color: 'violet',  badge: '1CU' },
+  price_effect:      { label: '비중만 변화', icon: ArrowRightLeft, color: 'amber',   badge: '비중' },
 };
+
+function getChangeCategory(change) {
+  if (change.classification) return change.classification;
+  if (change.type === 'new') return 'top10_new';
+  if (change.type === 'out') return 'top10_out';
+  return 'price_effect';
+}
 
 const COLOR_CLASSES = {
   emerald: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-600', ring: 'ring-emerald-500/30' },
@@ -76,7 +83,7 @@ const COLOR_CLASSES = {
 };
 
 function TypeBadge({ type }) {
-  const cfg = TYPE_CONFIG[type] || TYPE_CONFIG.weight;
+  const cfg = TYPE_CONFIG[type] || TYPE_CONFIG.price_effect;
   const cls = COLOR_CLASSES[cfg.color];
   return (
     <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-semibold border ${cls.bg} ${cls.border} ${cls.text}`}>
@@ -87,7 +94,7 @@ function TypeBadge({ type }) {
 
 // 통계 카드
 function StatCard({ type, count }) {
-  const cfg = TYPE_CONFIG[type] || TYPE_CONFIG.weight;
+  const cfg = TYPE_CONFIG[type] || TYPE_CONFIG.price_effect;
   const cls = COLOR_CLASSES[cfg.color];
   const Icon = cfg.icon;
   return (
@@ -135,7 +142,8 @@ function DateGroup({ date, children }) {
 
 // 단일 변경사항 카드
 function ChangeCard({ change }) {
-  const cfg = TYPE_CONFIG[change.type] || TYPE_CONFIG.weight;
+  const category = getChangeCategory(change);
+  const cfg = TYPE_CONFIG[category] || TYPE_CONFIG.price_effect;
   const cls = COLOR_CLASSES[cfg.color];
   const Icon = cfg.icon;
 
@@ -169,7 +177,7 @@ function ChangeCard({ change }) {
 
         {/* 배지 */}
         <div className="shrink-0">
-          <TypeBadge type={change.type} />
+          <TypeBadge type={category} />
         </div>
       </div>
     </div>
@@ -178,7 +186,7 @@ function ChangeCard({ change }) {
 
 // ─── 메인 페이지 ──────────────────────────────────────────────────────────
 
-const ALL_TYPES = ['new', 'out', 'weight', 'swap', 'rank'];
+const ALL_TYPES = ['top10_new', 'top10_out', 'quantity_increase', 'quantity_decrease', 'price_effect'];
 const DAYS_OPTIONS = [
   { value: 7, label: '최근 7일' },
   { value: 30, label: '최근 30일' },
@@ -203,7 +211,7 @@ export default function Changes() {
 
   // 필터링
   const filtered = changes.filter(c => {
-    const typeOk = selectedTypes.includes(c.type);
+    const typeOk = selectedTypes.includes(getChangeCategory(c));
     const codeOk = searchCode.trim() === '' ||
       c.code.includes(searchCode.trim()) ||
       (c.etfName || '').toLowerCase().includes(searchCode.trim().toLowerCase());
@@ -220,7 +228,7 @@ export default function Changes() {
 
   // 통계
   const stats = ALL_TYPES.reduce((acc, t) => {
-    acc[t] = changes.filter(c => c.type === t).length;
+    acc[t] = changes.filter(c => getChangeCategory(c) === t).length;
     return acc;
   }, {});
 
@@ -237,8 +245,8 @@ export default function Changes() {
           변경 감지 레이더
         </h1>
         <p className="text-slate-600 max-w-xl mx-auto text-base">
-          국내 주식형 현물 ETF의 상위 구성종목을 거래일마다 비교합니다.
-          신규 편입·편출·비중 변동을 누구보다 빠르게 확인하세요.
+          국내 주식형 현물 ETF의 TOP 10 구성종목을 거래일마다 비교합니다.
+          TOP 10 진입·이탈과 1CU당 구성수량 변화를 구분해 확인하세요.
         </p>
         {lastUpdated && (
           <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500">
@@ -250,10 +258,10 @@ export default function Changes() {
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard type="new"    count={stats.new} />
-        <StatCard type="out"    count={stats.out} />
-        <StatCard type="weight" count={stats.weight + stats.rank} />
-        <StatCard type="swap"   count={stats.swap} />
+        <StatCard type="top10_new" count={stats.top10_new} />
+        <StatCard type="top10_out" count={stats.top10_out} />
+        <StatCard type="quantity_increase" count={stats.quantity_increase} />
+        <StatCard type="quantity_decrease" count={stats.quantity_decrease} />
       </div>
 
       {/* 필터 바 */}
@@ -378,7 +386,7 @@ export default function Changes() {
           <p>
             구성종목 변경 데이터는 <strong className="text-slate-900">평일 오후 6시 10분 (KST)</strong>에 수집하며,
             종가 데이터가 늦으면 오후 7시 10분에 한 번 더 확인합니다. 네이버 금융의 상위 10개 구성자산만 비교하므로
-            전체 편입·편출 내역과는 다를 수 있으며, 현재는 주요 국내 ETF 9개를 감시합니다.
+            TOP 10 이탈은 ETF에서 완전히 편출됐다는 뜻이 아닙니다. 현재 지원 범위의 국내 주식형 현물 ETF 전체를 수집합니다.
             해외·채권·원자재·레버리지·인버스·커버드콜 ETF는 현재 지원하지 않습니다.
           </p>
         </div>

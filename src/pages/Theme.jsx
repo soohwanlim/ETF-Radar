@@ -125,8 +125,8 @@ function ThemeSignalPanel({ signals, themeId }) {
   return (
     <section className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4">
       <div className="mb-3">
-        <div className="text-sm font-bold text-slate-900">공통 1CU당 구성수량 신호</div>
-        <div className="mt-1 text-xs text-slate-500">같은 테마 ETF 2개 이상에서 1CU당 수량이 같은 방향으로 변한 종목입니다.</div>
+        <div className="text-sm font-bold text-slate-900">공통 구성종목 변화</div>
+        <div className="mt-1 text-xs text-slate-500">1CU당 수량 변화와 TOP 10 진입·이탈/비중 변화를 구분해 표시합니다.</div>
       </div>
       <div className="space-y-2">
         {themeSignals.map(signal => {
@@ -140,6 +140,7 @@ function ThemeSignalPanel({ signals, themeId }) {
                   <span className={`rounded-full p-1.5 ${increase ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}><Icon size={15} /></span>
                   <div className="min-w-0">
                     <div className="truncate text-sm font-bold text-slate-900">{signal.holdingName}</div>
+                    <div className="mt-0.5 text-[10px] font-bold text-blue-600">{quantitySignal ? '1CU 수량 변화' : 'TOP 10·비중 변화'}</div>
                     <div className="text-[11px] text-slate-500">{signal.etfCount}개 ETF에서 {quantitySignal ? '1CU당 수량' : 'TOP 10 공통'} {increase ? '증가' : '감소'}</div>
                   </div>
                 </div>
@@ -178,7 +179,7 @@ function ThemeSignalPanel({ signals, themeId }) {
           );
         })}
       </div>
-      <p className="mt-3 text-[10px] leading-relaxed text-slate-400">네이버 금융의 1CU당 TOP 10 구성수량 기준입니다. 기업행사나 CU 기준 변경 가능성이 있어 매매로 단정하지 않습니다.</p>
+      <p className="mt-3 text-[10px] leading-relaxed text-slate-400">TOP 10 이탈은 전체 편출을 뜻하지 않습니다. 수량 변화도 기업행사나 CU 기준 변경 가능성이 있어 매매로 단정하지 않습니다.</p>
     </section>
   );
 }

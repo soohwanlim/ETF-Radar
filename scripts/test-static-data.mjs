@@ -27,7 +27,7 @@ const changes = compareHoldings(
 assert.deepEqual(changes.map(change => change.type).sort(), ['new', 'out', 'weight']);
 assert.equal(changes.find(change => change.holdingCode === '005930').classification, 'quantity_increase');
 assert.equal(changes.find(change => change.holdingCode === '005930').shareChangeRate, 10);
-assert.match(formatChange(changes.find(change => change.type === 'new')), /TOP 10 신규 진입/);
+assert.match(formatChange(changes.find(change => change.type === 'new')), /TOP 10 진입/);
 
 const priceEffect = compareHoldings(
   [{ code: '005930', name: '삼성전자', shares: 100, weight: 20 }],
@@ -45,6 +45,8 @@ const signals = buildThemeSignals(
   [
     { code: 'A', etfName: 'KODEX 반도체', date: '2026-06-12', type: 'weight', classification: 'quantity_increase', holdingCode: '005930', holdingName: '삼성전자', previousWeight: 20, weight: 23, shareChange: 10, shareChangeRate: 10 },
     { code: 'B', etfName: 'TIGER 반도체TOP10', date: '2026-06-12', type: 'weight', classification: 'quantity_increase', holdingCode: '005930', holdingName: '삼성전자', previousWeight: 10, weight: 12, shareChange: 5, shareChangeRate: 5 },
+    { code: 'A', etfName: 'KODEX 반도체', date: '2026-06-12', type: 'weight', classification: 'price_effect', holdingCode: '000660', holdingName: 'SK하이닉스', previousWeight: 15, weight: 18, shareChange: 0, shareChangeRate: 0 },
+    { code: 'B', etfName: 'TIGER 반도체TOP10', date: '2026-06-12', type: 'weight', classification: 'price_effect', holdingCode: '000660', holdingName: 'SK하이닉스', previousWeight: 12, weight: 14, shareChange: 0, shareChangeRate: 0 },
   ],
 );
 assert.equal(signals.length, 2);

@@ -84,6 +84,7 @@ export function buildThemeSignals(etfs = [], changes = [], themes = SIGNAL_THEME
 
     for (const change of changes) {
       if (!themeCodes.has(change.code)) continue;
+      if (['quantity_increase', 'quantity_decrease'].includes(change.classification)) continue;
       const delta = change.type === 'new'
         ? change.weight
         : change.type === 'out'

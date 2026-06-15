@@ -122,7 +122,7 @@ export function formatChange(change) {
     const sign = change.shareChange > 0 ? '+' : '';
     return `1CU당 구성수량 변화: ${change.holdingName} (${change.previousShares.toLocaleString()}주 → ${change.shares.toLocaleString()}주, ${sign}${change.shareChangeRate.toFixed(2)}%)`;
   }
-  if (change.type === 'new') return `TOP 10 신규 진입: ${change.holdingName} (비중 ${change.weight.toFixed(2)}%)`;
+  if (change.type === 'new') return `TOP 10 진입: ${change.holdingName} (비중 ${change.weight.toFixed(2)}%)`;
   if (change.type === 'out') return `TOP 10 이탈: ${change.holdingName} (이전 비중 ${change.previousWeight.toFixed(2)}%)`;
   const delta = change.weight - change.previousWeight;
   return `비중 변동: ${change.holdingName} (${change.previousWeight.toFixed(2)}% → ${change.weight.toFixed(2)}%, ${delta > 0 ? '+' : ''}${delta.toFixed(2)}%)`;
