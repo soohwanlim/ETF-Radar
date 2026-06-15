@@ -5,6 +5,7 @@ import { useCompareStore } from '../store/compareStore';
 import { useETFData } from '../hooks/useETFData';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { loadCompareData, loadHoldings } from '../data/staticData';
+import ETFIcon from '../components/ETFIcon';
 
 const PERIODS = [
   { id: '1d', label: '당일' }, { id: '1w', label: '1주' }, { id: '1m', label: '1개월' },
@@ -35,9 +36,12 @@ function CompareCard({ etf, period, onRemove }) {
       <button onClick={onRemove} className="absolute top-4 right-4 text-slate-500 hover:text-rose-600 p-1.5 rounded-lg" title="비교에서 제거">
         <Trash2 size={14} />
       </button>
-      <div>
+      <div className="flex items-center gap-3 pr-7">
+        <ETFIcon etf={etf} size="sm" />
+        <div className="min-w-0">
         <span className="text-[10px] font-mono text-slate-500">{etf.code}</span>
         <Link to={`/etf/${etf.code}`} className="font-extrabold text-slate-900 pr-6 hover:text-blue-600 block truncate">{etf.name}</Link>
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-4 text-xs font-mono border-y border-slate-200 py-4">
         <div><span className="text-[10px] text-slate-500 block">기준일 종가</span><span className="font-semibold text-slate-700 text-sm">{(etf.price || 0).toLocaleString()}원</span></div>

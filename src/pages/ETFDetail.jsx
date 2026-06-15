@@ -2,6 +2,7 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, RefreshCw, BarChart2, Info, Loader2 } from 'lucide-react';
 import { useETFDetail, useETFHoldings, useETFHistory } from '../hooks/useETFData';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
+import ETFIcon from '../components/ETFIcon';
 
 const COLORS = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#EC4899', '#14B8A6'];
 
@@ -43,10 +44,10 @@ export default function ETFDetail() {
           <ArrowLeft size={16} />
         </Link>
         {detail && (
-          <div>
+          <><ETFIcon etf={detail} size="lg" /><div>
             <span className="text-xs font-mono text-slate-500">{detail.code}</span>
             <h1 className="text-3xl font-extrabold text-slate-950">{detail.name} 상세</h1>
-          </div>
+          </div></>
         )}
       </div>
 

@@ -4,6 +4,7 @@ import { ArrowDownRight, ArrowUpRight, Loader2, Star } from 'lucide-react';
 import { useETFData } from '../hooks/useETFData';
 import { useCompareStore } from '../store/compareStore';
 import { useWatchlistStore } from '../store/watchlistStore';
+import ETFIcon from '../components/ETFIcon';
 
 const PERIODS = [
   { id: '1d', label: '당일' },
@@ -90,8 +91,8 @@ export default function Watchlist() {
                   return (
                     <tr key={etf.code} className="hover:bg-slate-50 transition-colors">
                       <td className="py-4 px-5">
-                        <Link to={`/etf/${etf.code}`} className="font-semibold text-slate-900 hover:text-amber-600 block">{etf.name}</Link>
-                        <span className="text-xs text-slate-500 font-mono">{etf.code}</span>
+                        <div className="flex items-center gap-3"><ETFIcon etf={etf} size="sm" /><div><Link to={`/etf/${etf.code}`} className="font-semibold text-slate-900 hover:text-amber-600 block">{etf.name}</Link>
+                        <span className="text-xs text-slate-500 font-mono">{etf.code}</span></div></div>
                       </td>
                       <td className="py-4 px-4 text-right font-mono text-slate-700">{etf.price.toLocaleString()}원</td>
                       <td className={`py-4 px-4 text-right font-semibold font-mono ${!hasRate ? 'text-slate-500' : positive ? 'text-rose-500' : 'text-blue-500'}`}>

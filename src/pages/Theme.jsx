@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useETFData } from '../hooks/useETFData';
 import { loadHoldings } from '../data/staticData';
+import ETFIcon from '../components/ETFIcon';
 
 const PERIODS = [
   { id: '1w', label: '1주' },
@@ -64,11 +65,14 @@ function ThemeEtfCard({ etf, period }) {
   return (
     <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-slate-200 transition-colors space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
+        <div className="flex items-center gap-3">
+          <ETFIcon etf={etf} size="sm" />
+          <div>
           <span className="text-xs font-mono text-slate-500">{etf.code}</span>
           <Link to={`/etf/${etf.code}`} className="font-bold text-slate-900 hover:text-blue-600 block">
             {etf.name}
           </Link>
+          </div>
         </div>
         <div className="flex items-center gap-5 text-sm font-mono">
           <div className="text-right">
