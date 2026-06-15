@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   LayoutGrid, Cpu, BatteryCharging, Bot, Shield, Ship, HeartPulse, ArrowDownRight, ArrowUpRight,
   Landmark, Car, Zap, MonitorPlay, Building2, ChevronDown, Loader2, TrendingUp,
@@ -176,8 +176,9 @@ function ThemeSignalPanel({ signals, themeId }) {
 }
 
 export default function Theme() {
+  const [searchParams] = useSearchParams();
   const [period, setPeriod] = useState('1w');
-  const [selectedTheme, setSelectedTheme] = useState(null);
+  const [selectedTheme, setSelectedTheme] = useState(() => searchParams.get('theme'));
   const [signals, setSignals] = useState([]);
   const { etfs, loading, error } = useETFData(period);
   const isDesktop = useDesktopLayout();

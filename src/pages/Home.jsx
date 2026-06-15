@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDownRight, ArrowRight, ArrowUpRight, CalendarPlus, Check, Loader2, Search, Star } from 'lucide-react';
 import { useWatchlistStore } from '../store/watchlistStore';
@@ -6,6 +6,7 @@ import { useCompareStore } from '../store/compareStore';
 import { useETFData } from '../hooks/useETFData';
 import { useChanges } from '../hooks/useChanges';
 import ETFIcon from '../components/ETFIcon';
+import { loadThemeSignals } from '../data/staticData';
 
 const PERIODS = [
   ['1d', '오늘'], ['1w', '1주'], ['1m', '1개월'], ['3m', '3개월'], ['1y', '1년'], ['10y', '10년'],
@@ -27,9 +28,27 @@ function Rate({ value, large = false }) {
   );
 }
 
+function selectMainSignals(signals) {
+  const selected = [];
+  const themeCounts = new Map();
+  const ranked = [...signals].sort((a, b) => {
+    if (a.confidence !== b.confidence) return a.confidence === 'high' ? -1 : 1;
+    return b.etfCount - a.etfCount || b.coverageRate - a.coverageRate;
+  });
+
+  for (const signal of ranked) {
+    if ((themeCounts.get(signal.themeId) || 0) >= 2) continue;
+    selected.push(signal);
+    themeCounts.set(signal.themeId, (themeCounts.get(signal.themeId) || 0) + 1);
+    if (selected.length === 3) break;
+  }
+  return selected;
+}
+
 export default function Home() {
   const [period, setPeriod] = useState('3m');
   const [search, setSearch] = useState('');
+  const [themeSignals, setThemeSignals] = useState([]);
   const { watchlist, toggleWatchlist } = useWatchlistStore();
   const { selectedEtfs, addEtf, removeEtf } = useCompareStore();
   const { etfs, loading: etfsLoading, error: etfsError } = useETFData(period);
@@ -56,6 +75,13 @@ export default function Home() {
       .sort((a, b) => b.listingDate.localeCompare(a.listingDate))
       .slice(0, 4);
   }, [asOf, etfs]);
+  const mainSignals = useMemo(() => selectMainSignals(themeSignals), [themeSignals]);
+
+  useEffect(() => {
+    let active = true;
+    loadThemeSignals().then(data => active && setThemeSignals(data)).catch(() => active && setThemeSignals([]));
+    return () => { active = false; };
+  }, []);
 
   const toggleCompare = code => {
     if (selectedEtfs.includes(code)) removeEtf(code);
@@ -94,6 +120,52 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {mainSignals.length > 0 && (
+        <section>
+          <div className="mb-4 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-blue-600">테마 ETF 공통 신호</p>
+              <h2 className="mt-1 text-xl font-bold text-slate-950">여러 ETF가 함께 움직인 종목</h2>
+            </div>
+            <Link to="/theme" className="shrink-0 text-xs font-bold text-slate-500 hover:text-blue-600">전체 보기</Link>
+          </div>
+          <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1 md:grid md:grid-cols-3 md:overflow-visible">
+            {mainSignals.map(signal => {
+              const increase = signal.direction === 'increase';
+              const Icon = increase ? ArrowUpRight : ArrowDownRight;
+              return (
+                <Link
+                  key={`${signal.themeId}-${signal.holdingCode}-${signal.direction}`}
+                  to={`/theme?theme=${signal.themeId}`}
+                  className="min-w-[270px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md md:min-w-0"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-700">{signal.themeName}</span>
+                    <span className={`rounded-full p-2 ${increase ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}><Icon size={16} /></span>
+                  </div>
+                  <h3 className="mt-5 truncate text-lg font-extrabold text-slate-950">{signal.holdingName}</h3>
+                  <p className="mt-1 text-sm font-semibold text-slate-600">{signal.etfCount}개 ETF에서 공통 {increase ? '증가' : '감소'}</p>
+                  <div className="mt-5 flex items-end justify-between text-xs text-slate-500">
+                    <span>테마 ETF의 {signal.coverageRate}%</span>
+                    {signal.averageWeightDelta != null && (
+                      <span className={`font-bold ${increase ? 'text-red-600' : 'text-blue-600'}`}>평균 {signal.averageWeightDelta > 0 ? '+' : ''}{signal.averageWeightDelta}%p</span>
+                    )}
+                  </div>
+                  {(signal.newCount > 0 || signal.outCount > 0) && (
+                    <div className="mt-3 text-[11px] font-semibold text-slate-400">
+                      {signal.newCount > 0 && `TOP 10 진입 ${signal.newCount}개`}
+                      {signal.newCount > 0 && signal.outCount > 0 && ' · '}
+                      {signal.outCount > 0 && `TOP 10 이탈 ${signal.outCount}개`}
+                    </div>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+          <p className="mt-3 text-[10px] text-slate-400">네이버 금융 TOP 10 구성자산 기준이며 전체 편입·편출을 의미하지 않습니다.</p>
+        </section>
+      )}
 
       {recentListings.length > 0 && (
         <section>
