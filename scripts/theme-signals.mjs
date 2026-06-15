@@ -24,11 +24,8 @@ export function buildThemeSignals(etfs = [], changes = [], themes = SIGNAL_THEME
 
     for (const change of changes) {
       if (!themeCodes.has(change.code)) continue;
-      const delta = change.type === 'new'
-        ? change.weight
-        : change.type === 'out'
-          ? -change.previousWeight
-          : change.weight - change.previousWeight;
+      if (!['quantity_increase', 'quantity_decrease'].includes(change.classification)) continue;
+      const delta = change.shareChangeRate;
       if (!Number.isFinite(delta) || delta === 0) continue;
 
       const direction = delta > 0 ? 'increase' : 'decrease';
@@ -38,20 +35,20 @@ export function buildThemeSignals(etfs = [], changes = [], themes = SIGNAL_THEME
         holdingName: change.holdingName,
         direction,
         date: change.date,
-        newCount: 0,
-        outCount: 0,
+        shareChangeRates: [],
         weightDeltas: [],
         etfs: new Map(),
       };
       group.etfs.set(change.code, {
         code: change.code,
         name: etfMap.get(change.code)?.name || change.etfName,
-        type: change.type,
-        delta: Number(delta.toFixed(2)),
+        type: change.classification,
+        shareChange: change.shareChange,
+        shareChangeRate: Number(delta.toFixed(2)),
+        weightDelta: Number((change.weight - change.previousWeight).toFixed(2)),
       });
-      if (change.type === 'new') group.newCount += 1;
-      else if (change.type === 'out') group.outCount += 1;
-      else group.weightDeltas.push(delta);
+      group.shareChangeRates.push(delta);
+      group.weightDeltas.push(change.weight - change.previousWeight);
       grouped.set(key, group);
     }
 
@@ -69,12 +66,9 @@ export function buildThemeSignals(etfs = [], changes = [], themes = SIGNAL_THEME
         etfCount: affectedEtfs.length,
         themeEtfCount: themeEtfs.length,
         coverageRate: Number((ratio * 100).toFixed(1)),
-        newCount: group.newCount,
-        outCount: group.outCount,
-        weightCount: group.weightDeltas.length,
-        averageWeightDelta: group.weightDeltas.length
-          ? Number((group.weightDeltas.reduce((sum, value) => sum + value, 0) / group.weightDeltas.length).toFixed(2))
-          : null,
+        signalType: 'per_cu_quantity',
+        averageShareChangeRate: Number((group.shareChangeRates.reduce((sum, value) => sum + value, 0) / group.shareChangeRates.length).toFixed(2)),
+        averageWeightDelta: Number((group.weightDeltas.reduce((sum, value) => sum + value, 0) / group.weightDeltas.length).toFixed(2)),
         confidence: affectedEtfs.length >= 3 || ratio >= 0.5 ? 'high' : 'medium',
         etfs: affectedEtfs,
         coverage: 'top10',
@@ -83,5 +77,8 @@ export function buildThemeSignals(etfs = [], changes = [], themes = SIGNAL_THEME
     }
   }
 
-  return signals.sort((a, b) => b.etfCount - a.etfCount || b.coverageRate - a.coverageRate || a.holdingName.localeCompare(b.holdingName, 'ko'));
+  return signals.sort((a, b) => b.etfCount - a.etfCount
+    || b.coverageRate - a.coverageRate
+    || Math.abs(b.averageShareChangeRate) - Math.abs(a.averageShareChangeRate)
+    || a.holdingName.localeCompare(b.holdingName, 'ko'));
 }

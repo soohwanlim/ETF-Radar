@@ -76,26 +76,52 @@ export function compareHoldings(previous = [], current = []) {
 
   for (const item of current) {
     if (!previousMap.has(item.code)) {
-      changes.push({ type: 'new', holdingCode: item.code, holdingName: item.name, previousWeight: null, weight: item.weight });
+      changes.push({
+        type: 'new', classification: 'top10_new', holdingCode: item.code, holdingName: item.name,
+        previousWeight: null, weight: item.weight, previousShares: null, shares: item.shares,
+        shareChange: null, shareChangeRate: null,
+      });
     }
   }
   for (const item of previous) {
     if (!currentMap.has(item.code)) {
-      changes.push({ type: 'out', holdingCode: item.code, holdingName: item.name, previousWeight: item.weight, weight: 0 });
+      changes.push({
+        type: 'out', classification: 'top10_out', holdingCode: item.code, holdingName: item.name,
+        previousWeight: item.weight, weight: 0, previousShares: item.shares, shares: null,
+        shareChange: null, shareChangeRate: null,
+      });
     }
   }
   for (const item of current) {
     const before = previousMap.get(item.code);
     if (!before) continue;
-    const delta = item.weight - before.weight;
-    if (Math.abs(delta) >= 2) {
-      changes.push({ type: 'weight', holdingCode: item.code, holdingName: item.name, previousWeight: before.weight, weight: item.weight });
+    const weightDelta = item.weight - before.weight;
+    const shareChange = item.shares - before.shares;
+    const shareChangeRate = before.shares > 0 ? (shareChange / before.shares) * 100 : null;
+    const hasMaterialShareChange = Number.isFinite(shareChangeRate)
+      && Math.abs(shareChange) >= 1
+      && Math.abs(shareChangeRate) >= 0.5;
+    if (hasMaterialShareChange || Math.abs(weightDelta) >= 2) {
+      changes.push({
+        type: 'weight',
+        classification: hasMaterialShareChange
+          ? shareChange > 0 ? 'quantity_increase' : 'quantity_decrease'
+          : 'price_effect',
+        holdingCode: item.code, holdingName: item.name,
+        previousWeight: before.weight, weight: item.weight,
+        previousShares: before.shares, shares: item.shares, shareChange,
+        shareChangeRate: Number.isFinite(shareChangeRate) ? Number(shareChangeRate.toFixed(2)) : null,
+      });
     }
   }
   return changes;
 }
 
 export function formatChange(change) {
+  if (change.classification === 'quantity_increase' || change.classification === 'quantity_decrease') {
+    const sign = change.shareChange > 0 ? '+' : '';
+    return `1CU당 구성수량 변화: ${change.holdingName} (${change.previousShares.toLocaleString()}주 → ${change.shares.toLocaleString()}주, ${sign}${change.shareChangeRate.toFixed(2)}%)`;
+  }
   if (change.type === 'new') return `TOP 10 신규 진입: ${change.holdingName} (비중 ${change.weight.toFixed(2)}%)`;
   if (change.type === 'out') return `TOP 10 이탈: ${change.holdingName} (이전 비중 ${change.previousWeight.toFixed(2)}%)`;
   const delta = change.weight - change.previousWeight;

@@ -21,11 +21,20 @@ assert.equal(holdings.length, 2);
 assert.equal(holdings[0].code, '005930');
 
 const changes = compareHoldings(
-  [{ code: '005930', name: '삼성전자', weight: 30 }, { code: '000660', name: 'SK하이닉스', weight: 20 }],
-  [{ code: '005930', name: '삼성전자', weight: 27 }, { code: '035420', name: 'NAVER', weight: 10 }],
+  [{ code: '005930', name: '삼성전자', shares: 100, weight: 30 }, { code: '000660', name: 'SK하이닉스', shares: 50, weight: 20 }],
+  [{ code: '005930', name: '삼성전자', shares: 110, weight: 27 }, { code: '035420', name: 'NAVER', shares: 10, weight: 10 }],
 );
 assert.deepEqual(changes.map(change => change.type).sort(), ['new', 'out', 'weight']);
+assert.equal(changes.find(change => change.holdingCode === '005930').classification, 'quantity_increase');
+assert.equal(changes.find(change => change.holdingCode === '005930').shareChangeRate, 10);
 assert.match(formatChange(changes.find(change => change.type === 'new')), /TOP 10 신규 진입/);
+
+const priceEffect = compareHoldings(
+  [{ code: '005930', name: '삼성전자', shares: 100, weight: 20 }],
+  [{ code: '005930', name: '삼성전자', shares: 100, weight: 23 }],
+);
+assert.equal(priceEffect[0].classification, 'price_effect');
+assert.equal(priceEffect[0].shareChangeRate, 0);
 
 const signals = buildThemeSignals(
   [
@@ -34,12 +43,13 @@ const signals = buildThemeSignals(
     { code: 'C', name: 'SOL 자동차TOP3' },
   ],
   [
-    { code: 'A', etfName: 'KODEX 반도체', date: '2026-06-12', type: 'weight', holdingCode: '005930', holdingName: '삼성전자', previousWeight: 20, weight: 23 },
-    { code: 'B', etfName: 'TIGER 반도체TOP10', date: '2026-06-12', type: 'new', holdingCode: '005930', holdingName: '삼성전자', previousWeight: null, weight: 12 },
+    { code: 'A', etfName: 'KODEX 반도체', date: '2026-06-12', type: 'weight', classification: 'quantity_increase', holdingCode: '005930', holdingName: '삼성전자', previousWeight: 20, weight: 23, shareChange: 10, shareChangeRate: 10 },
+    { code: 'B', etfName: 'TIGER 반도체TOP10', date: '2026-06-12', type: 'weight', classification: 'quantity_increase', holdingCode: '005930', holdingName: '삼성전자', previousWeight: 10, weight: 12, shareChange: 5, shareChangeRate: 5 },
   ],
 );
 assert.equal(signals.length, 1);
 assert.equal(signals[0].direction, 'increase');
 assert.equal(signals[0].etfCount, 2);
+assert.equal(signals[0].averageShareChangeRate, 7.5);
 
 console.log('Static data tests passed');

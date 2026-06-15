@@ -32,8 +32,9 @@ function selectMainSignals(signals) {
   const selected = [];
   const themeCounts = new Map();
   const ranked = [...signals].sort((a, b) => {
-    if (a.confidence !== b.confidence) return a.confidence === 'high' ? -1 : 1;
-    return b.etfCount - a.etfCount || b.coverageRate - a.coverageRate;
+    return b.etfCount - a.etfCount
+      || b.coverageRate - a.coverageRate
+      || Math.abs(b.averageShareChangeRate || 0) - Math.abs(a.averageShareChangeRate || 0);
   });
 
   for (const signal of ranked) {
@@ -125,8 +126,8 @@ export default function Home() {
         <section>
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold text-blue-600">테마 ETF 공통 신호</p>
-              <h2 className="mt-1 text-xl font-bold text-slate-950">여러 ETF가 함께 움직인 종목</h2>
+              <p className="text-sm font-semibold text-blue-600">1CU당 구성수량 신호</p>
+              <h2 className="mt-1 text-xl font-bold text-slate-950">여러 ETF에서 수량이 함께 변한 종목</h2>
             </div>
             <Link to="/theme" className="shrink-0 text-xs font-bold text-slate-500 hover:text-blue-600">전체 보기</Link>
           </div>
@@ -145,25 +146,19 @@ export default function Home() {
                     <span className={`rounded-full p-2 ${increase ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}><Icon size={16} /></span>
                   </div>
                   <h3 className="mt-5 truncate text-lg font-extrabold text-slate-950">{signal.holdingName}</h3>
-                  <p className="mt-1 text-sm font-semibold text-slate-600">{signal.etfCount}개 ETF에서 공통 {increase ? '증가' : '감소'}</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-600">{signal.etfCount}개 ETF에서 1CU당 수량 {increase ? '증가' : '감소'}</p>
                   <div className="mt-5 flex items-end justify-between text-xs text-slate-500">
                     <span>테마 ETF의 {signal.coverageRate}%</span>
-                    {signal.averageWeightDelta != null && (
-                      <span className={`font-bold ${increase ? 'text-red-600' : 'text-blue-600'}`}>평균 {signal.averageWeightDelta > 0 ? '+' : ''}{signal.averageWeightDelta}%p</span>
+                    {signal.averageShareChangeRate != null && (
+                      <span className={`font-bold ${increase ? 'text-red-600' : 'text-blue-600'}`}>평균 {signal.averageShareChangeRate > 0 ? '+' : ''}{signal.averageShareChangeRate}%</span>
                     )}
                   </div>
-                  {(signal.newCount > 0 || signal.outCount > 0) && (
-                    <div className="mt-3 text-[11px] font-semibold text-slate-400">
-                      {signal.newCount > 0 && `TOP 10 진입 ${signal.newCount}개`}
-                      {signal.newCount > 0 && signal.outCount > 0 && ' · '}
-                      {signal.outCount > 0 && `TOP 10 이탈 ${signal.outCount}개`}
-                    </div>
-                  )}
+                  <div className="mt-3 text-[11px] font-semibold text-slate-400">비중 변화 평균 {signal.averageWeightDelta > 0 ? '+' : ''}{signal.averageWeightDelta}%p</div>
                 </Link>
               );
             })}
           </div>
-          <p className="mt-3 text-[10px] text-slate-400">네이버 금융 TOP 10 구성자산 기준이며 전체 편입·편출을 의미하지 않습니다.</p>
+          <p className="mt-3 text-[10px] text-slate-400">네이버 금융의 1CU당 TOP 10 구성수량 기준입니다. 기업행사나 CU 기준 변경 가능성이 있어 매매로 단정하지 않습니다.</p>
         </section>
       )}
 

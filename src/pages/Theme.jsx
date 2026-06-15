@@ -125,8 +125,8 @@ function ThemeSignalPanel({ signals, themeId }) {
   return (
     <section className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4">
       <div className="mb-3">
-        <div className="text-sm font-bold text-slate-900">공통 구성종목 신호</div>
-        <div className="mt-1 text-xs text-slate-500">같은 테마 ETF 2개 이상에서 같은 방향으로 변한 종목입니다.</div>
+        <div className="text-sm font-bold text-slate-900">공통 1CU당 구성수량 신호</div>
+        <div className="mt-1 text-xs text-slate-500">같은 테마 ETF 2개 이상에서 1CU당 수량이 같은 방향으로 변한 종목입니다.</div>
       </div>
       <div className="space-y-2">
         {themeSignals.map(signal => {
@@ -139,29 +139,25 @@ function ThemeSignalPanel({ signals, themeId }) {
                   <span className={`rounded-full p-1.5 ${increase ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}><Icon size={15} /></span>
                   <div className="min-w-0">
                     <div className="truncate text-sm font-bold text-slate-900">{signal.holdingName}</div>
-                    <div className="text-[11px] text-slate-500">{signal.etfCount}개 ETF에서 공통 {increase ? '증가' : '감소'}</div>
+                    <div className="text-[11px] text-slate-500">{signal.etfCount}개 ETF에서 1CU당 수량 {increase ? '증가' : '감소'}</div>
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
-                  {signal.averageWeightDelta != null && (
+                  {signal.averageShareChangeRate != null && (
                     <div className={`text-xs font-bold ${increase ? 'text-red-600' : 'text-blue-600'}`}>
-                      평균 {signal.averageWeightDelta > 0 ? '+' : ''}{signal.averageWeightDelta}%p
+                      평균 {signal.averageShareChangeRate > 0 ? '+' : ''}{signal.averageShareChangeRate}%
                     </div>
                   )}
                   <div className="text-[10px] text-slate-400">테마 ETF의 {signal.coverageRate}%</div>
                 </div>
               </summary>
               <div className="mt-3 border-t border-slate-100 pt-3">
-                <div className="mb-2 flex flex-wrap gap-1.5 text-[10px] font-semibold text-slate-500">
-                  {signal.newCount > 0 && <span className="rounded-full bg-emerald-50 px-2 py-1 text-emerald-700">TOP 10 진입 {signal.newCount}</span>}
-                  {signal.outCount > 0 && <span className="rounded-full bg-rose-50 px-2 py-1 text-rose-700">TOP 10 이탈 {signal.outCount}</span>}
-                  {signal.weightCount > 0 && <span className="rounded-full bg-slate-100 px-2 py-1">비중 변화 {signal.weightCount}</span>}
-                </div>
+                <div className="mb-2 text-[10px] font-semibold text-slate-500">수량 변화 우선 · 비중 변화는 보조 지표</div>
                 <div className="space-y-1.5">
                   {signal.etfs.map(etf => (
                     <Link key={etf.code} to={`/etf/${etf.code}`} className="flex items-center justify-between gap-3 text-xs text-slate-600 hover:text-blue-600">
                       <span className="truncate">{etf.name}</span>
-                      <span className="shrink-0 font-mono">{etf.delta > 0 ? '+' : ''}{etf.delta}%p</span>
+                      <span className="shrink-0 font-mono">{etf.shareChangeRate > 0 ? '+' : ''}{etf.shareChangeRate}%</span>
                     </Link>
                   ))}
                 </div>
@@ -170,7 +166,7 @@ function ThemeSignalPanel({ signals, themeId }) {
           );
         })}
       </div>
-      <p className="mt-3 text-[10px] leading-relaxed text-slate-400">네이버 금융 TOP 10 구성자산 기준 신호이며 전체 편입·편출을 의미하지 않습니다.</p>
+      <p className="mt-3 text-[10px] leading-relaxed text-slate-400">네이버 금융의 1CU당 TOP 10 구성수량 기준입니다. 기업행사나 CU 기준 변경 가능성이 있어 매매로 단정하지 않습니다.</p>
     </section>
   );
 }

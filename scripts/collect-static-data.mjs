@@ -85,6 +85,7 @@ function normalizeKrx(row) {
     nav: parseNumber(row.NAV) || null,
     marketCap: Math.round(parseNumber(row.MKTCAP) / 100000000),
     netAssets: Math.round(parseNumber(row.INVSTASST_NETASST_TOTAMT) / 100000000) || null,
+    listedShares: parseNumber(row.LIST_SHRS) || null,
     volume: parseNumber(row.ACC_TRDVOL),
     benchmark: row.IDX_IND_NM || null,
   };
@@ -158,17 +159,28 @@ async function main() {
       const detail = parseDetail(html);
       holdings[code] = parseNaverHoldings(html, market.asOf);
       const previousHoldings = existingHoldings[code] || [];
+      const previous = existingEtfMap.get(code) || {};
       if (previousHoldings.length > 0) {
         for (const change of compareHoldings(previousHoldings, holdings[code])) {
+          const listedShareChangeRate = previous.listedShares > 0 && current.listedShares > 0
+            ? Number((((current.listedShares - previous.listedShares) / previous.listedShares) * 100).toFixed(2))
+            : null;
           changes.push({
             ...change,
             code,
             etfName: current.name,
             date: market.asOf,
             message: formatChange(change),
-            badge: change.type === 'new' ? 'TOP 10 진입' : change.type === 'out' ? 'TOP 10 이탈' : '비중변동',
+            badge: change.type === 'new'
+              ? 'TOP 10 진입'
+              : change.type === 'out'
+                ? 'TOP 10 이탈'
+                : change.classification === 'price_effect' ? '비중변동' : '1CU 수량변화',
             source: 'Naver Finance',
             coverage: 'top10',
+            previousListedShares: previous.listedShares ?? null,
+            listedShares: current.listedShares,
+            listedShareChangeRate,
           });
         }
       }
@@ -179,7 +191,6 @@ async function main() {
       priceSeries.push([market.asOf, current.price]);
       series[code] = compactSeries(priceSeries.sort((a, b) => a[0].localeCompare(b[0])), market.asOf);
 
-      const previous = existingEtfMap.get(code) || {};
       etfs.push({
         ...previous,
         ...current,
