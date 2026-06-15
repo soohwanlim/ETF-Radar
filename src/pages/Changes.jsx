@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   RefreshCw, Filter, TrendingUp, TrendingDown,
   ArrowRightLeft, AlertCircle, Clock, ChevronDown, Loader2
@@ -60,11 +60,11 @@ function useAllChanges(days = 7) {
 // ─── 유틸 컴포넌트 ────────────────────────────────────────────────────────
 
 const TYPE_CONFIG = {
-  top10_new:         { label: 'TOP 10 진입', icon: TrendingUp,     color: 'emerald', badge: 'TOP10' },
-  top10_out:         { label: 'TOP 10 이탈', icon: TrendingDown,   color: 'rose',    badge: 'TOP10' },
-  quantity_increase: { label: '1CU 수량 증가', icon: TrendingUp,   color: 'blue',    badge: '1CU' },
-  quantity_decrease: { label: '1CU 수량 감소', icon: TrendingDown, color: 'violet',  badge: '1CU' },
-  price_effect:      { label: '비중만 변화', icon: ArrowRightLeft, color: 'amber',   badge: '비중' },
+  top10_new:         { label: 'TOP 10 진입', icon: TrendingUp,     color: 'emerald' },
+  top10_out:         { label: 'TOP 10 이탈', icon: TrendingDown,   color: 'rose' },
+  quantity_increase: { label: '1CU 수량 증가', icon: TrendingUp,   color: 'blue' },
+  quantity_decrease: { label: '1CU 수량 감소', icon: TrendingDown, color: 'violet' },
+  price_effect:      { label: '비중만 변화', icon: ArrowRightLeft, color: 'amber' },
 };
 
 function getChangeCategory(change) {
@@ -87,7 +87,7 @@ function TypeBadge({ type }) {
   const cls = COLOR_CLASSES[cfg.color];
   return (
     <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-semibold border ${cls.bg} ${cls.border} ${cls.text}`}>
-      {cfg.badge} {cfg.label}
+      {cfg.label}
     </span>
   );
 }
@@ -195,7 +195,11 @@ const DAYS_OPTIONS = [
 ];
 
 export default function Changes() {
-  const [selectedTypes, setSelectedTypes] = useState(ALL_TYPES);
+  const [searchParams] = useSearchParams();
+  const [selectedTypes, setSelectedTypes] = useState(() => {
+    const requestedTypes = (searchParams.get('types') || '').split(',').filter(type => ALL_TYPES.includes(type));
+    return requestedTypes.length > 0 ? requestedTypes : ALL_TYPES;
+  });
   const [selectedDays, setSelectedDays] = useState(7);
   const [searchCode, setSearchCode] = useState('');
 
@@ -327,7 +331,7 @@ export default function Changes() {
                     : 'bg-transparent border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-600'
                 }`}
               >
-                {cfg.badge} {cfg.label}
+                {cfg.label}
                 {stats[type] > 0 && (
                   <span className="ml-1 bg-white rounded-full px-1.5 py-0.5 text-[10px] font-mono">
                     {stats[type]}

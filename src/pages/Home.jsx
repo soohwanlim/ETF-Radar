@@ -129,7 +129,7 @@ export default function Home() {
               <p className="text-sm font-semibold text-blue-600">1CU당 구성수량 증가</p>
               <h2 className="mt-1 text-xl font-bold text-slate-950">여러 ETF가 함께 늘린 종목</h2>
             </div>
-            <Link to="/theme" className="shrink-0 text-xs font-bold text-slate-500 hover:text-blue-600">전체 보기</Link>
+            <Link to="/changes?types=quantity_increase,quantity_decrease" className="shrink-0 text-xs font-bold text-slate-500 hover:text-blue-600">전체 보기</Link>
           </div>
           <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1 md:grid md:grid-cols-3 md:overflow-visible">
             {mainSignals.map(signal => {
