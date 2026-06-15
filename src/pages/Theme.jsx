@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   LayoutGrid, Cpu, BatteryCharging, Bot, Shield, Ship, HeartPulse,
-  Landmark, Car, Zap, MonitorPlay, Building2, Loader2, TrendingUp,
+  Landmark, Car, Zap, MonitorPlay, Building2, ChevronDown, Loader2, TrendingUp,
 } from 'lucide-react';
 import { useETFData } from '../hooks/useETFData';
 import { loadHoldings } from '../data/staticData';
@@ -30,6 +30,19 @@ const THEME_RULES = [
 
 function getRate(etf, period) {
   return period === '1w' ? etf.rate1w : etf.rate1m;
+}
+
+function useDesktopLayout() {
+  const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches);
+
+  useEffect(() => {
+    const query = window.matchMedia('(min-width: 768px)');
+    const update = event => setIsDesktop(event.matches);
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+
+  return isDesktop;
 }
 
 function buildHotThemes(etfs, period) {
@@ -109,8 +122,10 @@ export default function Theme() {
   const [period, setPeriod] = useState('1w');
   const [selectedTheme, setSelectedTheme] = useState(null);
   const { etfs, loading, error } = useETFData(period);
+  const isDesktop = useDesktopLayout();
   const themes = useMemo(() => buildHotThemes(etfs, period), [etfs, period]);
-  const activeTheme = themes.find(theme => theme.id === selectedTheme) || themes[0];
+  const activeTheme = themes.find(theme => theme.id === selectedTheme)
+    || (selectedTheme === '__closed__' && !isDesktop ? null : themes[0]);
 
   return (
     <div className="space-y-8 fade-in">
@@ -138,7 +153,7 @@ export default function Theme() {
       ) : error ? (
         <div className="glass rounded-3xl p-12 text-center text-rose-600 text-sm">{error}</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        isDesktop ? <div className="grid grid-cols-3 gap-8">
           <div className="space-y-3">
             <h2 className="text-lg font-bold text-slate-900 px-1">수익률 상위 테마</h2>
             {themes.map((theme, index) => {
@@ -177,6 +192,46 @@ export default function Theme() {
               </>
             )}
           </div>
+        </div> : <div className="space-y-3">
+          <h2 className="px-1 text-lg font-bold text-slate-900">수익률 상위 테마</h2>
+          {themes.map((theme, index) => {
+            const Icon = theme.icon;
+            const expanded = theme.id === activeTheme?.id;
+            return (
+              <section key={theme.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => setSelectedTheme(expanded ? '__closed__' : theme.id)}
+                  className="flex w-full items-center justify-between gap-3 p-4 text-left"
+                  aria-expanded={expanded}
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="w-4 text-xs font-bold text-slate-400">{index + 1}</span>
+                    <span className={`rounded-xl p-2 ${expanded ? 'bg-emerald-500 text-white' : 'bg-emerald-50 text-emerald-700'}`}><Icon size={18} /></span>
+                    <div className="min-w-0">
+                      <div className="truncate font-bold text-slate-900">{theme.name}</div>
+                      <div className="text-xs text-slate-500">{theme.members.length}개 ETF</div>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className={`font-mono text-sm font-bold ${theme.score >= 0 ? 'text-rose-500' : 'text-blue-500'}`}>
+                      {theme.score >= 0 ? '+' : ''}{theme.score.toFixed(2)}%
+                    </span>
+                    <ChevronDown size={18} className={`text-slate-400 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                  </div>
+                </button>
+
+                {expanded && (
+                  <div className="space-y-3 border-t border-slate-200 bg-slate-50 p-3">
+                    <div className="px-1 pt-1 text-xs font-semibold text-slate-500">
+                      {period === '1w' ? '최근 1주' : '최근 1개월'} 수익률 상위 ETF
+                    </div>
+                    {theme.members.slice(0, 5).map(etf => <ThemeEtfCard key={etf.code} etf={etf} period={period} />)}
+                  </div>
+                )}
+              </section>
+            );
+          })}
         </div>
       )}
     </div>

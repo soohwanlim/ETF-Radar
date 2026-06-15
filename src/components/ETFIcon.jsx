@@ -17,7 +17,7 @@ const BRAND_STYLES = [
   { pattern: /^(KOSEF)/i, background: '#16a34a', foreground: '#ffffff' },
   { pattern: /^(TIMEFOLIO)/i, background: '#7c3aed', foreground: '#ffffff' },
   { pattern: /^(WON)/i, background: '#2563eb', foreground: '#ffffff' },
-  { pattern: /^(1Q)/i, background: '#e11d48', foreground: '#ffffff' },
+  { pattern: /^(1Q)/i, background: '#00857a', foreground: '#ffffff' },
   { pattern: /^(BNK)/i, background: '#dc2626', foreground: '#ffffff' },
   { pattern: /^(IBK)/i, background: '#2563eb', foreground: '#ffffff' },
   { pattern: /^(UNICORN)/i, background: '#7c3aed', foreground: '#ffffff' },
