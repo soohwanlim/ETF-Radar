@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDownRight, ArrowRight, ArrowUpRight, Check, Loader2, Search, Star } from 'lucide-react';
+import { ArrowDownRight, ArrowRight, ArrowUpRight, CalendarPlus, Check, Loader2, Search, Star } from 'lucide-react';
 import { useWatchlistStore } from '../store/watchlistStore';
 import { useCompareStore } from '../store/compareStore';
 import { useETFData } from '../hooks/useETFData';
@@ -42,6 +42,19 @@ export default function Home() {
 
   const leaders = etfs.slice(0, 3);
   const periodLabel = PERIODS.find(([key]) => key === period)?.[1];
+  const asOf = etfs[0]?.asOf;
+  const recentListings = useMemo(() => {
+    if (!asOf) return [];
+    const asOfTime = Date.parse(`${asOf}T00:00:00Z`);
+    return etfs
+      .filter(etf => {
+        if (!etf.listingDate) return false;
+        const age = (asOfTime - Date.parse(`${etf.listingDate}T00:00:00Z`)) / 86400000;
+        return age >= 0 && age <= 90;
+      })
+      .sort((a, b) => b.listingDate.localeCompare(a.listingDate))
+      .slice(0, 4);
+  }, [asOf, etfs]);
 
   const toggleCompare = code => {
     if (selectedEtfs.includes(code)) removeEtf(code);
@@ -54,6 +67,7 @@ export default function Home() {
         <p className="text-sm font-semibold text-blue-400">오늘의 ETF</p>
         <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">어떤 ETF가 오르고 있을까요?</h1>
         <p className="text-sm leading-relaxed text-slate-400 md:text-base">국내 주식형 현물 ETF의 종가 수익률과 TOP 10 구성자산 변화를 비교합니다.</p>
+        {asOf && <p className="pt-1 text-xs font-semibold text-slate-500">{asOf} 종가 기준 · 실시간 시세가 아닙니다</p>}
       </section>
 
       <section>
@@ -73,12 +87,37 @@ export default function Home() {
               <h3 className="truncate font-bold text-white group-hover:text-blue-300">{etf.name}</h3>
               <div className="mt-1 flex justify-between text-xs text-slate-500">
                 <span>{etf.code}</span>
-                <span>{etf.price?.toLocaleString()}원</span>
+                <span>{etf.asOf} 종가 {etf.price?.toLocaleString()}원</span>
               </div>
             </Link>
           ))}
         </div>
       </section>
+
+      {recentListings.length > 0 && (
+        <section>
+          <div className="mb-4 flex items-center gap-2">
+            <CalendarPlus size={19} className="text-emerald-400" />
+            <div>
+              <h2 className="text-xl font-bold text-white">새로 상장한 ETF</h2>
+              <p className="mt-0.5 text-xs text-slate-500">최근 90일 내 상장 · 상장일 기준</p>
+            </div>
+          </div>
+          <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1 md:grid md:grid-cols-4 md:overflow-visible">
+            {recentListings.map(etf => (
+              <Link key={etf.code} to={`/etf/${etf.code}`} className="min-w-[240px] rounded-3xl bg-slate-900 p-5 transition-colors hover:bg-slate-800 md:min-w-0">
+                <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-400">{etf.listingDate} 상장</span>
+                <h3 className="mt-4 truncate font-bold text-white">{etf.name}</h3>
+                <p className="mt-1 truncate text-xs text-slate-500">{etf.provider || etf.code}</p>
+                <div className="mt-5 flex items-end justify-between">
+                  <span className="text-xs text-slate-500">{etf.asOf} 종가</span>
+                  <span className="font-bold tabular-nums text-slate-200">{etf.price?.toLocaleString()}원</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0">
@@ -117,7 +156,7 @@ export default function Home() {
                   <div key={etf.code} className={`flex items-center gap-3 px-4 py-4 md:px-5 ${index > 0 ? 'border-t border-slate-800/80' : ''}`}>
                     <Link to={`/etf/${etf.code}`} className="min-w-0 flex-1">
                       <div className="truncate text-sm font-bold text-slate-100 md:text-base">{etf.name}</div>
-                      <div className="mt-1 text-xs text-slate-500">{etf.code} · 종가 {etf.price?.toLocaleString()}원</div>
+                      <div className="mt-1 text-xs text-slate-500">{etf.code} · {etf.asOf} 종가 {etf.price?.toLocaleString()}원</div>
                     </Link>
                     <div className="w-20 text-right"><Rate value={getRate(etf, period)} /></div>
                     <button type="button" onClick={() => toggleWatchlist(etf.code)} className={`hidden rounded-xl p-2 sm:block ${isFavorite ? 'text-amber-400' : 'text-slate-600 hover:text-slate-300'}`} aria-label={`${etf.name} 즐겨찾기`}>

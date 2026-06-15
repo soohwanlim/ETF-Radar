@@ -48,7 +48,7 @@ export default function DataStatus() {
           <Icon size={13} />
           {config.label}
         </span>
-        <span className="text-slate-400">기준일 {status.asOf}</span>
+        <span className="text-slate-400">{status.asOf} 종가 기준</span>
         <span className="text-slate-500">ETF {status.etfCount}개</span>
         <span className="text-slate-500">변경 {status.changeCount}건</span>
         {status.failedCount > 0 && (
