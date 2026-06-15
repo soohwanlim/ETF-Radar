@@ -1,18 +1,20 @@
 import { createElement } from 'react';
 import {
   Atom, BarChart3, BatteryCharging, Bot, Building2, Car, Cpu, Factory,
-  HeartPulse, Landmark, Layers3, Leaf, Plane, Shield, Ship, ShoppingBag, Zap,
+  HeartPulse, Landmark, Layers3, Leaf, Network, Plane, RadioTower, Shield, Ship,
+  ShoppingBag, Zap,
 } from 'lucide-react';
 
 const BRAND_STYLES = [
   { pattern: /^(RISE)/i, background: '#ffcc00', foreground: '#402f00' },
   { pattern: /^(KODEX)/i, background: '#2563eb', foreground: '#ffffff' },
   { pattern: /^(TIGER)/i, background: '#f97316', foreground: '#ffffff' },
-  { pattern: /^(ACE)/i, background: '#2563eb', foreground: '#ffffff' },
-  { pattern: /^(HANARO)/i, background: '#2878b8', foreground: '#ffffff' },
-  { pattern: /^(SOL)/i, background: '#0f6fff', foreground: '#ffffff' },
+  { pattern: /^(ACE)/i, background: '#5b7fa6', foreground: '#ffffff' },
+  { pattern: /^(HANARO)/i, background: '#2b7bbb', foreground: '#ffffff' },
+  { pattern: /^(SOL)/i, background: '#087cca', foreground: '#ffffff' },
   { pattern: /^(PLUS)/i, background: '#ef4444', foreground: '#ffffff' },
-  { pattern: /^(KOSEF|KIWOOM)/i, background: '#16a34a', foreground: '#ffffff' },
+  { pattern: /^(KIWOOM)/i, background: '#ec168c', foreground: '#ffffff' },
+  { pattern: /^(KOSEF)/i, background: '#16a34a', foreground: '#ffffff' },
   { pattern: /^(TIMEFOLIO)/i, background: '#7c3aed', foreground: '#ffffff' },
   { pattern: /^(WON)/i, background: '#2563eb', foreground: '#ffffff' },
   { pattern: /^(1Q)/i, background: '#e11d48', foreground: '#ffffff' },
@@ -22,6 +24,8 @@ const BRAND_STYLES = [
 ];
 
 const THEME_ICONS = [
+  { pattern: /네트워크|데이터센터|클라우드|인터넷/, icon: Network },
+  { pattern: /5G|통신|통신장비/, icon: RadioTower },
   { pattern: /원자력|원전|우라늄/, icon: Atom },
   { pattern: /반도체|하이닉스|삼성전자/, icon: Cpu },
   { pattern: /AI|인공지능|로봇|소프트웨어|디지털/, icon: Bot },
@@ -53,8 +57,12 @@ function getStyle(etf) {
 }
 
 function getIcon(etf) {
-  const keywords = `${etf?.name || ''} ${etf?.fundType || ''} ${etf?.benchmark || ''}`;
-  return THEME_ICONS.find(item => item.pattern.test(keywords))?.icon || Layers3;
+  const name = etf?.name || '';
+  const nameMatch = THEME_ICONS.find(item => item.pattern.test(name));
+  if (nameMatch) return nameMatch.icon;
+
+  const metadata = `${etf?.benchmark || ''} ${etf?.fundType || ''}`;
+  return THEME_ICONS.find(item => item.pattern.test(metadata))?.icon || Layers3;
 }
 
 export default function ETFIcon({ etf, size = 'md', className = '' }) {
