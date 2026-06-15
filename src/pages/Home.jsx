@@ -31,12 +31,11 @@ function Rate({ value, large = false }) {
 function selectMainSignals(signals) {
   const selected = [];
   const themeCounts = new Map();
-  const ranked = [...signals].sort((a, b) => {
-    return (a.signalType === 'per_cu_quantity' ? -1 : 1) - (b.signalType === 'per_cu_quantity' ? -1 : 1)
-      || b.etfCount - a.etfCount
+  const ranked = signals
+    .filter(signal => signal.signalType === 'per_cu_quantity' && signal.direction === 'increase')
+    .sort((a, b) => b.etfCount - a.etfCount
       || b.coverageRate - a.coverageRate
-      || Math.abs(b.averageShareChangeRate || b.averageWeightDelta || 0) - Math.abs(a.averageShareChangeRate || a.averageWeightDelta || 0);
-  });
+      || (b.averageShareChangeRate || 0) - (a.averageShareChangeRate || 0));
 
   for (const signal of ranked) {
     if ((themeCounts.get(signal.themeId) || 0) >= 2) continue;
@@ -127,16 +126,13 @@ export default function Home() {
         <section>
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold text-blue-600">테마 ETF 공통 변화</p>
-              <h2 className="mt-1 text-xl font-bold text-slate-950">여러 ETF에서 함께 변한 종목</h2>
+              <p className="text-sm font-semibold text-blue-600">1CU당 구성수량 증가</p>
+              <h2 className="mt-1 text-xl font-bold text-slate-950">여러 ETF가 함께 늘린 종목</h2>
             </div>
             <Link to="/theme" className="shrink-0 text-xs font-bold text-slate-500 hover:text-blue-600">전체 보기</Link>
           </div>
           <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1 md:grid md:grid-cols-3 md:overflow-visible">
             {mainSignals.map(signal => {
-              const increase = signal.direction === 'increase';
-              const quantitySignal = signal.signalType === 'per_cu_quantity';
-              const Icon = increase ? ArrowUpRight : ArrowDownRight;
               return (
                 <Link
                   key={`${signal.themeId}-${signal.holdingCode}-${signal.direction}`}
@@ -146,33 +142,24 @@ export default function Home() {
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-1.5">
                       <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-700">{signal.themeName}</span>
-                      <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600">{quantitySignal ? '1CU 수량' : 'TOP 10·비중'}</span>
+                      <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">1CU 수량 증가</span>
                     </div>
-                    <span className={`rounded-full p-2 ${increase ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}><Icon size={16} /></span>
+                    <span className="rounded-full bg-red-50 p-2 text-red-600"><ArrowUpRight size={16} /></span>
                   </div>
                   <h3 className="mt-5 truncate text-lg font-extrabold text-slate-950">{signal.holdingName}</h3>
-                  <p className="mt-1 text-sm font-semibold text-slate-600">
-                    {signal.etfCount}개 ETF에서 {quantitySignal ? '1CU당 수량' : 'TOP 10 공통'} {increase ? '증가' : '감소'}
-                  </p>
+                  <p className="mt-1 text-sm font-semibold text-slate-600">{signal.etfCount}개 ETF에서 1CU당 수량 증가</p>
                   <div className="mt-5 flex items-end justify-between text-xs text-slate-500">
                     <span>테마 ETF의 {signal.coverageRate}%</span>
-                    {quantitySignal && signal.averageShareChangeRate != null && (
-                      <span className={`font-bold ${increase ? 'text-red-600' : 'text-blue-600'}`}>평균 {signal.averageShareChangeRate > 0 ? '+' : ''}{signal.averageShareChangeRate}%</span>
-                    )}
-                    {!quantitySignal && signal.averageWeightDelta != null && (
-                      <span className={`font-bold ${increase ? 'text-red-600' : 'text-blue-600'}`}>평균 {signal.averageWeightDelta > 0 ? '+' : ''}{signal.averageWeightDelta}%p</span>
+                    {signal.averageShareChangeRate != null && (
+                      <span className="font-bold text-red-600">평균 +{signal.averageShareChangeRate}%</span>
                     )}
                   </div>
-                  <div className="mt-3 text-[11px] font-semibold text-slate-400">
-                    {quantitySignal
-                      ? `비중 변화 평균 ${signal.averageWeightDelta > 0 ? '+' : ''}${signal.averageWeightDelta}%p`
-                      : `TOP 10 진입 ${signal.newCount || 0} · 이탈 ${signal.outCount || 0}`}
-                  </div>
+                  <div className="mt-3 text-[11px] font-semibold text-slate-400">비중 변화 평균 {signal.averageWeightDelta > 0 ? '+' : ''}{signal.averageWeightDelta}%p</div>
                 </Link>
               );
             })}
           </div>
-          <p className="mt-3 text-[10px] text-slate-400">1CU 수량 변화와 TOP 10 진입·이탈/비중 변화를 구분합니다. TOP 10 이탈은 ETF 전체 편출을 의미하지 않습니다.</p>
+          <p className="mt-3 text-[10px] text-slate-400">메인에는 여러 테마 ETF에서 1CU당 구성수량이 함께 증가한 신호만 표시합니다. 감소와 TOP 10 변화는 변경 감지에서 확인할 수 있습니다.</p>
         </section>
       )}
 
