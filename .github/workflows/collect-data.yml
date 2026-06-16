@@ -68,9 +68,11 @@ jobs:
             gh issue comment "$existing" --body "Another scheduled collection failed: $RUN_URL"
             exit 0
           fi
+          
           body="The scheduled ETF data collection workflow failed.
-
-Run: $RUN_URL
-
-Check the failed step logs first. If the failure is a KRX/Naver temporary outage, rerun the workflow manually after a few minutes."
+          
+          Run: $RUN_URL
+          
+          Check the failed step logs first. If the failure is a KRX/Naver temporary outage, rerun the workflow manually after a few minutes."
+          
           gh issue create --title "$title" --body "$body"

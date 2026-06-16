@@ -10,7 +10,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: deployed-health-check
+  group: daily-etf-data  # 이전 수집 작업과 꼬이지 않도록 고유 그룹을 유지하거나 통일합니다.
   cancel-in-progress: false
 
 jobs:
@@ -20,21 +20,21 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
-
+      
       - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
-
+          
       - run: npm ci
-
+      
       - name: Check deployed status
         id: health
         continue-on-error: true
         env:
           STATUS_URL: ${{ vars.STATUS_URL }}
         run: npm run check:health
-
+        
       - name: Write health summary
         shell: bash
         run: |
@@ -44,7 +44,7 @@ jobs:
           echo "- Status URL: ${STATUS_URL:-https://etf-radar.net/data/status.json}" >> "$GITHUB_STEP_SUMMARY"
         env:
           STATUS_URL: ${{ vars.STATUS_URL }}
-
+          
       - name: Open stale data issue
         if: steps.health.outcome == 'failure'
         shell: bash
@@ -56,20 +56,23 @@ jobs:
           title="ETF deployed data health check failed - $(date -u +%Y-%m-%d)"
           existing="$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
           status_url="${STATUS_URL:-https://etf-radar.net/data/status.json}"
+          
           body="The deployed ETF data health check failed.
-
-Run: $RUN_URL
-Status JSON: $status_url
-
-This usually means the deployed status data is stale, incomplete, or reports partial failures.
-
-First checks:
-- Did the 18:10 or 19:10 KST collection workflow succeed?
-- Did Cloudflare Pages finish deploying after the data commit?
-- Is KRX/Naver temporarily delayed or unavailable?"
+          
+          Run: $RUN_URL
+          Status JSON: $status_url
+          
+          This usually means the deployed status data is stale, incomplete, or reports partial failures.
+          
+          First checks:
+          - Did the 18:10 or 19:10 KST collection workflow succeed?
+          - Did Cloudflare Pages finish deploying after the data commit?
+          - Is KRX/Naver temporarily delayed or unavailable?"
+          
           if [ -n "$existing" ]; then
             gh issue comment "$existing" --body "Another health check failed: $RUN_URL"
             exit 1
           fi
+          
           gh issue create --title "$title" --body "$body"
           exit 1
