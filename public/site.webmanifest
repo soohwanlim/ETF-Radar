@@ -1,0 +1,21 @@
+{
+  "name": "ETF Radar",
+  "short_name": "ETF Radar",
+  "description": "국내 ETF 수익률과 TOP 10 구성종목 변화를 한눈에 비교합니다.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
