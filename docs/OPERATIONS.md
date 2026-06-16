@@ -43,6 +43,7 @@ GitHub 모바일 앱에서도 Issue 생성 알림을 받을 수 있다.
 ## 성능 측정
 
 - Chrome DevTools Lighthouse에서 모바일 기준으로 먼저 측정한다.
+- 측정 대상과 기록표는 `docs/PERFORMANCE.md`를 따른다.
 - 우선 목표:
   - Performance 85+
   - Accessibility 90+
@@ -64,6 +65,8 @@ Google AdSense 신청 전 최소 정비 항목:
 - 데이터 출처와 기준일 표시: 각 화면 및 `/policy`
 
 금융 데이터 서비스이므로 모든 화면에서 실시간 시세가 아니며 투자 권유가 아니라는 문구를 유지한다.
+
+Search Console 등록과 sitemap 제출은 `docs/SEARCH_CONSOLE.md`를 따른다.
 
 ## 추가 운영 목표 후보
 
