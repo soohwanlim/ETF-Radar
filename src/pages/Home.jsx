@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDownRight, ArrowRight, ArrowUpRight, CalendarPlus, Check, Loader2, Search, Star } from 'lucide-react';
+import { ArrowDownRight, ArrowRight, ArrowUpRight, CalendarPlus, Check, ChevronDown, ChevronUp, Loader2, Search, Star } from 'lucide-react';
 import { useWatchlistStore } from '../store/watchlistStore';
 import { useCompareStore } from '../store/compareStore';
 import { useETFData } from '../hooks/useETFData';
@@ -11,6 +11,7 @@ import { loadListings, loadThemeSignals } from '../data/staticData';
 const PERIODS = [
   ['1d', '오늘'], ['1w', '1주'], ['1m', '1개월'], ['3m', '3개월'], ['1y', '1년'], ['10y', '10년'],
 ];
+const COLLAPSED_ETF_COUNT = 30;
 
 function getRate(etf, period) {
   return etf[`rate${period}`];
@@ -49,6 +50,7 @@ function selectMainSignals(signals) {
 export default function Home() {
   const [period, setPeriod] = useState('3m');
   const [search, setSearch] = useState('');
+  const [showAllEtfs, setShowAllEtfs] = useState(false);
   const [themeSignals, setThemeSignals] = useState([]);
   const [listings, setListings] = useState({ recent: [], upcoming: [] });
   const { watchlist, toggleWatchlist } = useWatchlistStore();
@@ -61,6 +63,8 @@ export default function Home() {
     if (!keyword) return etfs;
     return etfs.filter(etf => etf.name.toLowerCase().includes(keyword) || etf.code.includes(keyword));
   }, [etfs, search]);
+  const visibleEtfs = showAllEtfs ? filteredEtfs : filteredEtfs.slice(0, COLLAPSED_ETF_COUNT);
+  const canToggleEtfs = filteredEtfs.length > COLLAPSED_ETF_COUNT;
 
   const leaders = etfs.slice(0, 3);
   const periodLabel = PERIODS.find(([key]) => key === period)?.[1];
@@ -231,7 +235,7 @@ export default function Home() {
 
             <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
               {PERIODS.map(([key, label]) => (
-                <button key={key} type="button" onClick={() => setPeriod(key)} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${period === key ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-950'}`}>
+                <button key={key} type="button" onClick={() => { setPeriod(key); setShowAllEtfs(false); }} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${period === key ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-950'}`}>
                   {label}
                 </button>
               ))}
@@ -239,7 +243,7 @@ export default function Home() {
 
             <label className="relative block">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-              <input value={search} onChange={event => setSearch(event.target.value)} placeholder="ETF 이름이나 종목코드 검색" className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-sm text-slate-950 shadow-sm outline-none ring-blue-500 placeholder:text-slate-400 focus:ring-2" />
+              <input value={search} onChange={event => { setSearch(event.target.value); setShowAllEtfs(false); }} placeholder="ETF 이름이나 종목코드 검색" className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-sm text-slate-950 shadow-sm outline-none ring-blue-500 placeholder:text-slate-400 focus:ring-2" />
             </label>
           </div>
 
@@ -251,7 +255,8 @@ export default function Home() {
             ) : filteredEtfs.length === 0 ? (
               <div className="p-12 text-center text-sm text-slate-500">검색 결과가 없습니다.</div>
             ) : (
-              filteredEtfs.map((etf, index) => {
+              <>
+                {visibleEtfs.map((etf, index) => {
                 const isSelected = selectedEtfs.includes(etf.code);
                 const isFavorite = watchlist.includes(etf.code);
                 return (
@@ -270,7 +275,23 @@ export default function Home() {
                     </button>
                   </div>
                 );
-              })
+                })}
+                {canToggleEtfs && (
+                  <div className="border-t border-slate-200 bg-slate-50/70 p-4 text-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowAllEtfs(value => !value)}
+                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      {showAllEtfs ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      {showAllEtfs ? '접기' : `전체 ${filteredEtfs.length}개 ETF 펼쳐보기`}
+                    </button>
+                    {!showAllEtfs && (
+                      <p className="mt-2 text-xs text-slate-500">현재 수익률 상위 {visibleEtfs.length}개만 표시 중입니다.</p>
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

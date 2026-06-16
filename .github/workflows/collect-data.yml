@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 concurrency:
   group: daily-etf-data
@@ -52,3 +53,23 @@ jobs:
           git add public/data
           git commit -m "chore: update daily ETF data"
           git push
+
+      - name: Open failure issue
+        if: failure()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="ETF data collection failed - $(date -u +%Y-%m-%d)"
+          existing="$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "Another scheduled collection failed: $RUN_URL"
+            exit 0
+          fi
+          body="The scheduled ETF data collection workflow failed.
+
+Run: $RUN_URL
+
+Check the failed step logs first. If the failure is a KRX/Naver temporary outage, rerun the workflow manually after a few minutes."
+          gh issue create --title "$title" --body "$body"
