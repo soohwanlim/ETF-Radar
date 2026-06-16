@@ -11,8 +11,23 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://etf-radar-834.pages.dev/compare</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://etf-radar-834.pages.dev/watchlist</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
     <loc>https://etf-radar-834.pages.dev/changes</loc>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://etf-radar-834.pages.dev/policy</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
   </url>
 </urlset>

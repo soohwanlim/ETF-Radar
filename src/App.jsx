@@ -10,6 +10,7 @@ const Compare = lazy(() => import('./pages/Compare'));
 const ETFDetail = lazy(() => import('./pages/ETFDetail'));
 const Changes = lazy(() => import('./pages/Changes'));
 const Watchlist = lazy(() => import('./pages/Watchlist'));
+const Policy = lazy(() => import('./pages/Policy'));
 
 const NAV_ITEMS = [
   { to: '/', label: '홈', desktopLabel: '수익률', icon: BarChart3 },
@@ -101,6 +102,7 @@ export default function App() {
               <Route path="/changes" element={<Changes />} />
               <Route path="/watchlist" element={<Watchlist />} />
               <Route path="/etf/:code" element={<ETFDetail />} />
+              <Route path="/policy" element={<Policy />} />
             </Routes>
           </Suspense>
         </main>
@@ -108,9 +110,16 @@ export default function App() {
         <FloatingCompareBar />
 
         <footer className="border-t border-slate-200 px-6 py-8 pb-24 text-xs text-slate-500 md:pb-8">
-          <div className="mx-auto flex max-w-6xl flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-2 font-semibold text-slate-600">
-              <ShieldAlert size={14} /> 투자 유의사항
+          <div className="mx-auto flex max-w-6xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 font-semibold text-slate-600">
+                <ShieldAlert size={14} /> 투자 유의사항
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 font-semibold text-slate-500">
+                <Link to="/policy" className="hover:text-blue-600">개인정보처리방침</Link>
+                <Link to="/policy" className="hover:text-blue-600">면책/투자 유의사항</Link>
+                <Link to="/policy" className="hover:text-blue-600">문의</Link>
+              </div>
             </div>
             <p className="max-w-2xl leading-relaxed md:text-right">
               ETF Radar의 정보는 참고용이며 투자 권유가 아닙니다. 투자 결과에 대한 최종 책임은 투자자 본인에게 있습니다.

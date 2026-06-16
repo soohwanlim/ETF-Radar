@@ -55,18 +55,18 @@ GitHub 모바일 앱에서도 Issue 생성 알림을 받을 수 있다.
 
 Google AdSense 신청 전 최소 정비 항목:
 
-- 개인정보처리방침 페이지
-- 투자 정보 면책 페이지
-- 문의 수단 또는 운영자 소개
-- 광고/쿠키 사용 안내
-- 데이터 출처와 기준일 표시
+- 개인정보처리방침 페이지: `/policy`
+- 투자 정보 면책 페이지: `/policy`
+- 문의 수단 또는 운영자 소개: `/policy`
+- 광고/쿠키 사용 안내: 광고 적용 전 `/policy`에 보강
+- 데이터 출처와 기준일 표시: 각 화면 및 `/policy`
 
 금융 데이터 서비스이므로 모든 화면에서 실시간 시세가 아니며 투자 권유가 아니라는 문구를 유지한다.
 
 ## 추가 운영 목표 후보
 
-- `robots.txt`와 `sitemap.xml` 추가
 - Cloudflare Pages 커스텀 도메인 연결
 - Actions 실패 Issue에 최근 `status.json` 상태 첨부
 - 월 1회 Lighthouse 결과 기록
 - 사용자 피드백 수집 폼 또는 GitHub Discussions 연결
+- Google AdSense 신청 전 커스텀 도메인, 충분한 콘텐츠, 정책 페이지 최종 점검
