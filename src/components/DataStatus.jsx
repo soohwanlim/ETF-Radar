@@ -15,6 +15,26 @@ const STATE_STYLE = {
   },
 };
 
+const CHECK_LABEL = {
+  updated: '데이터 갱신',
+  partial: '부분 갱신',
+  no_new_data: '신규 데이터 없음',
+};
+
+function formatKstDateTime(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat('ko-KR', {
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Asia/Seoul',
+  }).format(date);
+}
+
 export default function DataStatus() {
   const [status, setStatus] = useState(null);
   const [unavailable, setUnavailable] = useState(false);
@@ -40,6 +60,8 @@ export default function DataStatus() {
 
   const config = STATE_STYLE[status.state] || STATE_STYLE.partial;
   const Icon = config.icon;
+  const checkedAt = formatKstDateTime(status.lastCheckedAt);
+  const checkLabel = CHECK_LABEL[status.lastCheckState];
 
   return (
     <div className={`border-b ${config.className}`}>
@@ -49,6 +71,15 @@ export default function DataStatus() {
           {config.label}
         </span>
         <span className="text-slate-600">{status.asOf} 종가 기준</span>
+        {checkedAt && (
+          <span className="text-slate-500">마지막 확인 {checkedAt}</span>
+        )}
+        {checkLabel && (
+          <span className="text-slate-500">{checkLabel}</span>
+        )}
+        {status.latestAvailableAsOf && status.latestAvailableAsOf !== status.asOf && (
+          <span className="text-slate-500">최신 KRX {status.latestAvailableAsOf}</span>
+        )}
         <span className="text-slate-500">ETF {status.etfCount}개</span>
         <span className="text-slate-500">변경 {status.changeCount}건</span>
         {status.failedCount > 0 && (

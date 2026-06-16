@@ -45,6 +45,31 @@ async function writeJson(name, value) {
   await writeFile(target, `${JSON.stringify(value)}\n`);
 }
 
+async function writeCollectionCheck({ manifest, status, checkedAt, latestAvailableAsOf }) {
+  await Promise.all([
+    writeJson('manifest.json', {
+      ...manifest,
+      lastCheckedAt: checkedAt,
+      latestAvailableAsOf,
+      lastCheckState: 'no_new_data',
+    }),
+    writeJson('status.json', {
+      ...status,
+      generatedAt: status.generatedAt || manifest.generatedAt || checkedAt,
+      asOf: status.asOf || manifest.asOf || latestAvailableAsOf,
+      state: status.state || manifest.status || 'success',
+      etfCount: status.etfCount ?? manifest.etfCount ?? 0,
+      failedCount: status.failedCount ?? manifest.failedCount ?? 0,
+      changeCount: status.changeCount ?? manifest.changeCount ?? 0,
+      themeSignalCount: status.themeSignalCount ?? manifest.themeSignalCount ?? 0,
+      source: status.source || manifest.source || 'KRX Open API / Naver Finance TOP 10',
+      lastCheckedAt: checkedAt,
+      latestAvailableAsOf,
+      lastCheckState: 'no_new_data',
+    }),
+  ]);
+}
+
 async function fetchText(url, encoding = 'utf-8') {
   const response = await fetch(url, {
     headers: {
@@ -128,8 +153,9 @@ async function fetchHistory(code) {
 
 async function main() {
   await mkdir(DATA_DIR, { recursive: true });
-  const [manifest, existingEtfs, existingHoldings, existingHistory, existingSeries] = await Promise.all([
+  const [manifest, existingStatus, existingEtfs, existingHoldings, existingHistory, existingSeries] = await Promise.all([
     readJson('manifest.json', {}),
+    readJson('status.json', {}),
     readJson('etfs.json', []),
     readJson('holdings.json', {}),
     readJson('changes/history.json', []),
@@ -139,7 +165,14 @@ async function main() {
   const universe = await fetchUniverse();
   const universeMap = new Map(universe.map(item => [item.itemcode, item]));
   const market = await fetchKrxClose(process.env.KRX_API_KEY);
+  const checkedAt = new Date().toISOString();
   if (!process.env.FORCE_COLLECT && manifest.asOf === market.asOf && existingEtfs.length > 0) {
+    await writeCollectionCheck({
+      manifest,
+      status: existingStatus,
+      checkedAt,
+      latestAvailableAsOf: market.asOf,
+    });
     console.log(`최신 정적 데이터가 이미 존재합니다: ${market.asOf}`);
     return;
   }
@@ -241,6 +274,9 @@ async function main() {
     generatedAt,
     asOf: market.asOf,
     state: collectionState,
+    lastCheckedAt: generatedAt,
+    latestAvailableAsOf: market.asOf,
+    lastCheckState: collectionState === 'success' ? 'updated' : 'partial',
     etfCount: etfs.length,
     marketRowCount: marketRows.length,
     holdingsCount: Object.keys(holdings).length,
@@ -255,6 +291,9 @@ async function main() {
     writeJson('manifest.json', {
       generatedAt,
       asOf: market.asOf,
+      lastCheckedAt: generatedAt,
+      latestAvailableAsOf: market.asOf,
+      lastCheckState: collectionState === 'success' ? 'updated' : 'partial',
       etfCount: etfs.length,
       status: collectionState,
       failedCount: failures.length,
