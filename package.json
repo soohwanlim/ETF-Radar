@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "collect:data": "node scripts/collect-static-data.mjs",
+    "check:health": "node scripts/check-deployed-health.mjs",
     "test": "node scripts/test-static-data.mjs",
     "lint": "eslint .",
     "preview": "vite preview"

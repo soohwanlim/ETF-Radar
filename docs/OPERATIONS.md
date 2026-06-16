@@ -5,6 +5,7 @@ ETF Radar는 별도 백엔드 없이 GitHub Actions가 데이터를 갱신하고
 ## 매일 확인
 
 - GitHub Actions `Collect daily ETF data`가 18:10, 19:10 KST 중 한 번 이상 성공했는지 확인한다.
+- GitHub Actions `Check deployed ETF data health`가 21:10 KST에 성공했는지 확인한다.
 - 사이트 상단 상태 바의 기준일이 최신 거래일 종가인지 확인한다.
 - 실패 시 GitHub Issue가 자동 생성된다. 같은 날짜 실패가 반복되면 기존 Issue에 실행 링크가 댓글로 추가된다.
 - KRX 데이터 공개 지연이면 수동 재실행 전에 10~30분 기다린다.
@@ -21,12 +22,21 @@ ETF Radar는 별도 백엔드 없이 GitHub Actions가 데이터를 갱신하고
 
 ## GitHub Actions 실패 알림
 
-- 코드상 자동 알림: 워크플로우 실패 시 GitHub Issue 생성
+- 코드상 자동 알림: 수집 워크플로우 실패 시 GitHub Issue 생성
+- 배포 데이터 알림: 21:10 KST에 배포된 `/data/status.json`이 최신이 아니거나 `failedCount > 0`이면 GitHub Issue 생성
 - GitHub 기본 알림: 저장소 Watch 설정에서 `All Activity` 또는 Actions 관련 이메일 알림을 켠다.
 - 실패 Issue를 닫는 기준:
   - 재실행 성공
   - 원인이 KRX/Naver 일시 장애로 확인됨
   - 코드 수정 후 다음 스케줄 성공 확인
+
+### GitHub 앱 알림
+
+GitHub 모바일 앱에서도 Issue 생성 알림을 받을 수 있다.
+
+1. 저장소 페이지에서 `Watch`를 `All Activity` 또는 최소 `Issues` 알림을 받을 수 있는 상태로 설정한다.
+2. GitHub 모바일 앱 > Settings > Notifications에서 push 알림을 켠다.
+3. 휴대폰 OS 설정에서도 GitHub 앱 알림을 허용한다.
 
 ## 성능 측정
 

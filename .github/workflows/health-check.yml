@@ -1,0 +1,74 @@
+name: Check deployed ETF data health
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '10 12 * * 1-5'
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: deployed-health-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Check deployed status
+        id: health
+        continue-on-error: true
+        env:
+          STATUS_URL: ${{ vars.STATUS_URL }}
+        run: npm run check:health
+
+      - name: Write health summary
+        shell: bash
+        run: |
+          echo "## ETF deployed data health" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Result: ${{ steps.health.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Status URL: ${STATUS_URL:-https://etf-radar-834.pages.dev/data/status.json}" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          STATUS_URL: ${{ vars.STATUS_URL }}
+
+      - name: Open stale data issue
+        if: steps.health.outcome == 'failure'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          STATUS_URL: ${{ vars.STATUS_URL }}
+        run: |
+          title="ETF deployed data health check failed - $(date -u +%Y-%m-%d)"
+          existing="$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
+          status_url="${STATUS_URL:-https://etf-radar-834.pages.dev/data/status.json}"
+          body="The deployed ETF data health check failed.
+
+Run: $RUN_URL
+Status JSON: $status_url
+
+This usually means the deployed status data is stale, incomplete, or reports partial failures.
+
+First checks:
+- Did the 18:10 or 19:10 KST collection workflow succeed?
+- Did Cloudflare Pages finish deploying after the data commit?
+- Is KRX/Naver temporarily delayed or unavailable?"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "Another health check failed: $RUN_URL"
+            exit 1
+          fi
+          gh issue create --title "$title" --body "$body"
+          exit 1
