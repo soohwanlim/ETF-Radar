@@ -24,6 +24,8 @@ ETF Radar는 별도 백엔드 없이 GitHub Actions가 데이터를 갱신하고
 
 - 코드상 자동 알림: 수집 워크플로우 실패 시 GitHub Issue 생성
 - 배포 데이터 알림: 21:10 KST에 배포된 `/data/status.json`이 최신이 아니거나 `failedCount > 0`이면 GitHub Issue 생성
+- 공식 헬스체크 주소: `https://etf-radar.net/data/status.json`
+- GitHub Actions Repository Variable을 쓴다면 `STATUS_URL=https://etf-radar.net/data/status.json`로 설정한다.
 - GitHub 기본 알림: 저장소 Watch 설정에서 `All Activity` 또는 Actions 관련 이메일 알림을 켠다.
 - 실패 Issue를 닫는 기준:
   - 재실행 성공

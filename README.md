@@ -2,7 +2,7 @@
 
 국내 주식형 현물 ETF의 종가 수익률과 네이버 금융 TOP 10 구성자산 변화를 보여주는 정적 웹 서비스입니다.
 
-Site: https://etf-radar-834.pages.dev/
+Site: https://etf-radar.net/
 
 Repository description suggestion:
 

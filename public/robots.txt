@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://etf-radar-834.pages.dev/sitemap.xml
+Sitemap: https://etf-radar.net/sitemap.xml

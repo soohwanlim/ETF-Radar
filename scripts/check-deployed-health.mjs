@@ -1,4 +1,4 @@
-const DEFAULT_STATUS_URL = 'https://etf-radar-834.pages.dev/data/status.json';
+const DEFAULT_STATUS_URL = 'https://etf-radar.net/data/status.json';
 const MIN_ETF_COUNT = 300;
 const MAX_BUSINESS_DAY_LAG = 0;
 

@@ -1,32 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://etf-radar-834.pages.dev/</loc>
+    <loc>https://etf-radar.net/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://etf-radar-834.pages.dev/theme</loc>
+    <loc>https://etf-radar.net/theme</loc>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://etf-radar-834.pages.dev/compare</loc>
+    <loc>https://etf-radar.net/compare</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://etf-radar-834.pages.dev/watchlist</loc>
+    <loc>https://etf-radar.net/watchlist</loc>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://etf-radar-834.pages.dev/changes</loc>
+    <loc>https://etf-radar.net/changes</loc>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://etf-radar-834.pages.dev/policy</loc>
+    <loc>https://etf-radar.net/policy</loc>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>

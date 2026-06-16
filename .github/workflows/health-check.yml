@@ -40,7 +40,7 @@ jobs:
           echo "## ETF deployed data health" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "- Result: ${{ steps.health.outcome }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Status URL: ${STATUS_URL:-https://etf-radar-834.pages.dev/data/status.json}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Status URL: ${STATUS_URL:-https://etf-radar.net/data/status.json}" >> "$GITHUB_STEP_SUMMARY"
         env:
           STATUS_URL: ${{ vars.STATUS_URL }}
 
@@ -54,7 +54,7 @@ jobs:
         run: |
           title="ETF deployed data health check failed - $(date -u +%Y-%m-%d)"
           existing="$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
-          status_url="${STATUS_URL:-https://etf-radar-834.pages.dev/data/status.json}"
+          status_url="${STATUS_URL:-https://etf-radar.net/data/status.json}"
           body="The deployed ETF data health check failed.
 
 Run: $RUN_URL
