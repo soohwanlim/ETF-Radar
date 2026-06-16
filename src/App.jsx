@@ -53,7 +53,7 @@ function Navigation() {
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 md:px-6">
           <Link to="/" className="flex items-center gap-2.5">
-            <img src="/logo-192.png" alt="ETF Radar" className="h-9 w-9 rounded-xl shadow-sm ring-1 ring-blue-900/10" />
+            <img src="/logo-symbol.png" alt="ETF Radar" className="h-9 w-9 object-contain" />
             <div>
               <div className="text-base font-extrabold tracking-tight text-slate-950">ETF Radar</div>
               <div className="hidden text-[10px] text-slate-500 sm:block">국내 ETF를 더 쉽게</div>
