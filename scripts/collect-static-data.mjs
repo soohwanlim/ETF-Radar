@@ -117,6 +117,35 @@ function normalizeKrx(row) {
   };
 }
 
+function buildListingCalendar(etfs, asOf) {
+  const asOfTime = Date.parse(`${asOf}T00:00:00Z`);
+  const recent = etfs
+    .filter(etf => {
+      if (!etf.listingDate) return false;
+      const age = (asOfTime - Date.parse(`${etf.listingDate}T00:00:00Z`)) / 86400000;
+      return age >= 0 && age <= 90;
+    })
+    .sort((a, b) => b.listingDate.localeCompare(a.listingDate) || a.name.localeCompare(b.name, 'ko'))
+    .slice(0, 12)
+    .map(etf => ({
+      code: etf.code,
+      name: etf.name,
+      listingDate: etf.listingDate,
+      provider: etf.provider || null,
+      price: etf.price,
+      asOf: etf.asOf,
+    }));
+
+  return {
+    generatedAt: new Date().toISOString(),
+    asOf,
+    source: 'Naver Finance listingDate / KRX Open API',
+    recent,
+    upcoming: [],
+    upcomingSourceStatus: 'unavailable_structured_source',
+  };
+}
+
 function extractTableValue(html, label) {
   const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const match = html.match(new RegExp(`<th[^>]*scope="row"[^>]*>\\s*${escaped}\\s*<\\/th>\\s*<td[^>]*>([\\s\\S]*?)<\\/td>`));
@@ -260,6 +289,7 @@ async function main() {
   const history = [...changes, ...retainedHistory].slice(0, 10000);
   const themeSignals = buildThemeSignals(etfs, changes);
   etfs.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+  const listingCalendar = buildListingCalendar(etfs, market.asOf);
 
   const minimumSafeCount = existingEtfs.length > 0
     ? Math.floor(existingEtfs.length * 0.9)
@@ -282,6 +312,8 @@ async function main() {
     holdingsCount: Object.keys(holdings).length,
     changeCount: changes.length,
     themeSignalCount: themeSignals.length,
+    recentListingCount: listingCalendar.recent.length,
+    upcomingListingCount: listingCalendar.upcoming.length,
     failedCount: failures.length,
     failures,
     source: 'KRX Open API / Naver Finance TOP 10',
@@ -299,6 +331,8 @@ async function main() {
       failedCount: failures.length,
       changeCount: changes.length,
       themeSignalCount: themeSignals.length,
+      recentListingCount: listingCalendar.recent.length,
+      upcomingListingCount: listingCalendar.upcoming.length,
       source: 'KRX Open API / Naver Finance TOP 10',
     }),
     writeJson('status.json', status),
@@ -308,6 +342,7 @@ async function main() {
     writeJson('changes/latest.json', changes),
     writeJson('changes/history.json', history),
     writeJson('theme-signals.json', themeSignals),
+    writeJson('listings.json', listingCalendar),
   ]);
   console.log(`완료: ${market.asOf}, ETF ${etfs.length}개, 변경 ${changes.length}건`);
 }

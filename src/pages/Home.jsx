@@ -6,7 +6,7 @@ import { useCompareStore } from '../store/compareStore';
 import { useETFData } from '../hooks/useETFData';
 import { useChanges } from '../hooks/useChanges';
 import ETFIcon from '../components/ETFIcon';
-import { loadThemeSignals } from '../data/staticData';
+import { loadListings, loadThemeSignals } from '../data/staticData';
 
 const PERIODS = [
   ['1d', '오늘'], ['1w', '1주'], ['1m', '1개월'], ['3m', '3개월'], ['1y', '1년'], ['10y', '10년'],
@@ -50,6 +50,7 @@ export default function Home() {
   const [period, setPeriod] = useState('3m');
   const [search, setSearch] = useState('');
   const [themeSignals, setThemeSignals] = useState([]);
+  const [listings, setListings] = useState({ recent: [], upcoming: [] });
   const { watchlist, toggleWatchlist } = useWatchlistStore();
   const { selectedEtfs, addEtf, removeEtf } = useCompareStore();
   const { etfs, loading: etfsLoading, error: etfsError } = useETFData(period);
@@ -64,7 +65,8 @@ export default function Home() {
   const leaders = etfs.slice(0, 3);
   const periodLabel = PERIODS.find(([key]) => key === period)?.[1];
   const asOf = etfs[0]?.asOf;
-  const recentListings = useMemo(() => {
+  const positiveCount = etfs.filter(etf => (getRate(etf, period) ?? -Infinity) > 0).length;
+  const fallbackRecentListings = useMemo(() => {
     if (!asOf) return [];
     const asOfTime = Date.parse(`${asOf}T00:00:00Z`);
     return etfs
@@ -76,11 +78,13 @@ export default function Home() {
       .sort((a, b) => b.listingDate.localeCompare(a.listingDate))
       .slice(0, 4);
   }, [asOf, etfs]);
+  const recentListings = listings.recent?.length ? listings.recent : fallbackRecentListings;
   const mainSignals = useMemo(() => selectMainSignals(themeSignals), [themeSignals]);
 
   useEffect(() => {
     let active = true;
     loadThemeSignals().then(data => active && setThemeSignals(data)).catch(() => active && setThemeSignals([]));
+    loadListings().then(data => active && setListings(data)).catch(() => active && setListings({ recent: [], upcoming: [] }));
     return () => { active = false; };
   }, []);
 
@@ -91,11 +95,35 @@ export default function Home() {
 
   return (
     <div className="space-y-10 fade-in">
-      <section className="space-y-2">
-        <p className="text-sm font-semibold text-blue-600">오늘의 ETF</p>
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-950 md:text-4xl">어떤 ETF가 오르고 있을까요?</h1>
-        <p className="text-sm leading-relaxed text-slate-600 md:text-base">국내 주식형 현물 ETF의 종가 수익률과 TOP 10 구성자산 변화를 비교합니다.</p>
-        {asOf && <p className="pt-1 text-xs font-semibold text-slate-500">{asOf} 종가 기준 · 실시간 시세가 아닙니다</p>}
+      <section className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+        <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-br from-blue-50 via-emerald-50 to-white" />
+        <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-end">
+          <div className="space-y-4">
+            <span className="inline-flex w-fit rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">국내 현물 ETF 레이더</span>
+            <div>
+              <h1 className="text-3xl font-extrabold tracking-tight text-slate-950 md:text-5xl">오늘 강한 ETF를 한눈에</h1>
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 md:text-base">
+                종가 기준 수익률, 신규 상장 ETF, TOP 10 구성자산 변화를 매일 정적 데이터로 업데이트합니다.
+              </p>
+            </div>
+            {asOf && <p className="text-xs font-semibold text-slate-500">{asOf} 종가 기준 · 실시간 시세가 아닙니다</p>}
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 rounded-3xl border border-slate-200 bg-white/80 p-3 shadow-sm backdrop-blur">
+            <div className="rounded-2xl bg-slate-50 p-3">
+              <div className="text-[11px] font-semibold text-slate-500">감시 ETF</div>
+              <div className="mt-1 text-xl font-extrabold text-slate-950">{etfs.length || '-'}</div>
+            </div>
+            <div className="rounded-2xl bg-red-50 p-3">
+              <div className="text-[11px] font-semibold text-slate-500">상승 ETF</div>
+              <div className="mt-1 text-xl font-extrabold text-red-600">{positiveCount || '-'}</div>
+            </div>
+            <div className="rounded-2xl bg-emerald-50 p-3">
+              <div className="text-[11px] font-semibold text-slate-500">신규 상장</div>
+              <div className="mt-1 text-xl font-extrabold text-emerald-700">{recentListings.length || '-'}</div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section>
@@ -165,17 +193,18 @@ export default function Home() {
 
       {recentListings.length > 0 && (
         <section>
-          <div className="mb-4 flex items-center gap-2">
-            <CalendarPlus size={19} className="text-emerald-600" />
+          <div className="mb-4 flex items-end justify-between gap-4">
             <div>
-              <h2 className="text-xl font-bold text-slate-950">새로 상장한 ETF</h2>
-              <p className="mt-0.5 text-xs text-slate-500">최근 90일 내 상장 · 상장일 기준</p>
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-emerald-700"><CalendarPlus size={16} /> 신규 상장</p>
+              <h2 className="mt-1 text-xl font-bold text-slate-950">최근 시장에 들어온 ETF</h2>
+              <p className="mt-0.5 text-xs text-slate-500">최근 90일 내 상장 · 네이버 상장일 기준</p>
             </div>
+            <span className="hidden rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500 sm:inline-flex">상장예정: 소스 확인 중</span>
           </div>
           <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1 md:grid md:grid-cols-4 md:overflow-visible">
             {recentListings.map(etf => (
-              <Link key={etf.code} to={`/etf/${etf.code}`} className="min-w-[240px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md md:min-w-0">
-                <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-600">{etf.listingDate} 상장</span>
+              <Link key={etf.code} to={`/etf/${etf.code}`} className="min-w-[240px] rounded-3xl border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/60 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md md:min-w-0">
+                <span className="rounded-full bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white">{etf.listingDate} 상장</span>
                 <div className="mt-4 flex items-center gap-3"><ETFIcon etf={etf} size="sm" /><h3 className="truncate font-bold text-slate-950">{etf.name}</h3></div>
                 <p className="mt-1 truncate text-xs text-slate-500">{etf.provider || etf.code}</p>
                 <div className="mt-5 flex items-end justify-between">
@@ -184,6 +213,10 @@ export default function Home() {
                 </div>
               </Link>
             ))}
+            <div className="min-w-[240px] rounded-3xl border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-500 md:min-w-0">
+              <div className="font-bold text-slate-900">상장예정 ETF</div>
+              <p className="mt-2 text-xs leading-relaxed">KRX 일별매매정보는 상장 후 데이터가 안정적입니다. 상장예정은 구조화 소스가 확인되면 별도 자동화로 연결합니다.</p>
+            </div>
           </div>
         </section>
       )}

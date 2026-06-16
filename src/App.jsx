@@ -88,7 +88,7 @@ function Navigation() {
 export default function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-slate-50 text-slate-950">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#eff6ff_0,#f8fafc_36%,#f8fafc_100%)] text-slate-950">
         <Navigation />
         <DataStatus />
 
