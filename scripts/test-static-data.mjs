@@ -4,6 +4,7 @@ import {
   compareHoldings,
   formatChange,
   isSupportedDomesticSpotEtf,
+  normalizeIssueCode,
   parseNaverHoldings,
 } from './static-data-lib.mjs';
 import { buildThemeSignals } from './theme-signals.mjs';
@@ -11,6 +12,10 @@ import { buildThemeSignals } from './theme-signals.mjs';
 assert.equal(isSupportedDomesticSpotEtf({ etfTabCode: 1, itemname: 'KODEX 200' }), true);
 assert.equal(isSupportedDomesticSpotEtf({ etfTabCode: 1, itemname: 'KODEX 미국S&P500' }), false);
 assert.equal(calculateRate([['2026-06-01', 100], ['2026-06-08', 110]], '2026-06-08', 7), 10);
+assert.equal(normalizeIssueCode('069500'), '069500');
+assert.equal(normalizeIssueCode('A069500'), '069500');
+assert.equal(normalizeIssueCode('KR7069500007'), '069500');
+assert.equal(normalizeIssueCode('KR70182R0000'), '0182R0');
 
 const html = `<div class="section etf_asset"><table><tbody>
   <tr><td><a href="/item/main.naver?code=005930">삼성전자</a></td><td>100</td><td class="per">30.00%</td></tr>

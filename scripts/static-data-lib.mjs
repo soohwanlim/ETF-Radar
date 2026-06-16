@@ -28,6 +28,17 @@ export function parseNumber(value) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+export function normalizeIssueCode(value) {
+  const raw = String(value ?? '').trim().toUpperCase();
+  if (!raw) return '';
+  const withoutPrefix = raw.replace(/^A/, '');
+  if (/^[0-9A-Z]{6}$/.test(withoutPrefix)) return withoutPrefix;
+  const isinMatch = raw.match(/^KR[0-9A-Z]([0-9A-Z]{6})/);
+  if (isinMatch) return isinMatch[1];
+  const embeddedMatch = raw.match(/[0-9]{4}[0-9A-Z][0-9]/);
+  return embeddedMatch ? embeddedMatch[0] : withoutPrefix;
+}
+
 export function decodeHtmlText(value = '') {
   return value
     .replace(/<[^>]+>/g, '')

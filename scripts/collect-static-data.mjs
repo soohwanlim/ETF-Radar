@@ -7,6 +7,7 @@ import {
   decodeHtmlText,
   formatChange,
   isSupportedDomesticSpotEtf,
+  normalizeIssueCode,
   parseNaverHoldings,
   parseNumber,
 } from './static-data-lib.mjs';
@@ -77,7 +78,7 @@ async function fetchKrxClose(apiKey) {
 
 function normalizeKrx(row) {
   return {
-    code: String(row.ISU_CD || '').trim(),
+    code: normalizeIssueCode(row.ISU_CD || row.ISU_SRT_CD || row.SHRT_CODE),
     name: row.ISU_NM || '',
     price: parseNumber(row.TDD_CLSPRC),
     change: parseNumber(row.CMPPREVDD_PRC),
@@ -143,6 +144,12 @@ async function main() {
     return;
   }
   const marketRows = market.rows.map(normalizeKrx).filter(item => universeMap.has(item.code) && item.price > 0);
+  console.log(`Market snapshot ${market.asOf}: KRX rows ${market.rows.length}, Naver universe ${universe.length}, matched ETFs ${marketRows.length}`);
+  if (marketRows.length === 0) {
+    const krxSamples = market.rows.slice(0, 5).map(row => row.ISU_CD || row.ISU_SRT_CD || row.SHRT_CODE || '(empty)');
+    const naverSamples = universe.slice(0, 5).map(item => item.itemcode || '(empty)');
+    throw new Error(`No ETF codes matched between KRX and Naver. KRX samples: ${krxSamples.join(', ')} / Naver samples: ${naverSamples.join(', ')}`);
+  }
   const marketMap = new Map(marketRows.map(item => [item.code, item]));
   const holdings = {};
   const series = { ...existingSeries };
