@@ -100,7 +100,6 @@ export default function Home() {
   return (
     <div className="space-y-10 fade-in">
       <section className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-        <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-br from-blue-50 via-emerald-50 to-white" />
         <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-end">
           <div className="space-y-4">
             <span className="inline-flex w-fit rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">국내 현물 ETF 레이더</span>
