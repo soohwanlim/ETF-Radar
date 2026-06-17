@@ -1,6 +1,7 @@
 const DEFAULT_STATUS_URL = 'https://etf-radar.net/data/status.json';
 const MIN_ETF_COUNT = 300;
 const MAX_BUSINESS_DAY_LAG = 0;
+const MARKET_DATA_READY_HOUR_KST = 18;
 
 function parseArgs(argv) {
   const options = { url: process.env.STATUS_URL || DEFAULT_STATUS_URL };
@@ -20,6 +21,22 @@ function toKstDate(date = new Date()) {
   return formatter.format(date);
 }
 
+function toKstParts(date = new Date()) {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    hour12: false,
+  });
+  const parts = Object.fromEntries(formatter.formatToParts(date).map(part => [part.type, part.value]));
+  return {
+    date: `${parts.year}-${parts.month}-${parts.day}`,
+    hour: Number(parts.hour),
+  };
+}
+
 function parseDate(dateString) {
   if (!dateString || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return null;
   return new Date(`${dateString}T00:00:00+09:00`);
@@ -36,6 +53,14 @@ function previousBusinessDate(date) {
     next.setDate(next.getDate() - 1);
   } while (isWeekend(next));
   return next;
+}
+
+function latestExpectedBusinessDate(now = new Date()) {
+  const kst = toKstParts(now);
+  const todayKst = parseDate(kst.date);
+  if (isWeekend(todayKst)) return previousBusinessDate(todayKst);
+  if (kst.hour < MARKET_DATA_READY_HOUR_KST) return previousBusinessDate(todayKst);
+  return todayKst;
 }
 
 function businessDayLag(expectedDate, actualDate) {
@@ -61,12 +86,14 @@ async function fetchStatus(url) {
 
 function evaluateStatus(status, now = new Date()) {
   const problems = [];
-  const todayKst = parseDate(toKstDate(now));
-  const latestExpected = isWeekend(todayKst) ? previousBusinessDate(todayKst) : todayKst;
+  const latestExpected = latestExpectedBusinessDate(now);
   const asOfDate = parseDate(status.asOf);
 
   if (status.state !== 'success') {
     problems.push(`state is ${status.state || 'missing'}`);
+  }
+  if (status.lastCheckState === 'no_new_data') {
+    problems.push(`collector saw no newer KRX data; latestAvailableAsOf=${status.latestAvailableAsOf || 'missing'}`);
   }
   if (!asOfDate) {
     problems.push(`invalid asOf: ${status.asOf || 'missing'}`);
@@ -87,6 +114,10 @@ function evaluateStatus(status, now = new Date()) {
     ok: problems.length === 0,
     problems,
     expectedAsOf: toKstDate(latestExpected),
+    statusSummary: {
+      lastCheckState: status.lastCheckState || 'n/a',
+      latestAvailableAsOf: status.latestAvailableAsOf || 'n/a',
+    },
   };
 }
 
@@ -96,7 +127,7 @@ async function main() {
   const result = evaluateStatus(status);
 
   console.log(`Status URL: ${url}`);
-  console.log(`asOf=${status.asOf || 'n/a'} expected=${result.expectedAsOf} state=${status.state || 'n/a'} etfs=${status.etfCount || 0} failed=${status.failedCount || 0}`);
+  console.log(`asOf=${status.asOf || 'n/a'} expected=${result.expectedAsOf} state=${status.state || 'n/a'} lastCheck=${result.statusSummary.lastCheckState} latestAvailable=${result.statusSummary.latestAvailableAsOf} etfs=${status.etfCount || 0} failed=${status.failedCount || 0}`);
 
   if (!result.ok) {
     console.error(`Health check failed:\n- ${result.problems.join('\n- ')}`);
