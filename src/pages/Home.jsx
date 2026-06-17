@@ -105,9 +105,9 @@ export default function Home() {
           <div className="space-y-4">
             <span className="inline-flex w-fit rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">국내 현물 ETF 레이더</span>
             <div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-slate-950 md:text-5xl">오늘 강한 ETF를 한눈에</h1>
+              <h1 className="text-3xl font-extrabold tracking-tight text-slate-950 md:text-5xl">수익률과 구성 변화로 보는 국내 ETF</h1>
               <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 md:text-base">
-                종가 기준 수익률, 신규 상장 ETF, TOP 10 구성자산 변화를 매일 정적 데이터로 업데이트합니다.
+                종가 수익률, 신규 상장 ETF, TOP 10 구성자산 변화를 매일 종가 기준 데이터로 업데이트합니다.
               </p>
             </div>
             {asOf && <p className="text-xs font-semibold text-slate-500">{asOf} 종가 기준 · 실시간 시세가 아닙니다</p>}
@@ -161,7 +161,7 @@ export default function Home() {
               <p className="text-sm font-semibold text-blue-600">1CU당 구성수량 증가</p>
               <h2 className="mt-1 text-xl font-bold text-slate-950">여러 ETF가 함께 늘린 종목</h2>
             </div>
-            <Link to="/changes?types=quantity_increase,quantity_decrease" className="shrink-0 text-xs font-bold text-slate-500 hover:text-blue-600">전체 보기</Link>
+            <Link to="/changes?types=quantity_increase,quantity_decrease,quantity_decrease_weight_held" className="shrink-0 text-xs font-bold text-slate-500 hover:text-blue-600">전체 보기</Link>
           </div>
           <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1 md:grid md:grid-cols-3 md:overflow-visible">
             {mainSignals.map(signal => {

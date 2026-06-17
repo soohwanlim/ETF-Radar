@@ -41,6 +41,13 @@ const priceEffect = compareHoldings(
 assert.equal(priceEffect[0].classification, 'price_effect');
 assert.equal(priceEffect[0].shareChangeRate, 0);
 
+const heldWeightDecrease = compareHoldings(
+  [{ code: '000660', name: 'SK하이닉스', shares: 100, weight: 18 }],
+  [{ code: '000660', name: 'SK하이닉스', shares: 80, weight: 17.8 }],
+);
+assert.equal(heldWeightDecrease[0].classification, 'quantity_decrease_weight_held');
+assert.match(formatChange(heldWeightDecrease[0]), /수량 감소 · 비중 유지/);
+
 const signals = buildThemeSignals(
   [
     { code: 'A', name: 'KODEX 반도체' },
@@ -50,15 +57,19 @@ const signals = buildThemeSignals(
   [
     { code: 'A', etfName: 'KODEX 반도체', date: '2026-06-12', type: 'weight', classification: 'quantity_increase', holdingCode: '005930', holdingName: '삼성전자', previousWeight: 20, weight: 23, shareChange: 10, shareChangeRate: 10 },
     { code: 'B', etfName: 'TIGER 반도체TOP10', date: '2026-06-12', type: 'weight', classification: 'quantity_increase', holdingCode: '005930', holdingName: '삼성전자', previousWeight: 10, weight: 12, shareChange: 5, shareChangeRate: 5 },
-    { code: 'A', etfName: 'KODEX 반도체', date: '2026-06-12', type: 'weight', classification: 'price_effect', holdingCode: '000660', holdingName: 'SK하이닉스', previousWeight: 15, weight: 18, shareChange: 0, shareChangeRate: 0 },
+    { code: 'A', etfName: 'KODEX 반도체', date: '2026-06-12', type: 'weight', classification: 'quantity_decrease_weight_held', holdingCode: '000660', holdingName: 'SK하이닉스', previousWeight: 15, weight: 14.8, shareChange: -20, shareChangeRate: -20 },
     { code: 'B', etfName: 'TIGER 반도체TOP10', date: '2026-06-12', type: 'weight', classification: 'price_effect', holdingCode: '000660', holdingName: 'SK하이닉스', previousWeight: 12, weight: 14, shareChange: 0, shareChangeRate: 0 },
+    { code: 'B', etfName: 'TIGER 반도체TOP10', date: '2026-06-12', type: 'weight', classification: 'quantity_decrease_weight_held', holdingCode: '000660', holdingName: 'SK하이닉스', previousWeight: 12, weight: 12.1, shareChange: -10, shareChangeRate: -10 },
   ],
 );
 assert.equal(signals.length, 2);
-assert.equal(signals[0].direction, 'increase');
-assert.equal(signals[0].etfCount, 2);
-assert.equal(signals[0].signalType, 'per_cu_quantity');
-assert.equal(signals[0].averageShareChangeRate, 7.5);
-assert.equal(signals[1].signalType, 'top10_common');
+const increaseSignal = signals.find(signal => signal.holdingCode === '005930');
+const heldDecreaseSignal = signals.find(signal => signal.holdingCode === '000660');
+assert.equal(increaseSignal.direction, 'increase');
+assert.equal(increaseSignal.etfCount, 2);
+assert.equal(increaseSignal.signalType, 'per_cu_quantity');
+assert.equal(increaseSignal.averageShareChangeRate, 7.5);
+assert.equal(heldDecreaseSignal.direction, 'decrease');
+assert.equal(heldDecreaseSignal.signalType, 'per_cu_quantity');
 
 console.log('Static data tests passed');

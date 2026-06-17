@@ -244,7 +244,9 @@ async function main() {
               ? 'TOP 10 진입'
               : change.type === 'out'
                 ? 'TOP 10 이탈'
-                : change.classification === 'price_effect' ? '비중변동' : '1CU 수량변화',
+                : change.classification === 'price_effect'
+                  ? '비중변동'
+                  : change.classification === 'quantity_decrease_weight_held' ? '수량감소·비중유지' : '1CU 수량변화',
             source: 'Naver Finance',
             coverage: 'top10',
             previousListedShares: previous.listedShares ?? null,

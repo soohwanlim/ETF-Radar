@@ -64,6 +64,7 @@ const TYPE_CONFIG = {
   top10_out:         { label: 'TOP 10 이탈', icon: TrendingDown,   color: 'rose' },
   quantity_increase: { label: '1CU 수량 증가', icon: TrendingUp,   color: 'blue' },
   quantity_decrease: { label: '1CU 수량 감소', icon: TrendingDown, color: 'violet' },
+  quantity_decrease_weight_held: { label: '수량 감소 · 비중 유지', icon: ArrowRightLeft, color: 'indigo' },
   price_effect:      { label: '비중만 변화', icon: ArrowRightLeft, color: 'amber' },
 };
 
@@ -80,6 +81,7 @@ const COLOR_CLASSES = {
   amber:   { bg: 'bg-amber-500/10',   border: 'border-amber-500/20',   text: 'text-amber-600',   ring: 'ring-amber-500/30'   },
   violet:  { bg: 'bg-violet-500/10',  border: 'border-violet-500/20',  text: 'text-violet-600',  ring: 'ring-violet-500/30'  },
   blue:    { bg: 'bg-blue-500/10',    border: 'border-blue-500/20',    text: 'text-blue-600',    ring: 'ring-blue-500/30'    },
+  indigo:  { bg: 'bg-indigo-500/10',  border: 'border-indigo-500/20',  text: 'text-indigo-600',  ring: 'ring-indigo-500/30'  },
 };
 
 function TypeBadge({ type }) {
@@ -186,7 +188,7 @@ function ChangeCard({ change }) {
 
 // ─── 메인 페이지 ──────────────────────────────────────────────────────────
 
-const ALL_TYPES = ['top10_new', 'top10_out', 'quantity_increase', 'quantity_decrease', 'price_effect'];
+const ALL_TYPES = ['top10_new', 'top10_out', 'quantity_increase', 'quantity_decrease', 'quantity_decrease_weight_held', 'price_effect'];
 const DAYS_OPTIONS = [
   { value: 7, label: '최근 7일' },
   { value: 30, label: '최근 30일' },
@@ -261,11 +263,12 @@ export default function Changes() {
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         <StatCard type="top10_new" count={stats.top10_new} />
         <StatCard type="top10_out" count={stats.top10_out} />
         <StatCard type="quantity_increase" count={stats.quantity_increase} />
         <StatCard type="quantity_decrease" count={stats.quantity_decrease} />
+        <StatCard type="quantity_decrease_weight_held" count={stats.quantity_decrease_weight_held} />
       </div>
 
       {/* 필터 바 */}

@@ -113,10 +113,15 @@ export function compareHoldings(previous = [], current = []) {
       && Math.abs(shareChange) >= 1
       && Math.abs(shareChangeRate) >= 0.5;
     if (hasMaterialShareChange || Math.abs(weightDelta) >= 2) {
+      const quantityDecreaseWithHeldWeight = hasMaterialShareChange
+        && shareChange < 0
+        && weightDelta >= -0.5;
       changes.push({
         type: 'weight',
         classification: hasMaterialShareChange
-          ? shareChange > 0 ? 'quantity_increase' : 'quantity_decrease'
+          ? shareChange > 0
+            ? 'quantity_increase'
+            : quantityDecreaseWithHeldWeight ? 'quantity_decrease_weight_held' : 'quantity_decrease'
           : 'price_effect',
         holdingCode: item.code, holdingName: item.name,
         previousWeight: before.weight, weight: item.weight,
@@ -129,6 +134,10 @@ export function compareHoldings(previous = [], current = []) {
 }
 
 export function formatChange(change) {
+  if (change.classification === 'quantity_decrease_weight_held') {
+    const weightDelta = change.weight - change.previousWeight;
+    return `수량 감소 · 비중 유지: ${change.holdingName} (${change.previousShares.toLocaleString()}주 → ${change.shares.toLocaleString()}주, ${change.shareChangeRate.toFixed(2)}%, 비중 ${weightDelta >= 0 ? '+' : ''}${weightDelta.toFixed(2)}%p)`;
+  }
   if (change.classification === 'quantity_increase' || change.classification === 'quantity_decrease') {
     const sign = change.shareChange > 0 ? '+' : '';
     return `1CU당 구성수량 변화: ${change.holdingName} (${change.previousShares.toLocaleString()}주 → ${change.shares.toLocaleString()}주, ${sign}${change.shareChangeRate.toFixed(2)}%)`;

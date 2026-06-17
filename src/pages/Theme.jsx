@@ -160,7 +160,7 @@ function ThemeSignalPanel({ signals, themeId }) {
               </summary>
               <div className="mt-3 border-t border-slate-100 pt-3">
                 <div className="mb-2 text-[10px] font-semibold text-slate-500">
-                  {quantitySignal ? '수량 변화 우선 · 비중 변화는 보조 지표' : `TOP 10 진입 ${signal.newCount || 0} · 이탈 ${signal.outCount || 0}`}
+                  {quantitySignal ? '수량 변화 우선 · 비중 유지형 감소는 가격/비중 관리 가능성' : `TOP 10 진입 ${signal.newCount || 0} · 이탈 ${signal.outCount || 0}`}
                 </div>
                 <div className="space-y-1.5">
                   {signal.etfs.map(etf => (
@@ -179,7 +179,7 @@ function ThemeSignalPanel({ signals, themeId }) {
           );
         })}
       </div>
-      <p className="mt-3 text-[10px] leading-relaxed text-slate-400">TOP 10 이탈은 전체 편출을 뜻하지 않습니다. 수량 변화도 기업행사나 CU 기준 변경 가능성이 있어 매매로 단정하지 않습니다.</p>
+      <p className="mt-3 text-[10px] leading-relaxed text-slate-400">TOP 10 이탈은 전체 편출을 뜻하지 않습니다. 수량 감소에도 비중이 유지되는 경우는 주가 상승이나 비중 관리 영향일 수 있지만, 매매 의도로 단정하지 않습니다.</p>
     </section>
   );
 }
