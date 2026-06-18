@@ -18,7 +18,7 @@ const MARKET_PROXIES = [
 ];
 
 function getRate(etf, period) {
-  return etf[`rate${period}`];
+  return etf?.[`rate${period}`] ?? null;
 }
 
 function isActiveEtf(etf) {
