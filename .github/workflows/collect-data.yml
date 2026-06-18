@@ -3,9 +3,9 @@ name: Collect daily ETF data
 on:
   workflow_dispatch:
   schedule:
-    # KRX ETF close data can appear late. Run once late at night KST and once the next morning.
-    - cron: '40 14 * * 1-5' # 23:40 KST Mon-Fri
-    - cron: '40 22 * * 1-5' # 07:40 KST Tue-Sat fallback
+    # KRX ETF close data can appear late. Run the next morning KST, with a later fallback.
+    - cron: '40 22 * * 1-5' # 07:40 KST Tue-Sat
+    - cron: '40 1 * * 2-6' # 10:40 KST Tue-Sat fallback
 
 permissions:
   contents: write

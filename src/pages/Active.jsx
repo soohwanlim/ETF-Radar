@@ -62,6 +62,48 @@ function classifyChange(change) {
   return '비중 변화';
 }
 
+function getChangeKind(change) {
+  if (change.classification === 'quantity_increase') return 'quantity_increase';
+  if (change.classification === 'quantity_decrease_weight_held') return 'quantity_decrease_weight_held';
+  if (change.classification === 'quantity_decrease') return 'quantity_decrease';
+  if (change.type === 'new') return 'top10_new';
+  if (change.type === 'out') return 'top10_out';
+  return 'price_effect';
+}
+
+const CHANGE_STYLE = {
+  quantity_increase: {
+    label: '1CU 수량 증가',
+    className: 'border-red-100 bg-red-50 text-red-700 hover:bg-red-100',
+    valueClassName: 'text-red-600',
+  },
+  quantity_decrease: {
+    label: '1CU 수량 감소',
+    className: 'border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-100',
+    valueClassName: 'text-blue-600',
+  },
+  quantity_decrease_weight_held: {
+    label: '수량 감소 · 비중 유지',
+    className: 'border-indigo-100 bg-indigo-50 text-indigo-700 hover:bg-indigo-100',
+    valueClassName: 'text-indigo-600',
+  },
+  top10_new: {
+    label: 'TOP 10 진입',
+    className: 'border-emerald-100 bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
+    valueClassName: 'text-emerald-600',
+  },
+  top10_out: {
+    label: 'TOP 10 이탈',
+    className: 'border-rose-100 bg-rose-50 text-rose-700 hover:bg-rose-100',
+    valueClassName: 'text-rose-600',
+  },
+  price_effect: {
+    label: '비중 변화',
+    className: 'border-amber-100 bg-amber-50 text-amber-700 hover:bg-amber-100',
+    valueClassName: 'text-amber-600',
+  },
+};
+
 function buildActiveRows(etfs, changes, period) {
   return etfs
     .filter(isActiveEtf)
@@ -94,6 +136,48 @@ function buildActiveRows(etfs, changes, period) {
       };
     })
     .sort((a, b) => (b.excess ?? -Infinity) - (a.excess ?? -Infinity));
+}
+
+function buildCommonActiveIncreases(rows, changes) {
+  const activeMap = new Map(rows.map(row => [row.etf.code, row]));
+  const grouped = new Map();
+
+  for (const change of changes) {
+    if (change.classification !== 'quantity_increase' || !activeMap.has(change.code)) continue;
+    const key = `${change.holdingCode || change.holdingName}-${change.holdingName}`;
+    const current = grouped.get(key) || {
+      holdingCode: change.holdingCode,
+      holdingName: change.holdingName,
+      etfs: new Map(),
+      shareRates: [],
+      latestDate: change.date,
+    };
+    current.latestDate = current.latestDate > change.date ? current.latestDate : change.date;
+    current.etfs.set(change.code, {
+      code: change.code,
+      name: change.etfName,
+      themeName: activeMap.get(change.code)?.theme.name,
+      shareChangeRate: change.shareChangeRate,
+    });
+    if (change.shareChangeRate != null) current.shareRates.push(change.shareChangeRate);
+    grouped.set(key, current);
+  }
+
+  return [...grouped.values()]
+    .map(item => {
+      const etfs = [...item.etfs.values()];
+      return {
+        ...item,
+        etfs,
+        etfCount: etfs.length,
+        averageShareChangeRate: item.shareRates.length
+          ? Number((item.shareRates.reduce((sum, value) => sum + value, 0) / item.shareRates.length).toFixed(2))
+          : null,
+      };
+    })
+    .filter(item => item.etfCount >= 2)
+    .sort((a, b) => b.etfCount - a.etfCount || (b.averageShareChangeRate ?? -Infinity) - (a.averageShareChangeRate ?? -Infinity))
+    .slice(0, 4);
 }
 
 export default function Active() {
@@ -140,6 +224,7 @@ export default function Active() {
     });
   }, [rows, search, themeId]);
   const outperformCount = rows.filter(row => row.excess != null && row.excess > 0).length;
+  const commonIncreases = useMemo(() => buildCommonActiveIncreases(rows, changes), [changes, rows]);
 
   return (
     <div className="space-y-8 fade-in">
@@ -180,6 +265,43 @@ export default function Active() {
           <div className="mt-2 text-3xl font-extrabold text-blue-600">{rows.filter(row => row.recentChanges.length > 0).length}</div>
         </div>
       </section>
+
+      {commonIncreases.length > 0 && (
+        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm font-bold text-red-600">액티브 공통 매수 신호</p>
+              <h2 className="text-xl font-extrabold text-slate-950">여러 액티브 ETF가 함께 늘린 종목</h2>
+            </div>
+            <span className="text-xs font-semibold text-slate-500">1CU당 구성수량 증가 기준</span>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {commonIncreases.map(signal => (
+              <div key={`${signal.holdingCode}-${signal.holdingName}`} className="rounded-2xl border border-red-100 bg-red-50 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-lg font-extrabold text-slate-950">{signal.holdingName}</h3>
+                    <p className="mt-1 text-xs font-semibold text-red-700">{signal.etfCount}개 액티브 ETF에서 증가</p>
+                  </div>
+                  {signal.averageShareChangeRate != null && (
+                    <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-extrabold text-red-600">
+                      평균 +{signal.averageShareChangeRate}%
+                    </span>
+                  )}
+                </div>
+                <div className="mt-4 space-y-1.5">
+                  {signal.etfs.slice(0, 3).map(etf => (
+                    <Link key={etf.code} to={`/etf/${etf.code}`} className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 text-xs hover:text-blue-600">
+                      <span className="truncate font-semibold text-slate-700">{etf.name}</span>
+                      <span className="shrink-0 font-bold text-red-600">+{etf.shareChangeRate}%</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -262,15 +384,19 @@ export default function Active() {
                     <div className="flex items-center gap-2 text-xs text-slate-500"><Loader2 className="animate-spin" size={13} />변경 내역 확인 중...</div>
                   ) : row.recentChanges.length > 0 ? (
                     <div className="grid gap-2 md:grid-cols-2">
-                      {row.recentChanges.map(change => (
-                        <Link key={`${change.date}-${change.message}`} to={`/changes?types=${change.classification || ''}`} className="rounded-xl bg-slate-50 px-3 py-2 text-xs hover:bg-blue-50">
+                      {row.recentChanges.map(change => {
+                        const kind = getChangeKind(change);
+                        const style = CHANGE_STYLE[kind] || CHANGE_STYLE.price_effect;
+                        return (
+                        <Link key={`${change.date}-${change.message}`} to={`/changes?types=${change.classification || kind}`} className={`rounded-xl border px-3 py-2 text-xs ${style.className}`}>
                           <div className="mb-1 flex items-center justify-between gap-2">
-                            <span className="font-bold text-blue-700">{classifyChange(change)}</span>
+                            <span className={`font-bold ${style.valueClassName}`}>{style.label || classifyChange(change)}</span>
                             <span className="font-mono text-slate-400">{change.date}</span>
                           </div>
                           <p className="line-clamp-2 text-slate-600">{change.message}</p>
                         </Link>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="text-xs text-slate-500">최근 감지된 TOP 10/1CU 변화가 없습니다.</div>

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   schedule:
     # Check after the next-morning KST fallback collection has had time to deploy.
-    - cron: '30 23 * * 1-5' # 08:30 KST Tue-Sat
+    - cron: '30 2 * * 2-6' # 11:30 KST Tue-Sat
 
 permissions:
   contents: read
@@ -66,7 +66,7 @@ jobs:
           This usually means the deployed status data is stale, incomplete, or reports partial failures.
           
           First checks:
-          - Did the 23:40 KST or next-day 07:40 KST collection workflow succeed?
+          - Did the 07:40 KST or 10:40 KST fallback collection workflow succeed?
           - If collection succeeded, does status.json show lastCheckState=no_new_data or latestAvailableAsOf behind the expected trading date?
           - Did Cloudflare Pages finish deploying after the data commit?
           - Is KRX/Naver temporarily delayed or unavailable?"
