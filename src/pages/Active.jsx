@@ -107,24 +107,40 @@ const CHANGE_STYLE = {
 };
 
 function buildActiveRows(etfs, changes, period) {
-  return etfs
-    .filter(isActiveEtf)
-    .map(etf => {
-      const theme = getTheme(etf);
-      const themeMembers = etfs
-        .filter(item => getTheme(item).id === theme.id)
-        .filter(item => getRate(item, period) != null);
-      const rate = getRate(etf, period);
-      const themeAverage = themeMembers.length
-        ? Number((themeMembers.reduce((sum, item) => sum + getRate(item, period), 0) / themeMembers.length).toFixed(2))
-        : null;
-      const rank = rate == null
-        ? null
-        : [...themeMembers].sort((a, b) => getRate(b, period) - getRate(a, period)).findIndex(item => item.code === etf.code) + 1;
-      const recentChanges = changes
-        .filter(change => change.code === etf.code)
-        .filter(change => change.classification?.startsWith('quantity') || change.type === 'new' || change.type === 'out')
-        .slice(0, 4);
+  const decoratedEtfs = etfs.map(etf => ({ etf, theme: getTheme(etf), rate: getRate(etf, period) }));
+  const themeGroups = new Map();
+  const changesByCode = new Map();
+
+  for (const item of decoratedEtfs) {
+    if (item.rate == null) continue;
+    const group = themeGroups.get(item.theme.id) || {
+      sum: 0,
+      members: [],
+    };
+    group.sum += item.rate;
+    group.members.push(item);
+    themeGroups.set(item.theme.id, group);
+  }
+
+  for (const group of themeGroups.values()) {
+    group.members.sort((a, b) => b.rate - a.rate);
+    group.average = Number((group.sum / group.members.length).toFixed(2));
+    group.rankByCode = new Map(group.members.map((item, index) => [item.etf.code, index + 1]));
+  }
+
+  for (const change of changes) {
+    if (!(change.classification?.startsWith('quantity') || change.type === 'new' || change.type === 'out')) continue;
+    if (!changesByCode.has(change.code)) changesByCode.set(change.code, []);
+    if (changesByCode.get(change.code).length < 4) changesByCode.get(change.code).push(change);
+  }
+
+  return decoratedEtfs
+    .filter(item => isActiveEtf(item.etf))
+    .map(({ etf, theme, rate }) => {
+      const themeGroup = themeGroups.get(theme.id);
+      const themeAverage = themeGroup?.average ?? null;
+      const rank = rate == null ? null : themeGroup?.rankByCode.get(etf.code) ?? null;
+      const recentChanges = changesByCode.get(etf.code) || [];
 
       return {
         etf,
@@ -132,8 +148,8 @@ function buildActiveRows(etfs, changes, period) {
         rate,
         themeAverage,
         excess: rate != null && themeAverage != null ? Number((rate - themeAverage).toFixed(2)) : null,
-        rank: rank || null,
-        peerCount: themeMembers.length,
+        rank,
+        peerCount: themeGroup?.members.length || 0,
         recentChanges,
       };
     })

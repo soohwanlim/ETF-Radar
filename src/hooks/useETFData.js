@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { loadEtf, loadEtfHistory, loadEtfs, loadHoldings } from '../data/staticData';
+import { loadEtf, loadEtfHistory, loadEtfsSorted, loadHoldings } from '../data/staticData';
 
 export function useETFData(period = '3m') {
   const [etfs, setEtfs] = useState([]);
@@ -12,9 +12,7 @@ export function useETFData(period = '3m') {
       setLoading(true);
       setError(null);
       try {
-        const data = await loadEtfs();
-        const rateKey = `rate${period}`;
-        const sorted = [...data].sort((a, b) => (b[rateKey] ?? -Infinity) - (a[rateKey] ?? -Infinity));
+        const sorted = await loadEtfsSorted(period);
         if (active) {
           setEtfs(sorted);
         }

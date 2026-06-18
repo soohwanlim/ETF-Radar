@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   RefreshCw, Filter, TrendingUp, TrendingDown,
@@ -215,28 +215,26 @@ export default function Changes() {
     );
   };
 
-  // 필터링
-  const filtered = changes.filter(c => {
+  const filtered = useMemo(() => changes.filter(c => {
     const typeOk = selectedTypes.includes(getChangeCategory(c));
     const codeOk = searchCode.trim() === '' ||
       c.code.includes(searchCode.trim()) ||
       (c.etfName || '').toLowerCase().includes(searchCode.trim().toLowerCase());
     return typeOk && codeOk;
-  });
+  }), [changes, searchCode, selectedTypes]);
 
-  // 날짜별 그룹핑
-  const grouped = filtered.reduce((acc, c) => {
+  const grouped = useMemo(() => filtered.reduce((acc, c) => {
     if (!acc[c.date]) acc[c.date] = [];
     acc[c.date].push(c);
     return acc;
-  }, {});
-  const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+  }, {}), [filtered]);
+  const sortedDates = useMemo(() => Object.keys(grouped).sort((a, b) => b.localeCompare(a)), [grouped]);
 
-  // 통계
-  const stats = ALL_TYPES.reduce((acc, t) => {
-    acc[t] = changes.filter(c => getChangeCategory(c) === t).length;
+  const stats = useMemo(() => changes.reduce((acc, change) => {
+    const category = getChangeCategory(change);
+    acc[category] = (acc[category] || 0) + 1;
     return acc;
-  }, {});
+  }, Object.fromEntries(ALL_TYPES.map(type => [type, 0]))), [changes]);
 
   return (
     <div className="space-y-10 fade-in">

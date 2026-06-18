@@ -1,4 +1,5 @@
 const cache = new Map();
+const derivedCache = new Map();
 
 async function loadJson(path) {
   if (!cache.has(path)) {
@@ -14,13 +15,27 @@ export function loadEtfs() {
   return loadJson('/data/etfs.json');
 }
 
+export async function loadEtfsSorted(period = '3m') {
+  const key = `etfs:sorted:${period}`;
+  if (!derivedCache.has(key)) {
+    derivedCache.set(key, loadEtfs().then(data => {
+      const rateKey = `rate${period}`;
+      return [...data].sort((a, b) => (b[rateKey] ?? -Infinity) - (a[rateKey] ?? -Infinity));
+    }));
+  }
+  return derivedCache.get(key);
+}
+
 export function loadDataStatus() {
   return loadJson('/data/status.json');
 }
 
 export async function loadEtf(code) {
-  const etfs = await loadEtfs();
-  return etfs.find(etf => etf.code === code) || null;
+  if (!derivedCache.has('etfs:byCode')) {
+    derivedCache.set('etfs:byCode', loadEtfs().then(etfs => new Map(etfs.map(etf => [etf.code, etf]))));
+  }
+  const etfByCode = await derivedCache.get('etfs:byCode');
+  return etfByCode.get(code) || null;
 }
 
 export async function loadHoldings(code) {
@@ -29,8 +44,18 @@ export async function loadHoldings(code) {
 }
 
 export async function loadEtfHistory(code) {
-  const history = await loadJson('/data/changes/history.json');
-  return history.filter(change => change.code === code);
+  if (!derivedCache.has('changes:historyByCode')) {
+    derivedCache.set('changes:historyByCode', loadChangesHistory().then(history => {
+      const byCode = new Map();
+      for (const change of history) {
+        if (!byCode.has(change.code)) byCode.set(change.code, []);
+        byCode.get(change.code).push(change);
+      }
+      return byCode;
+    }));
+  }
+  const historyByCode = await derivedCache.get('changes:historyByCode');
+  return historyByCode.get(code) || [];
 }
 
 export function loadLatestChanges() {
