@@ -8,6 +8,11 @@ const STATE_STYLE = {
     label: '자동 수집 정상',
     className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
   },
+  waiting: {
+    icon: Clock3,
+    label: '신규 데이터 대기',
+    className: 'border-amber-200 bg-amber-50 text-amber-700',
+  },
   partial: {
     icon: AlertTriangle,
     label: '일부 데이터 이전 값 유지',
@@ -18,7 +23,7 @@ const STATE_STYLE = {
 const CHECK_LABEL = {
   updated: '데이터 갱신',
   partial: '부분 갱신',
-  no_new_data: '신규 데이터 없음',
+  no_new_data: 'KRX 신규 기준일 없음',
 };
 
 function formatKstDateTime(value) {
@@ -58,7 +63,8 @@ export default function DataStatus() {
     );
   }
 
-  const config = STATE_STYLE[status.state] || STATE_STYLE.partial;
+  const visualState = status.lastCheckState === 'no_new_data' ? 'waiting' : status.state;
+  const config = STATE_STYLE[visualState] || STATE_STYLE.partial;
   const Icon = config.icon;
   const checkedAt = formatKstDateTime(status.lastCheckedAt);
   const checkLabel = CHECK_LABEL[status.lastCheckState];
