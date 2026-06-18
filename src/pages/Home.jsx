@@ -12,9 +12,17 @@ const PERIODS = [
   ['1d', '오늘'], ['1w', '1주'], ['1m', '1개월'], ['3m', '3개월'], ['1y', '1년'], ['10y', '10년'],
 ];
 const COLLAPSED_ETF_COUNT = 30;
+const MARKET_PROXIES = [
+  { code: '069500', label: 'KOSPI200', name: 'KODEX 200' },
+  { code: '229200', label: 'KOSDAQ150', name: 'KODEX 코스닥150' },
+];
 
 function getRate(etf, period) {
   return etf[`rate${period}`];
+}
+
+function isActiveEtf(etf) {
+  return /액티브|Active/i.test(`${etf.name || ''} ${etf.description || ''}`);
 }
 
 function Rate({ value, large = false }) {
@@ -51,6 +59,7 @@ export default function Home() {
   const [period, setPeriod] = useState('3m');
   const [search, setSearch] = useState('');
   const [showAllEtfs, setShowAllEtfs] = useState(false);
+  const [activeOnly, setActiveOnly] = useState(false);
   const [themeSignals, setThemeSignals] = useState([]);
   const [listings, setListings] = useState({ recent: [], upcoming: [] });
   const { watchlist, toggleWatchlist } = useWatchlistStore();
@@ -60,9 +69,12 @@ export default function Home() {
 
   const filteredEtfs = useMemo(() => {
     const keyword = search.trim().toLowerCase();
-    if (!keyword) return etfs;
-    return etfs.filter(etf => etf.name.toLowerCase().includes(keyword) || etf.code.includes(keyword));
-  }, [etfs, search]);
+    return etfs.filter(etf => {
+      const keywordOk = !keyword || etf.name.toLowerCase().includes(keyword) || etf.code.includes(keyword);
+      const activeOk = !activeOnly || isActiveEtf(etf);
+      return keywordOk && activeOk;
+    });
+  }, [activeOnly, etfs, search]);
   const visibleEtfs = showAllEtfs ? filteredEtfs : filteredEtfs.slice(0, COLLAPSED_ETF_COUNT);
   const canToggleEtfs = filteredEtfs.length > COLLAPSED_ETF_COUNT;
 
@@ -70,6 +82,11 @@ export default function Home() {
   const periodLabel = PERIODS.find(([key]) => key === period)?.[1];
   const asOf = etfs[0]?.asOf;
   const positiveCount = etfs.filter(etf => (getRate(etf, period) ?? -Infinity) > 0).length;
+  const activeEtfCount = etfs.filter(isActiveEtf).length;
+  const marketReturns = MARKET_PROXIES.map(proxy => ({
+    ...proxy,
+    rate: getRate(etfs.find(etf => etf.code === proxy.code), period),
+  }));
   const fallbackRecentListings = useMemo(() => {
     if (!asOf) return [];
     const asOfTime = Date.parse(`${asOf}T00:00:00Z`);
@@ -130,10 +147,20 @@ export default function Home() {
       </section>
 
       <section>
-        <div className="mb-4 flex items-end justify-between">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm text-slate-500">{periodLabel} 수익률</p>
             <h2 className="mt-1 text-xl font-bold text-slate-950">지금 가장 많이 오른 ETF</h2>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {marketReturns.map(proxy => (
+              <div key={proxy.code} className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs shadow-sm" title={`${proxy.name} 기준`}>
+                <span className="font-semibold text-slate-500">{periodLabel} {proxy.label}</span>
+                <span className={`ml-2 font-extrabold tabular-nums ${proxy.rate == null ? 'text-slate-500' : proxy.rate >= 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                  {proxy.rate == null ? '-' : `${proxy.rate >= 0 ? '+' : ''}${proxy.rate}%`}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
         <div className="grid gap-3 md:grid-cols-3">
@@ -244,6 +271,15 @@ export default function Home() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
               <input value={search} onChange={event => { setSearch(event.target.value); setShowAllEtfs(false); }} placeholder="ETF 이름이나 종목코드 검색" className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-sm text-slate-950 shadow-sm outline-none ring-blue-500 placeholder:text-slate-400 focus:ring-2" />
             </label>
+
+            <button
+              type="button"
+              onClick={() => { setActiveOnly(value => !value); setShowAllEtfs(false); }}
+              className={`flex w-fit items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold transition-colors ${activeOnly ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700'}`}
+            >
+              액티브 ETF만 보기
+              <span className={`rounded-full px-2 py-0.5 text-xs ${activeOnly ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>{activeEtfCount}개</span>
+            </button>
           </div>
 
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
