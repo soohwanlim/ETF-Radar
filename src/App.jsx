@@ -1,12 +1,13 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { ArrowLeftRight, BarChart3, Grid2X2, RefreshCw, ShieldAlert, Star, X } from 'lucide-react';
+import { Activity, ArrowLeftRight, BarChart3, Grid2X2, RefreshCw, ShieldAlert, Star, X } from 'lucide-react';
 import { useCompareStore } from './store/compareStore';
 import DataStatus from './components/DataStatus';
 
 const Home = lazy(() => import('./pages/Home'));
 const Theme = lazy(() => import('./pages/Theme'));
 const Compare = lazy(() => import('./pages/Compare'));
+const Active = lazy(() => import('./pages/Active'));
 const ETFDetail = lazy(() => import('./pages/ETFDetail'));
 const Changes = lazy(() => import('./pages/Changes'));
 const Watchlist = lazy(() => import('./pages/Watchlist'));
@@ -15,6 +16,7 @@ const Policy = lazy(() => import('./pages/Policy'));
 const NAV_ITEMS = [
   { to: '/', label: '홈', desktopLabel: '수익률', icon: BarChart3 },
   { to: '/theme', label: '테마', desktopLabel: '테마 ETF', icon: Grid2X2 },
+  { to: '/active', label: '액티브', desktopLabel: '액티브', icon: Activity },
   { to: '/compare', label: '비교', desktopLabel: '비교분석', icon: ArrowLeftRight },
   { to: '/watchlist', label: '관심', desktopLabel: '즐겨찾기', icon: Star },
   { to: '/changes', label: '변경', desktopLabel: '변경 감지', icon: RefreshCw },
@@ -73,7 +75,7 @@ function Navigation() {
       </header>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">
-        <div className="mx-auto grid max-w-lg grid-cols-5">
+        <div className="mx-auto grid max-w-lg grid-cols-6">
           {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
             <Link key={to} to={to} className={`flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] font-semibold ${isActive(to) ? 'text-blue-600' : 'text-slate-500'}`}>
               <Icon size={20} strokeWidth={isActive(to) ? 2.5 : 2} />
@@ -98,6 +100,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/theme" element={<Theme />} />
+              <Route path="/active" element={<Active />} />
               <Route path="/compare" element={<Compare />} />
               <Route path="/changes" element={<Changes />} />
               <Route path="/watchlist" element={<Watchlist />} />
