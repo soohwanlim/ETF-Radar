@@ -67,7 +67,7 @@ export default function Policy() {
           네이버 금융 공개 페이지를 기준으로 수집합니다.
         </p>
         <p>
-          데이터는 평일 18:10, 19:10 KST에 GitHub Actions로 자동 수집하고, 변경 사항이 있을 때 Cloudflare Pages에
+          데이터는 다음날 06:00, 08:00 KST에 GitHub Actions로 자동 수집하고, 변경 사항이 있을 때 Cloudflare Pages에
           정적 파일로 재배포합니다. 별도 실시간 서버나 외부 데이터베이스를 사용하지 않습니다.
         </p>
       </Section>

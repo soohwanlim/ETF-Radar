@@ -391,8 +391,8 @@ export default function Changes() {
         <div className="text-xs text-slate-600 leading-relaxed space-y-1">
           <p className="font-semibold text-slate-700">데이터 수집 안내</p>
           <p>
-            구성종목 변경 데이터는 <strong className="text-slate-900">다음날 07:40 (KST)</strong>에 수집하며,
-            KRX 종가 데이터가 늦으면 10:40에 한 번 더 확인합니다. 네이버 금융의 상위 10개 구성자산만 비교하므로
+            구성종목 변경 데이터는 <strong className="text-slate-900">다음날 06:00 (KST)</strong>에 수집하며,
+            KRX 종가 데이터가 늦으면 08:00에 한 번 더 확인합니다. 네이버 금융의 상위 10개 구성자산만 비교하므로
             TOP 10 이탈은 ETF에서 완전히 편출됐다는 뜻이 아닙니다. 현재 지원 범위의 국내 주식형 현물 ETF 전체를 수집합니다.
             해외·채권·원자재·레버리지·인버스·커버드콜 ETF는 현재 지원하지 않습니다.
           </p>
