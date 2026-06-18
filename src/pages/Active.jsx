@@ -12,7 +12,9 @@ const PERIODS = [
 ];
 
 const THEME_RULES = [
-  { id: 'semi', name: '반도체', pattern: /반도체|SK하이닉스|삼성전자/ },
+  { id: 'semi', name: '반도체', pattern: /코리아테크TOP10|반도체|SK하이닉스|삼성전자/ },
+  { id: 'valueup', name: '밸류업', pattern: /밸류업/ },
+  { id: 'index', name: '지수', pattern: /코스피|코스닥|KOSPI|KOSDAQ/ },
   { id: 'battery', name: '2차전지', pattern: /2차전지|배터리|전고체|양극재/ },
   { id: 'ai-robot', name: 'AI·로봇', pattern: /인공지능|로봇|휴머노이드|온디바이스|(?:^|[^A-Z])AI(?:[^A-Z]|$)/ },
   { id: 'defense', name: '방산·우주', pattern: /방산|우주|항공/ },
