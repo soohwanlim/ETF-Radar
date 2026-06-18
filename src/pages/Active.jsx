@@ -178,13 +178,23 @@ function buildCommonActiveIncreases(rows, changes) {
           : null,
       };
     })
-    .filter(item => item.etfCount >= 2)
-    .sort((a, b) => (b.averageShareChangeRate ?? -Infinity) - (a.averageShareChangeRate ?? -Infinity) || b.etfCount - a.etfCount)
-    .slice(0, 4);
+    .filter(item => item.etfCount >= 2);
 }
 
 function getCommonSignalKey(signal) {
   return `${signal.holdingCode || signal.holdingName}-${signal.holdingName}`;
+}
+
+function sortSignalsByCount(signals) {
+  return [...signals]
+    .sort((a, b) => b.etfCount - a.etfCount || (b.averageShareChangeRate ?? -Infinity) - (a.averageShareChangeRate ?? -Infinity))
+    .slice(0, 4);
+}
+
+function sortSignalsByAverage(signals) {
+  return [...signals]
+    .sort((a, b) => (b.averageShareChangeRate ?? -Infinity) - (a.averageShareChangeRate ?? -Infinity) || b.etfCount - a.etfCount)
+    .slice(0, 4);
 }
 
 export default function Active() {
@@ -233,6 +243,52 @@ export default function Active() {
   }, [rows, search, themeId]);
   const outperformCount = rows.filter(row => row.excess != null && row.excess > 0).length;
   const commonIncreases = useMemo(() => buildCommonActiveIncreases(rows, changes), [changes, rows]);
+  const commonIncreasesByCount = useMemo(() => sortSignalsByCount(commonIncreases), [commonIncreases]);
+  const commonIncreasesByAverage = useMemo(() => sortSignalsByAverage(commonIncreases), [commonIncreases]);
+
+  const renderCommonSignalCard = (signal, sectionId) => {
+    const signalKey = `${sectionId}-${getCommonSignalKey(signal)}`;
+    const isExpanded = expandedSignalKey === signalKey;
+    return (
+      <div key={signalKey} className="rounded-2xl border border-red-100 bg-red-50 p-4">
+        <button
+          type="button"
+          onClick={() => setExpandedSignalKey(isExpanded ? null : signalKey)}
+          className="flex w-full items-start justify-between gap-3 text-left"
+          aria-expanded={isExpanded}
+        >
+          <div className="min-w-0">
+            <h3 className="truncate text-lg font-extrabold text-slate-950">{signal.holdingName}</h3>
+            <p className="mt-1 text-xs font-semibold text-red-700">{signal.etfCount}개 액티브 ETF에서 증가</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {signal.averageShareChangeRate != null && (
+              <span className="rounded-full bg-white px-2.5 py-1 text-xs font-extrabold text-red-600">
+                평균 +{signal.averageShareChangeRate}%
+              </span>
+            )}
+            <ChevronDown
+              size={17}
+              className={`text-red-600 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+            />
+          </div>
+        </button>
+        {isExpanded && (
+          <div className="mt-4 space-y-1.5">
+            {signal.etfs.map(etf => (
+              <Link key={etf.code} to={`/etf/${etf.code}`} className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 text-xs hover:text-blue-600">
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold text-slate-700">{etf.name}</span>
+                  <span className="mt-0.5 block text-[10px] font-semibold text-slate-400">{etf.themeName}</span>
+                </span>
+                <span className="shrink-0 font-bold text-red-600">+{etf.shareChangeRate}%</span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-8 fade-in">
@@ -283,50 +339,19 @@ export default function Active() {
             </div>
             <span className="text-xs font-semibold text-slate-500">1CU당 구성수량 증가 기준</span>
           </div>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {commonIncreases.map(signal => {
-              const signalKey = getCommonSignalKey(signal);
-              const isExpanded = expandedSignalKey === signalKey;
-              return (
-                <div key={signalKey} className="rounded-2xl border border-red-100 bg-red-50 p-4">
-                  <button
-                    type="button"
-                    onClick={() => setExpandedSignalKey(isExpanded ? null : signalKey)}
-                    className="flex w-full items-start justify-between gap-3 text-left"
-                    aria-expanded={isExpanded}
-                  >
-                    <div className="min-w-0">
-                      <h3 className="truncate text-lg font-extrabold text-slate-950">{signal.holdingName}</h3>
-                      <p className="mt-1 text-xs font-semibold text-red-700">{signal.etfCount}개 액티브 ETF에서 증가</p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      {signal.averageShareChangeRate != null && (
-                        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-extrabold text-red-600">
-                          평균 +{signal.averageShareChangeRate}%
-                        </span>
-                      )}
-                      <ChevronDown
-                        size={17}
-                        className={`text-red-600 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                      />
-                    </div>
-                  </button>
-                  {isExpanded && (
-                    <div className="mt-4 space-y-1.5">
-                      {signal.etfs.map(etf => (
-                        <Link key={etf.code} to={`/etf/${etf.code}`} className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 text-xs hover:text-blue-600">
-                          <span className="min-w-0">
-                            <span className="block truncate font-semibold text-slate-700">{etf.name}</span>
-                            <span className="mt-0.5 block text-[10px] font-semibold text-slate-400">{etf.themeName}</span>
-                          </span>
-                          <span className="shrink-0 font-bold text-red-600">+{etf.shareChangeRate}%</span>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          <div className="space-y-5">
+            <div>
+              <div className="mb-2 text-xs font-extrabold text-slate-700">많은 액티브 ETF에서 증가한 순</div>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                {commonIncreasesByCount.map(signal => renderCommonSignalCard(signal, 'count'))}
+              </div>
+            </div>
+            <div>
+              <div className="mb-2 text-xs font-extrabold text-slate-700">평균 증가율 높은 순</div>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                {commonIncreasesByAverage.map(signal => renderCommonSignalCard(signal, 'average'))}
+              </div>
+            </div>
           </div>
         </section>
       )}
@@ -400,7 +425,7 @@ export default function Active() {
                       </div>
                     </div>
                     <div className="rounded-2xl bg-white p-3">
-                      <div className="text-[10px] font-bold text-slate-500">테마 순위</div>
+                      <div className="text-[10px] font-bold text-slate-500">테마 내 수익률 순위</div>
                       <div className="mt-1 text-sm font-extrabold text-slate-900">{row.rank ? `${row.rank}/${row.peerCount}` : '-'}</div>
                     </div>
                   </div>
