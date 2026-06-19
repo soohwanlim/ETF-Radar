@@ -115,6 +115,10 @@ function StatCard({ type, count }) {
 // 날짜 그룹 헤더
 function DateGroup({ date, children }) {
   const [open, setOpen] = useState(true);
+  const [showAll, setShowAll] = useState(false);
+  const items = Array.isArray(children) ? children : [children];
+  const visibleItems = showAll ? items : items.slice(0, 10);
+  const hiddenCount = items.length - visibleItems.length;
   const today = new Date().toISOString().slice(0, 10);
   const label = date === today ? '오늘' : date;
 
@@ -135,13 +139,21 @@ function DateGroup({ date, children }) {
       </button>
       {open && (
         <div className="space-y-3 pb-4">
-          {children}
+          {visibleItems}
+          {items.length > 10 && (
+            <button
+              type="button"
+              onClick={() => setShowAll(prev => !prev)}
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700"
+            >
+              {showAll ? '접기' : `남은 ${hiddenCount}건 더 보기`}
+            </button>
+          )}
         </div>
       )}
     </div>
   );
 }
-
 // 단일 변경사항 카드
 function ChangeCard({ change }) {
   const category = getChangeCategory(change);

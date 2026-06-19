@@ -4,6 +4,7 @@ import { Activity, ArrowDownRight, ArrowUpRight, BarChart3, ChevronDown, Layers3
 import ETFIcon from '../components/ETFIcon';
 import { useETFData } from '../hooks/useETFData';
 import { loadChangesHistory, loadLatestChanges } from '../data/staticData';
+import { getEtfTheme } from '../data/themeRules';
 
 const PERIODS = [
   { id: '1m', label: '1개월' },
@@ -12,22 +13,6 @@ const PERIODS = [
 ];
 const ACTIVE_COMMON_SIGNAL_DAYS = 7;
 
-const THEME_RULES = [
-  { id: 'semi', name: '반도체', pattern: /코리아테크TOP10|반도체|SK하이닉스|삼성전자/ },
-  { id: 'valueup', name: '밸류업', pattern: /밸류업/ },
-  { id: 'index', name: '지수', pattern: /코스피|코스닥|KOSPI|KOSDAQ/ },
-  { id: 'battery', name: '2차전지', pattern: /2차전지|배터리|전고체|양극재/ },
-  { id: 'ai-robot', name: 'AI·로봇', pattern: /인공지능|로봇|휴머노이드|온디바이스|(?:^|[^A-Z])AI(?:[^A-Z]|$)/ },
-  { id: 'defense', name: '방산·우주', pattern: /방산|우주|항공/ },
-  { id: 'ship', name: '조선·해운', pattern: /조선|해운/ },
-  { id: 'bio', name: '바이오·헬스케어', pattern: /바이오|헬스케어|의료|제약/ },
-  { id: 'finance', name: '금융·고배당', pattern: /금융|은행|증권|보험|고배당|배당|리츠|주주환원|밸류업/ },
-  { id: 'auto', name: '자동차', pattern: /자동차|현대차|모빌리티/ },
-  { id: 'energy', name: '에너지·전력', pattern: /원자력|전력|에너지|수소|태양광|신재생|ESS/ },
-  { id: 'content', name: '콘텐츠·게임', pattern: /게임|콘텐츠|미디어|웹툰|드라마|K-POP|엔터|소프트웨어|인터넷/ },
-  { id: 'consumer', name: '소비·여행', pattern: /화장품|여행|레저|소비|K-푸드|생활소비/ },
-  { id: 'industry', name: '산업재·인프라', pattern: /건설|기계|철강|인프라|설비|산업재/ },
-];
 
 function isActiveEtf(etf) {
   return /액티브|Active/i.test(`${etf.name || ''} ${etf.description || ''}`);
@@ -38,8 +23,7 @@ function getRate(etf, period) {
 }
 
 function getTheme(etf) {
-  return THEME_RULES.find(theme => theme.pattern.test(`${etf.name || ''} ${etf.benchmark || ''} ${etf.description || ''}`))
-    || { id: 'etc', name: '전략·기타', pattern: /./ };
+  return getEtfTheme(etf);
 }
 
 function formatRate(value) {
@@ -204,14 +188,12 @@ function getCommonSignalKey(signal) {
 
 function sortSignalsByCount(signals) {
   return [...signals]
-    .sort((a, b) => b.etfCount - a.etfCount || (b.averageShareChangeRate ?? -Infinity) - (a.averageShareChangeRate ?? -Infinity))
-    .slice(0, 4);
+    .sort((a, b) => b.etfCount - a.etfCount || (b.averageShareChangeRate ?? -Infinity) - (a.averageShareChangeRate ?? -Infinity));
 }
 
 function sortSignalsByAverage(signals) {
   return [...signals]
-    .sort((a, b) => (b.averageShareChangeRate ?? -Infinity) - (a.averageShareChangeRate ?? -Infinity) || b.etfCount - a.etfCount)
-    .slice(0, 4);
+    .sort((a, b) => (b.averageShareChangeRate ?? -Infinity) - (a.averageShareChangeRate ?? -Infinity) || b.etfCount - a.etfCount);
 }
 
 function filterChangesByDays(changes, days) {
@@ -228,6 +210,7 @@ export default function Active() {
   const [themeId, setThemeId] = useState('all');
   const [search, setSearch] = useState('');
   const [expandedSignalKey, setExpandedSignalKey] = useState(null);
+  const [expandedSignalSections, setExpandedSignalSections] = useState(() => new Set());
   const [changes, setChanges] = useState([]);
   const [changesLoading, setChangesLoading] = useState(true);
   const { etfs, loading, error } = useETFData(period);
@@ -273,6 +256,48 @@ export default function Active() {
   const commonIncreasesByCount = useMemo(() => sortSignalsByCount(commonIncreases), [commonIncreases]);
   const commonIncreasesByAverage = useMemo(() => sortSignalsByAverage(commonIncreases), [commonIncreases]);
 
+  const toggleSignalSection = sectionId => {
+    setExpandedSignalSections(prev => {
+      const next = new Set(prev);
+      if (next.has(sectionId)) next.delete(sectionId);
+      else next.add(sectionId);
+      return next;
+    });
+  };
+
+  const renderSignalSection = (sectionId, title, signals) => {
+    const isExpanded = expandedSignalSections.has(sectionId);
+    const visibleSignals = isExpanded ? signals : signals.slice(0, 4);
+    const hiddenCount = signals.length - visibleSignals.length;
+    return (
+      <div>
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <div className="text-xs font-extrabold text-slate-700">{title}</div>
+          {signals.length > 4 && (
+            <button
+              type="button"
+              onClick={() => toggleSignalSection(sectionId)}
+              className="shrink-0 text-xs font-bold text-slate-500 hover:text-red-600"
+            >
+              {isExpanded ? '접기' : `전체 ${signals.length}개 보기`}
+            </button>
+          )}
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {visibleSignals.map(signal => renderCommonSignalCard(signal, sectionId))}
+        </div>
+        {!isExpanded && hiddenCount > 0 && (
+          <button
+            type="button"
+            onClick={() => toggleSignalSection(sectionId)}
+            className="mt-3 w-full rounded-xl border border-red-100 bg-white px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50"
+          >
+            남은 {hiddenCount}개 더 보기
+          </button>
+        )}
+      </div>
+    );
+  };
   const renderCommonSignalCard = (signal, sectionId) => {
     const signalKey = `${sectionId}-${getCommonSignalKey(signal)}`;
     const isExpanded = expandedSignalKey === signalKey;
@@ -367,18 +392,8 @@ export default function Active() {
             <span className="text-xs font-semibold text-slate-500">최근 {ACTIVE_COMMON_SIGNAL_DAYS}일 · 1CU당 구성수량 증가 기준</span>
           </div>
           <div className="space-y-5">
-            <div>
-              <div className="mb-2 text-xs font-extrabold text-slate-700">많은 액티브 ETF에서 증가한 순</div>
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                {commonIncreasesByCount.map(signal => renderCommonSignalCard(signal, 'count'))}
-              </div>
-            </div>
-            <div>
-              <div className="mb-2 text-xs font-extrabold text-slate-700">평균 증가율 높은 순</div>
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                {commonIncreasesByAverage.map(signal => renderCommonSignalCard(signal, 'average'))}
-              </div>
-            </div>
+            {renderSignalSection('count', '많은 액티브 ETF에서 증가한 순', commonIncreasesByCount)}
+            {renderSignalSection('average', '평균 증가율 높은 순', commonIncreasesByAverage)}
           </div>
         </section>
       )}

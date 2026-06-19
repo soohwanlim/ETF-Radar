@@ -2,31 +2,34 @@ import { useMemo, useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   LayoutGrid, Cpu, BatteryCharging, Bot, Shield, Ship, HeartPulse, ArrowDownRight, ArrowUpRight,
-  Landmark, Car, Zap, MonitorPlay, Building2, ChevronDown, Loader2, TrendingUp,
+  Landmark, Car, Zap, MonitorPlay, Building2, ChevronDown, Loader2, TrendingUp, BarChart3,
 } from 'lucide-react';
 import { useETFData } from '../hooks/useETFData';
 import { loadHoldings, loadThemeSignals } from '../data/staticData';
 import ETFIcon from '../components/ETFIcon';
+import { THEME_RULES, themeMatchesEtf } from '../data/themeRules';
 
 const PERIODS = [
   { id: '1w', label: '1주' },
   { id: '1m', label: '1개월' },
 ];
 
-const THEME_RULES = [
-  { id: 'semi', name: '반도체', icon: Cpu, pattern: /반도체|SK하이닉스|삼성전자/ },
-  { id: 'battery', name: '2차전지', icon: BatteryCharging, pattern: /2차전지|배터리|전고체|양극재/ },
-  { id: 'ai-robot', name: 'AI·로봇', icon: Bot, pattern: /인공지능|로봇|휴머노이드|온디바이스|(?:^|[^A-Z])AI(?:[^A-Z]|$)/ },
-  { id: 'defense', name: '방산·우주', icon: Shield, pattern: /방산|우주|항공/ },
-  { id: 'ship', name: '조선·해운', icon: Ship, pattern: /조선|해운/ },
-  { id: 'bio', name: '바이오·헬스케어', icon: HeartPulse, pattern: /바이오|헬스케어|의료|제약/ },
-  { id: 'finance', name: '금융·고배당', icon: Landmark, pattern: /금융|은행|증권|보험|고배당|배당|리츠|주주환원|밸류업/ },
-  { id: 'auto', name: '자동차', icon: Car, pattern: /자동차|현대차|모빌리티/ },
-  { id: 'energy', name: '에너지·전력', icon: Zap, pattern: /원자력|전력|에너지|수소|태양광|신재생|ESS/ },
-  { id: 'content', name: '콘텐츠·게임', icon: MonitorPlay, pattern: /게임|콘텐츠|미디어|웹툰|드라마|K-POP|엔터|소프트웨어|인터넷/ },
-  { id: 'consumer', name: '소비·여행', icon: TrendingUp, pattern: /화장품|여행|레저|소비|K-푸드|생활소비/ },
-  { id: 'industry', name: '산업재·인프라', icon: Building2, pattern: /건설|기계|철강|인프라|설비|산업재/ },
-];
+const THEME_ICONS = {
+  semi: Cpu,
+  valueup: TrendingUp,
+  index: BarChart3,
+  battery: BatteryCharging,
+  'ai-robot': Bot,
+  defense: Shield,
+  ship: Ship,
+  bio: HeartPulse,
+  finance: Landmark,
+  auto: Car,
+  energy: Zap,
+  content: MonitorPlay,
+  consumer: TrendingUp,
+  industry: Building2,
+};
 
 function getRate(etf, period) {
   return period === '1w' ? etf.rate1w : etf.rate1m;
@@ -48,14 +51,14 @@ function useDesktopLayout() {
 function buildHotThemes(etfs, period) {
   return THEME_RULES.map(theme => {
     const members = etfs
-      .filter(etf => theme.pattern.test(etf.name))
+      .filter(etf => themeMatchesEtf(theme, etf))
       .filter(etf => getRate(etf, period) != null)
       .sort((a, b) => getRate(b, period) - getRate(a, period));
     const leaders = members.slice(0, 3);
     const score = leaders.length
       ? leaders.reduce((sum, etf) => sum + getRate(etf, period), 0) / leaders.length
       : null;
-    return { ...theme, members, score };
+    return { ...theme, icon: THEME_ICONS[theme.id] || LayoutGrid, members, score };
   })
     .filter(theme => theme.members.length > 0)
     .sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
@@ -119,7 +122,10 @@ function ThemeEtfCard({ etf, period }) {
 }
 
 function ThemeSignalPanel({ signals, themeId }) {
-  const themeSignals = signals.filter(signal => signal.themeId === themeId).slice(0, 5);
+  const [showAllSignals, setShowAllSignals] = useState(false);
+  const themeSignals = signals.filter(signal => signal.themeId === themeId);
+  const visibleSignals = showAllSignals ? themeSignals : themeSignals.slice(0, 5);
+  const hiddenSignalCount = themeSignals.length - visibleSignals.length;
   if (themeSignals.length === 0) return null;
 
   return (
@@ -129,7 +135,7 @@ function ThemeSignalPanel({ signals, themeId }) {
         <div className="mt-1 text-xs text-slate-500">최근 30일 기준으로 1CU당 수량 변화와 TOP 10 진입·이탈/비중 변화를 구분해 표시합니다.</div>
       </div>
       <div className="space-y-2">
-        {themeSignals.map(signal => {
+        {visibleSignals.map(signal => {
           const increase = signal.direction === 'increase';
           const quantitySignal = signal.signalType === 'per_cu_quantity';
           const Icon = increase ? ArrowUpRight : ArrowDownRight;
@@ -179,11 +185,40 @@ function ThemeSignalPanel({ signals, themeId }) {
           );
         })}
       </div>
+      {themeSignals.length > 5 && (
+        <button
+          type="button"
+          onClick={() => setShowAllSignals(prev => !prev)}
+          className="mt-3 w-full rounded-xl border border-blue-100 bg-white px-4 py-2 text-xs font-bold text-blue-600 hover:bg-blue-50"
+        >
+          {showAllSignals ? '접기' : `남은 ${hiddenSignalCount}개 더 보기`}
+        </button>
+      )}
       <p className="mt-3 text-[10px] leading-relaxed text-slate-400">TOP 10 이탈은 전체 편출을 뜻하지 않습니다. 수량 감소에도 비중이 유지되는 경우는 주가 상승이나 비중 관리 영향일 수 있지만, 매매 의도로 단정하지 않습니다.</p>
     </section>
   );
 }
 
+function ThemeEtfList({ theme, period }) {
+  const [showAll, setShowAll] = useState(false);
+  const visibleMembers = showAll ? theme.members : theme.members.slice(0, 5);
+  const hiddenCount = theme.members.length - visibleMembers.length;
+
+  return (
+    <div className="space-y-4">
+      {visibleMembers.map(etf => <ThemeEtfCard key={etf.code} etf={etf} period={period} />)}
+      {theme.members.length > 5 && (
+        <button
+          type="button"
+          onClick={() => setShowAll(prev => !prev)}
+          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-600 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+        >
+          {showAll ? '접기' : `남은 ${hiddenCount}개 ETF 더 보기`}
+        </button>
+      )}
+    </div>
+  );
+}
 export default function Theme() {
   const [searchParams] = useSearchParams();
   const [period, setPeriod] = useState('1w');
@@ -262,7 +297,7 @@ export default function Theme() {
                 </div>
                 <div className="space-y-4">
                   <ThemeSignalPanel signals={signals} themeId={activeTheme.id} />
-                  {activeTheme.members.slice(0, 5).map(etf => <ThemeEtfCard key={etf.code} etf={etf} period={period} />)}
+                  <ThemeEtfList theme={activeTheme} period={period} />
                 </div>
               </>
             )}
@@ -302,7 +337,7 @@ export default function Theme() {
                       {period === '1w' ? '최근 1주' : '최근 1개월'} 수익률 상위 ETF
                     </div>
                     <ThemeSignalPanel signals={signals} themeId={theme.id} />
-                    {theme.members.slice(0, 5).map(etf => <ThemeEtfCard key={etf.code} etf={etf} period={period} />)}
+                    <ThemeEtfList theme={theme} period={period} />
                   </div>
                 )}
               </section>
