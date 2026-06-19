@@ -18,6 +18,7 @@ const NAVER_LIST_URL = 'https://finance.naver.com/api/sise/etfItemList.nhn';
 const DATA_DIR = new URL('../public/data/', import.meta.url);
 const REQUEST_DELAY_MS = Number(process.env.COLLECT_DELAY_MS || 350);
 const RETENTION_DAYS = 365;
+const THEME_SIGNAL_DAYS = 30;
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -289,7 +290,10 @@ async function main() {
   cutoff.setUTCDate(cutoff.getUTCDate() - RETENTION_DAYS);
   const retainedHistory = existingHistory.filter(item => item.date !== market.asOf && item.date >= formatDate(cutoff));
   const history = [...changes, ...retainedHistory].slice(0, 10000);
-  const themeSignals = buildThemeSignals(etfs, changes);
+  const themeSignalCutoff = new Date(`${market.asOf}T00:00:00Z`);
+  themeSignalCutoff.setUTCDate(themeSignalCutoff.getUTCDate() - THEME_SIGNAL_DAYS + 1);
+  const themeSignalChanges = history.filter(item => item.date >= formatDate(themeSignalCutoff));
+  const themeSignals = buildThemeSignals(etfs, themeSignalChanges);
   etfs.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
   const listingCalendar = buildListingCalendar(etfs, market.asOf);
 

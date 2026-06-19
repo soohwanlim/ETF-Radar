@@ -184,7 +184,7 @@ export default function Home() {
         <section>
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold text-blue-600">1CU당 구성수량 증가</p>
+              <p className="text-sm font-semibold text-blue-600">최근 30일 · 1CU당 구성수량 증가</p>
               <h2 className="mt-1 text-xl font-bold text-slate-950">여러 ETF가 함께 늘린 종목</h2>
             </div>
             <Link to="/changes?types=quantity_increase,quantity_decrease,quantity_decrease_weight_held" className="shrink-0 text-xs font-bold text-slate-500 hover:text-blue-600">전체 보기</Link>
@@ -217,7 +217,7 @@ export default function Home() {
               );
             })}
           </div>
-          <p className="mt-3 text-[10px] text-slate-400">메인에는 여러 테마 ETF에서 1CU당 구성수량이 함께 증가한 신호만 표시합니다. 감소와 TOP 10 변화는 변경 감지에서 확인할 수 있습니다.</p>
+          <p className="mt-3 text-[10px] text-slate-400">메인에는 최근 30일 동안 여러 테마 ETF에서 1CU당 구성수량이 함께 증가한 신호만 표시합니다. 감소와 TOP 10 변화는 변경 감지에서 확인할 수 있습니다.</p>
         </section>
       )}
 

@@ -126,7 +126,7 @@ function ThemeSignalPanel({ signals, themeId }) {
     <section className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4">
       <div className="mb-3">
         <div className="text-sm font-bold text-slate-900">공통 구성종목 변화</div>
-        <div className="mt-1 text-xs text-slate-500">1CU당 수량 변화와 TOP 10 진입·이탈/비중 변화를 구분해 표시합니다.</div>
+        <div className="mt-1 text-xs text-slate-500">최근 30일 기준으로 1CU당 수량 변화와 TOP 10 진입·이탈/비중 변화를 구분해 표시합니다.</div>
       </div>
       <div className="space-y-2">
         {themeSignals.map(signal => {

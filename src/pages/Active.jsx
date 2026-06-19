@@ -10,6 +10,7 @@ const PERIODS = [
   { id: '3m', label: '3개월' },
   { id: '1y', label: '1년' },
 ];
+const ACTIVE_COMMON_SIGNAL_DAYS = 7;
 
 const THEME_RULES = [
   { id: 'semi', name: '반도체', pattern: /코리아테크TOP10|반도체|SK하이닉스|삼성전자/ },
@@ -213,6 +214,15 @@ function sortSignalsByAverage(signals) {
     .slice(0, 4);
 }
 
+function filterChangesByDays(changes, days) {
+  const latestDate = changes[0]?.date;
+  if (!latestDate) return [];
+  const cutoff = new Date(`${latestDate}T00:00:00Z`);
+  cutoff.setUTCDate(cutoff.getUTCDate() - days + 1);
+  const cutoffDate = cutoff.toISOString().slice(0, 10);
+  return changes.filter(change => change.date >= cutoffDate);
+}
+
 export default function Active() {
   const [period, setPeriod] = useState('3m');
   const [themeId, setThemeId] = useState('all');
@@ -258,7 +268,8 @@ export default function Active() {
     });
   }, [rows, search, themeId]);
   const outperformCount = rows.filter(row => row.excess != null && row.excess > 0).length;
-  const commonIncreases = useMemo(() => buildCommonActiveIncreases(rows, changes), [changes, rows]);
+  const recentCommonSignalChanges = useMemo(() => filterChangesByDays(changes, ACTIVE_COMMON_SIGNAL_DAYS), [changes]);
+  const commonIncreases = useMemo(() => buildCommonActiveIncreases(rows, recentCommonSignalChanges), [recentCommonSignalChanges, rows]);
   const commonIncreasesByCount = useMemo(() => sortSignalsByCount(commonIncreases), [commonIncreases]);
   const commonIncreasesByAverage = useMemo(() => sortSignalsByAverage(commonIncreases), [commonIncreases]);
 
@@ -353,7 +364,7 @@ export default function Active() {
               <p className="text-sm font-bold text-red-600">액티브 공통 매수 신호</p>
               <h2 className="text-xl font-extrabold text-slate-950">여러 액티브 ETF가 함께 늘린 종목</h2>
             </div>
-            <span className="text-xs font-semibold text-slate-500">1CU당 구성수량 증가 기준</span>
+            <span className="text-xs font-semibold text-slate-500">최근 {ACTIVE_COMMON_SIGNAL_DAYS}일 · 1CU당 구성수량 증가 기준</span>
           </div>
           <div className="space-y-5">
             <div>
