@@ -18,11 +18,10 @@ export const THEME_RULES = [
 export const ETC_THEME = { id: 'etc', name: '전략·기타', pattern: /./ };
 
 export function getThemeSearchText(etf) {
-  return `${etf?.name || ''} ${etf?.benchmark || ''} ${etf?.description || ''}`;
+  return etf?.name || '';
 }
 
 export function themeMatchesEtf(theme, etf) {
-  if (theme.id === 'index') return theme.pattern.test(etf?.name || '');
   return theme.pattern.test(getThemeSearchText(etf));
 }
 

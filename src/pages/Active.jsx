@@ -12,6 +12,7 @@ const PERIODS = [
   { id: '1y', label: '1년' },
 ];
 const ACTIVE_COMMON_SIGNAL_DAYS = 7;
+const ACTIVE_LIST_INITIAL_COUNT = 12;
 
 
 function isActiveEtf(etf) {
@@ -211,6 +212,7 @@ export default function Active() {
   const [search, setSearch] = useState('');
   const [expandedSignalKey, setExpandedSignalKey] = useState(null);
   const [expandedSignalSections, setExpandedSignalSections] = useState(() => new Set());
+  const [showAllActiveRows, setShowAllActiveRows] = useState(false);
   const [changes, setChanges] = useState([]);
   const [changesLoading, setChangesLoading] = useState(true);
   const { etfs, loading, error } = useETFData(period);
@@ -250,6 +252,8 @@ export default function Active() {
       return themeOk && keywordOk;
     });
   }, [rows, search, themeId]);
+  const visibleFilteredRows = showAllActiveRows ? filteredRows : filteredRows.slice(0, ACTIVE_LIST_INITIAL_COUNT);
+  //const hiddenActiveRowCount = filteredRows.length - visibleFilteredRows.length;
   const outperformCount = rows.filter(row => row.excess != null && row.excess > 0).length;
   const recentCommonSignalChanges = useMemo(() => filterChangesByDays(changes, ACTIVE_COMMON_SIGNAL_DAYS), [changes]);
   const commonIncreases = useMemo(() => buildCommonActiveIncreases(rows, recentCommonSignalChanges), [recentCommonSignalChanges, rows]);
@@ -336,6 +340,15 @@ export default function Active() {
                 <span className="shrink-0 font-bold text-red-600">+{etf.shareChangeRate}%</span>
               </Link>
             ))}
+            {filteredRows.length > ACTIVE_LIST_INITIAL_COUNT && (
+              <button
+                type="button"
+                onClick={() => setShowAllActiveRows(prev => !prev)}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+              >
+                {showAllActiveRows ? '접기' : `전체 ${filteredRows.length}개 ETF 펼쳐보기`}
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -438,7 +451,7 @@ export default function Active() {
           <div className="p-12 text-center text-sm text-slate-500">조건에 맞는 액티브 ETF가 없습니다.</div>
         ) : (
           <div className="space-y-3">
-            {filteredRows.map(row => (
+            {visibleFilteredRows.map(row => (
               <article key={row.etf.code} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0 flex-1">
@@ -504,7 +517,7 @@ export default function Active() {
       </section>
 
       <p className="text-[11px] leading-relaxed text-slate-500">
-        테마 비교는 ETF명, 기초지수, 설명 텍스트의 키워드 기반 자동 분류입니다. TOP 10 구성자산 변화는 전체 편입/편출이 아니라 네이버 금융 상위 10개 스냅샷 기준 변화입니다.
+        테마 비교는 ETF명 키워드 기반 자동 분류입니다. TOP 10 구성자산 변화는 전체 편입/편출이 아니라 네이버 금융 상위 10개 스냅샷 기준 변화입니다.
       </p>
     </div>
   );

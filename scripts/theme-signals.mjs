@@ -132,9 +132,9 @@ export function buildThemeSignals(etfs = [], changes = [], themes = SIGNAL_THEME
     }
   }
 
-  return signals.sort((a, b) => (a.signalType === 'per_cu_quantity' ? -1 : 1) - (b.signalType === 'per_cu_quantity' ? -1 : 1)
+  return signals.sort((a, b) => b.date.localeCompare(a.date)
+    || (a.signalType === 'per_cu_quantity' ? -1 : 1) - (b.signalType === 'per_cu_quantity' ? -1 : 1)
     || b.etfCount - a.etfCount
-    || b.coverageRate - a.coverageRate
     || Math.abs(b.averageShareChangeRate || b.averageWeightDelta || 0) - Math.abs(a.averageShareChangeRate || a.averageWeightDelta || 0)
     || a.holdingName.localeCompare(b.holdingName, 'ko'));
 }

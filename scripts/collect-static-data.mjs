@@ -89,19 +89,30 @@ async function fetchUniverse() {
 
 async function fetchKrxClose(apiKey) {
   if (!apiKey) throw new Error('KRX_API_KEY is required');
+  const attempts = [];
   for (let offset = 0; offset < 10; offset++) {
     const date = new Date(Date.now() + 9 * 60 * 60 * 1000 - offset * 86400000);
     const basDd = compactDate(date);
-    const response = await fetch(`${KRX_URL}?basDd=${basDd}`, { headers: { AUTH_KEY: apiKey } });
-    const data = await response.json().catch(() => ({}));
-    if (response.status === 401 || data.respCode === '401') throw new Error('KRX API unauthorized');
-    if (!response.ok) throw new Error(`KRX API HTTP ${response.status}`);
-    const rows = data.OutBlock_1 || [];
-    if (rows.length) return { asOf: formatDate(date), rows };
+    try {
+      const response = await fetch(`${KRX_URL}?basDd=${basDd}`, { headers: { AUTH_KEY: apiKey } });
+      const data = await response.json().catch(() => ({}));
+      if (response.status === 401 || data.respCode === '401') throw new Error('KRX API unauthorized');
+      if (!response.ok) {
+        attempts.push(`${basDd}:HTTP ${response.status}`);
+        await sleep(500);
+        continue;
+      }
+      const rows = data.OutBlock_1 || [];
+      if (rows.length) return { asOf: formatDate(date), rows };
+      attempts.push(`${basDd}:empty`);
+    } catch (error) {
+      if (error.message === 'KRX API unauthorized') throw error;
+      attempts.push(`${basDd}:${error.message}`);
+      await sleep(500);
+    }
   }
-  throw new Error('KRX API returned no recent data');
+  throw new Error(`KRX API returned no recent data (${attempts.join(', ')})`);
 }
-
 function normalizeKrx(row) {
   return {
     code: normalizeIssueCode(row.ISU_CD || row.ISU_SRT_CD || row.SHRT_CODE),

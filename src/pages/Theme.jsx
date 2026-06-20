@@ -122,10 +122,8 @@ function ThemeEtfCard({ etf, period }) {
 }
 
 function ThemeSignalPanel({ signals, themeId }) {
-  const [showAllSignals, setShowAllSignals] = useState(false);
   const themeSignals = signals.filter(signal => signal.themeId === themeId);
-  const visibleSignals = showAllSignals ? themeSignals : themeSignals.slice(0, 5);
-  const hiddenSignalCount = themeSignals.length - visibleSignals.length;
+  const visibleSignals = themeSignals.slice(0, 5);
   if (themeSignals.length === 0) return null;
 
   return (
@@ -185,15 +183,6 @@ function ThemeSignalPanel({ signals, themeId }) {
           );
         })}
       </div>
-      {themeSignals.length > 5 && (
-        <button
-          type="button"
-          onClick={() => setShowAllSignals(prev => !prev)}
-          className="mt-3 w-full rounded-xl border border-blue-100 bg-white px-4 py-2 text-xs font-bold text-blue-600 hover:bg-blue-50"
-        >
-          {showAllSignals ? '접기' : `남은 ${hiddenSignalCount}개 더 보기`}
-        </button>
-      )}
       <p className="mt-3 text-[10px] leading-relaxed text-slate-400">TOP 10 이탈은 전체 편출을 뜻하지 않습니다. 수량 감소에도 비중이 유지되는 경우는 주가 상승이나 비중 관리 영향일 수 있지만, 매매 의도로 단정하지 않습니다.</p>
     </section>
   );
@@ -243,7 +232,7 @@ export default function Theme() {
           <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-2 text-slate-950">
             <LayoutGrid className="text-emerald-600" /> 테마 핫 ETF
           </h1>
-          <p className="text-slate-600 text-sm mt-2">국내 주식형 ETF를 산업 테마로 자동 분류하고, 상위 3개 ETF 평균 수익률로 정렬합니다.</p>
+          <p className="text-slate-600 text-sm mt-2">국내 주식형 ETF를 ETF명 기반 테마로 자동 분류하고, 상위 3개 ETF 평균 수익률로 정렬합니다.</p>
         </div>
         <div className="flex bg-white p-1 rounded-xl border border-slate-200">
           {PERIODS.map(item => (

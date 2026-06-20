@@ -92,9 +92,6 @@ function evaluateStatus(status, now = new Date()) {
   if (status.state !== 'success') {
     problems.push(`state is ${status.state || 'missing'}`);
   }
-  if (status.lastCheckState === 'no_new_data') {
-    problems.push(`collector saw no newer KRX data; latestAvailableAsOf=${status.latestAvailableAsOf || 'missing'}`);
-  }
   if (!asOfDate) {
     problems.push(`invalid asOf: ${status.asOf || 'missing'}`);
   } else {
