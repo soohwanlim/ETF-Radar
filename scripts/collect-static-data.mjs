@@ -46,13 +46,13 @@ async function writeJson(name, value) {
   await writeFile(target, `${JSON.stringify(value)}\n`);
 }
 
-async function writeCollectionCheck({ manifest, status, checkedAt, latestAvailableAsOf }) {
+async function writeCollectionCheck({ manifest, status, checkedAt, latestAvailableAsOf, lastCheckState = 'no_new_data', note = null }) {
   await Promise.all([
     writeJson('manifest.json', {
       ...manifest,
       lastCheckedAt: checkedAt,
       latestAvailableAsOf,
-      lastCheckState: 'no_new_data',
+      lastCheckState,
     }),
     writeJson('status.json', {
       ...status,
@@ -64,9 +64,10 @@ async function writeCollectionCheck({ manifest, status, checkedAt, latestAvailab
       changeCount: status.changeCount ?? manifest.changeCount ?? 0,
       themeSignalCount: status.themeSignalCount ?? manifest.themeSignalCount ?? 0,
       source: status.source || manifest.source || 'KRX Open API / Naver Finance TOP 10',
+      note,
       lastCheckedAt: checkedAt,
       latestAvailableAsOf,
-      lastCheckState: 'no_new_data',
+      lastCheckState,
     }),
   ]);
 }
@@ -205,8 +206,25 @@ async function main() {
   const existingEtfMap = new Map(existingEtfs.map(item => [item.code, item]));
   const universe = await fetchUniverse();
   const universeMap = new Map(universe.map(item => [item.itemcode, item]));
-  const market = await fetchKrxClose(process.env.KRX_API_KEY);
+  let market;
   const checkedAt = new Date().toISOString();
+  try {
+    market = await fetchKrxClose(process.env.KRX_API_KEY);
+  } catch (error) {
+    if (existingEtfs.length > 0 && ['KRX_FORBIDDEN', 'KRX_UNAVAILABLE'].includes(error.code)) {
+      await writeCollectionCheck({
+        manifest,
+        status: existingStatus,
+        checkedAt,
+        latestAvailableAsOf: existingStatus.latestAvailableAsOf || manifest.latestAvailableAsOf || existingStatus.asOf || manifest.asOf,
+        lastCheckState: error.code === 'KRX_FORBIDDEN' ? 'krx_forbidden' : 'krx_unavailable',
+        note: error.message,
+      });
+      console.warn(`${error.message}; preserved existing data asOf=${existingStatus.asOf || manifest.asOf || 'unknown'}`);
+      return;
+    }
+    throw error;
+  }
   if (!process.env.FORCE_COLLECT && manifest.asOf === market.asOf && existingEtfs.length > 0) {
     await writeCollectionCheck({
       manifest,
