@@ -32,6 +32,16 @@ function compactDate(date) {
   return formatDate(date).replaceAll('-', '');
 }
 
+function isWeekendDate(date) {
+  const day = date.getUTCDay();
+  return day === 0 || day === 6;
+}
+
+function countMatchedMarketRows(rows, universeCodes) {
+  if (!universeCodes?.size) return rows.length;
+  return rows.map(normalizeKrx).filter(item => universeCodes.has(item.code) && item.price > 0).length;
+}
+
 async function readJson(name, fallback) {
   try {
     return JSON.parse(await readFile(new URL(name, DATA_DIR), 'utf8'));
@@ -88,12 +98,16 @@ async function fetchUniverse() {
   return (data?.result?.etfItemList || []).filter(isSupportedDomesticSpotEtf);
 }
 
-async function fetchKrxClose(apiKey) {
+async function fetchKrxClose(apiKey, universeCodes = null) {
   if (!apiKey) throw new Error('KRX_API_KEY is required');
   const attempts = [];
   for (let offset = 0; offset < 10; offset++) {
     const date = new Date(Date.now() + 9 * 60 * 60 * 1000 - offset * 86400000);
     const basDd = compactDate(date);
+    if (isWeekendDate(date)) {
+      attempts.push(`${basDd}:weekend`);
+      continue;
+    }
     try {
       const response = await fetch(`${KRX_URL}?basDd=${basDd}`, { headers: { AUTH_KEY: apiKey } });
       const data = await response.json().catch(() => ({}));
@@ -104,7 +118,13 @@ async function fetchKrxClose(apiKey) {
         continue;
       }
       const rows = data.OutBlock_1 || [];
-      if (rows.length) return { asOf: formatDate(date), rows };
+      if (rows.length) {
+        const matchedRows = countMatchedMarketRows(rows, universeCodes);
+        const minimumMatchedRows = universeCodes?.size ? Math.min(50, Math.floor(universeCodes.size * 0.1)) : 1;
+        if (matchedRows >= minimumMatchedRows) return { asOf: formatDate(date), rows };
+        attempts.push(`${basDd}:matched ${matchedRows}/${universeCodes?.size || 0}`);
+        continue;
+      }
       attempts.push(`${basDd}:empty`);
     } catch (error) {
       if (error.message === 'KRX API unauthorized') throw error;
@@ -112,7 +132,10 @@ async function fetchKrxClose(apiKey) {
       await sleep(500);
     }
   }
-  throw new Error(`KRX API returned no recent data (${attempts.join(', ')})`);
+  const error = new Error(`KRX API returned no recent usable data (${attempts.join(', ')})`);
+  error.code = attempts.every(item => item.includes('HTTP 403')) ? 'KRX_FORBIDDEN' : 'KRX_UNAVAILABLE';
+  error.attempts = attempts;
+  throw error;
 }
 function normalizeKrx(row) {
   return {
@@ -209,7 +232,7 @@ async function main() {
   let market;
   const checkedAt = new Date().toISOString();
   try {
-    market = await fetchKrxClose(process.env.KRX_API_KEY);
+    market = await fetchKrxClose(process.env.KRX_API_KEY, new Set(universeMap.keys()));
   } catch (error) {
     if (existingEtfs.length > 0 && ['KRX_FORBIDDEN', 'KRX_UNAVAILABLE'].includes(error.code)) {
       await writeCollectionCheck({
