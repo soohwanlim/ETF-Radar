@@ -23,7 +23,7 @@ const STATE_STYLE = {
 const CHECK_LABEL = {
   updated: '데이터 갱신',
   partial: '부분 갱신',
-  no_new_data: 'KRX 신규 기준일 없음',
+  no_new_data: '최신 기준일 유지',
 };
 
 function formatKstDateTime(value) {
@@ -63,7 +63,9 @@ export default function DataStatus() {
     );
   }
 
-  const visualState = status.lastCheckState === 'no_new_data' ? 'waiting' : status.state;
+  const latestAsOf = status.latestAvailableAsOf || status.asOf;
+  const hasCurrentDataset = status.state === 'success' && latestAsOf === status.asOf;
+  const visualState = status.lastCheckState === 'no_new_data' && !hasCurrentDataset ? 'waiting' : status.state;
   const config = STATE_STYLE[visualState] || STATE_STYLE.partial;
   const Icon = config.icon;
   const checkedAt = formatKstDateTime(status.lastCheckedAt);
