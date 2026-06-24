@@ -35,6 +35,16 @@ export default function ETFDetail() {
     );
   }
 
+  const historyGroups = (history || []).reduce((groups, item) => {
+    const latestGroup = groups.at(-1);
+    if (latestGroup?.date === item.date) {
+      latestGroup.items.push(item);
+    } else {
+      groups.push({ date: item.date, items: [item] });
+    }
+    return groups;
+  }, []);
+
   return (
     <div className="space-y-10 fade-in">
       
@@ -114,18 +124,24 @@ export default function ETFDetail() {
             ) : historyError ? (
               <div className="text-xs text-slate-500">이력을 불러오지 못했습니다.</div>
             ) : history && history.length > 0 ? (
-              <div className="relative pl-6 border-l border-slate-200 space-y-6">
-                {history.map((hist, idx) => (
-                  <div key={idx} className="relative">
-                    <span className={`absolute -left-[30px] top-1.5 w-2 h-2 rounded-full border-2 ${
-                      hist.type === 'swap' ? 'bg-amber-500 border-amber-950 shadow-md shadow-amber-500/20' :
-                      hist.type === 'new' ? 'bg-emerald-500 border-emerald-950' :
-                      hist.type === 'out' ? 'bg-rose-500 border-rose-950' :
-                      'bg-slate-500 border-slate-200'
-                    }`} />
-                    
-                    <span className="text-[10px] text-slate-500 block font-mono font-semibold">{hist.date}</span>
-                    <p className="text-xs text-slate-700 mt-1">{hist.message}</p>
+              <div className="space-y-6">
+                {historyGroups.map((group, groupIndex) => (
+                  <div key={group.date} className={groupIndex > 0 ? 'border-t border-slate-200 pt-5' : ''}>
+                    <div className="relative pl-6 border-l border-slate-200 space-y-4">
+                      {group.items.map((hist, idx) => (
+                        <div key={`${hist.date}-${idx}-${hist.message}`} className="relative">
+                          <span className={`absolute -left-[30px] top-1.5 w-2 h-2 rounded-full border-2 ${
+                            hist.type === 'swap' ? 'bg-amber-500 border-amber-950 shadow-md shadow-amber-500/20' :
+                            hist.type === 'new' ? 'bg-emerald-500 border-emerald-950' :
+                            hist.type === 'out' ? 'bg-rose-500 border-rose-950' :
+                            'bg-slate-500 border-slate-200'
+                          }`} />
+
+                          <span className="text-[10px] text-slate-500 block font-mono font-semibold">{hist.date}</span>
+                          <p className="text-xs text-slate-700 mt-1">{hist.message}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
