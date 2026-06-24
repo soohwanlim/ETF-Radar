@@ -6,12 +6,13 @@ import { useCompareStore } from '../store/compareStore';
 import { useETFData } from '../hooks/useETFData';
 import { useChanges } from '../hooks/useChanges';
 import ETFIcon from '../components/ETFIcon';
-import { loadListings, loadThemeSignals } from '../data/staticData';
+import { loadChangesHistory, loadListings, loadThemeSignals } from '../data/staticData';
 
 const PERIODS = [
   ['1d', '오늘'], ['1w', '1주'], ['1m', '1개월'], ['3m', '3개월'], ['1y', '1년'], ['10y', '10년'],
 ];
 const COLLAPSED_ETF_COUNT = 30;
+const ACTIVE_COMMON_SIGNAL_DAYS = 7;
 const MARKET_PROXIES = [
   { code: '069500', label: 'KOSPI200', name: 'KODEX 200' },
   { code: '229200', label: 'KOSDAQ150', name: 'KODEX 코스닥150' },
@@ -55,12 +56,68 @@ function selectMainSignals(signals) {
   return selected;
 }
 
+function filterChangesByDays(changes, days) {
+  const latestDate = changes[0]?.date;
+  if (!latestDate) return [];
+  const cutoff = new Date(`${latestDate}T00:00:00Z`);
+  cutoff.setUTCDate(cutoff.getUTCDate() - days + 1);
+  const cutoffDate = cutoff.toISOString().slice(0, 10);
+  return changes.filter(change => change.date >= cutoffDate);
+}
+
+function buildActiveCommonSignals(etfs, changes) {
+  const activeEtfs = new Map(etfs.filter(isActiveEtf).map(etf => [etf.code, etf]));
+  const grouped = new Map();
+
+  for (const change of filterChangesByDays(changes, ACTIVE_COMMON_SIGNAL_DAYS)) {
+    if (change.classification !== 'quantity_increase' || !activeEtfs.has(change.code)) continue;
+    const key = `${change.holdingCode || change.holdingName}-${change.holdingName}`;
+    const group = grouped.get(key) || {
+      holdingCode: change.holdingCode,
+      holdingName: change.holdingName,
+      latestDate: change.date,
+      etfs: new Map(),
+    };
+    const previous = group.etfs.get(change.code);
+    if (!previous || change.date >= previous.date) {
+      group.etfs.set(change.code, {
+        code: change.code,
+        name: change.etfName || activeEtfs.get(change.code)?.name,
+        shareChangeRate: change.shareChangeRate,
+        date: change.date,
+      });
+    }
+    group.latestDate = group.latestDate > change.date ? group.latestDate : change.date;
+    grouped.set(key, group);
+  }
+
+  return [...grouped.values()]
+    .map(signal => {
+      const signalEtfs = [...signal.etfs.values()]
+        .sort((a, b) => (b.shareChangeRate ?? -Infinity) - (a.shareChangeRate ?? -Infinity));
+      const rates = signalEtfs.map(etf => etf.shareChangeRate).filter(value => value != null);
+      return {
+        ...signal,
+        etfs: signalEtfs,
+        etfCount: signalEtfs.length,
+        averageShareChangeRate: rates.length
+          ? Number((rates.reduce((sum, value) => sum + value, 0) / rates.length).toFixed(2))
+          : null,
+      };
+    })
+    .filter(signal => signal.etfCount >= 2)
+    .sort((a, b) => b.etfCount - a.etfCount
+      || b.latestDate.localeCompare(a.latestDate)
+      || (b.averageShareChangeRate ?? -Infinity) - (a.averageShareChangeRate ?? -Infinity))
+    .slice(0, 3);
+}
 export default function Home() {
   const [period, setPeriod] = useState('3m');
   const [search, setSearch] = useState('');
   const [showAllEtfs, setShowAllEtfs] = useState(false);
   const [activeOnly, setActiveOnly] = useState(false);
   const [themeSignals, setThemeSignals] = useState([]);
+  const [activeSignalChanges, setActiveSignalChanges] = useState([]);
   const [listings, setListings] = useState({ recent: [], upcoming: [] });
   const { watchlist, toggleWatchlist } = useWatchlistStore();
   const { selectedEtfs, addEtf, removeEtf } = useCompareStore();
@@ -101,10 +158,12 @@ export default function Home() {
   }, [asOf, etfs]);
   const recentListings = listings.recent?.length ? listings.recent : fallbackRecentListings;
   const mainSignals = useMemo(() => selectMainSignals(themeSignals), [themeSignals]);
+  const activeCommonSignals = useMemo(() => buildActiveCommonSignals(etfs, activeSignalChanges), [activeSignalChanges, etfs]);
 
   useEffect(() => {
     let active = true;
     loadThemeSignals().then(data => active && setThemeSignals(data)).catch(() => active && setThemeSignals([]));
+    loadChangesHistory().then(data => active && setActiveSignalChanges(data)).catch(() => active && setActiveSignalChanges([]));
     loadListings().then(data => active && setListings(data)).catch(() => active && setListings({ recent: [], upcoming: [] }));
     return () => { active = false; };
   }, []);
@@ -221,6 +280,49 @@ export default function Home() {
         </section>
       )}
 
+      {activeCommonSignals.length > 0 && (
+        <section>
+          <div className="mb-4 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-red-600">최근 7일 · 많은 액티브 ETF에서 증가한 순</p>
+              <h2 className="mt-1 text-xl font-bold text-slate-950">액티브 ETF가 함께 늘린 종목</h2>
+            </div>
+            <Link to="/active" className="shrink-0 text-xs font-bold text-slate-500 hover:text-red-600">전체 보기</Link>
+          </div>
+          <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1 md:grid md:grid-cols-3 md:overflow-visible">
+            {activeCommonSignals.map(signal => (
+              <Link
+                key={`${signal.holdingCode || signal.holdingName}-${signal.holdingName}`}
+                to="/active"
+                className="min-w-[270px] rounded-3xl border border-red-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md md:min-w-0"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-lg font-extrabold text-slate-950">{signal.holdingName}</h3>
+                    <p className="mt-1 text-sm font-semibold text-red-700">{signal.etfCount}개 액티브 ETF에서 증가</p>
+                  </div>
+                  <span className="rounded-full bg-red-50 p-2 text-red-600"><ArrowUpRight size={16} /></span>
+                </div>
+                <div className="mt-5 flex items-end justify-between text-xs text-slate-500">
+                  <span>{signal.latestDate} 기준</span>
+                  {signal.averageShareChangeRate != null && (
+                    <span className="font-bold text-red-600">평균 +{signal.averageShareChangeRate}%</span>
+                  )}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {signal.etfs.slice(0, 2).map(etf => (
+                    <span key={etf.code} className="max-w-full truncate rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600">{etf.name}</span>
+                  ))}
+                  {signal.etfCount > 2 && (
+                    <span className="rounded-full bg-red-50 px-2.5 py-1 text-[10px] font-bold text-red-600">+{signal.etfCount - 2}</span>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+          <p className="mt-3 text-[10px] text-slate-400">액티브 ETF만 대상으로 최근 7일간 1CU당 구성수량이 함께 증가한 종목을 요약합니다.</p>
+        </section>
+      )}
       {recentListings.length > 0 && (
         <section>
           <div className="mb-4 flex items-end justify-between gap-4">
