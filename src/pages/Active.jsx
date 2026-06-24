@@ -340,15 +340,6 @@ export default function Active() {
                 <span className="shrink-0 font-bold text-red-600">+{etf.shareChangeRate}%</span>
               </Link>
             ))}
-            {filteredRows.length > ACTIVE_LIST_INITIAL_COUNT && (
-              <button
-                type="button"
-                onClick={() => setShowAllActiveRows(prev => !prev)}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-              >
-                {showAllActiveRows ? '접기' : `전체 ${filteredRows.length}개 ETF 펼쳐보기`}
-              </button>
-            )}
           </div>
         )}
       </div>
@@ -512,6 +503,15 @@ export default function Active() {
                 </div>
               </article>
             ))}
+            {filteredRows.length > ACTIVE_LIST_INITIAL_COUNT && (
+              <button
+                type="button"
+                onClick={() => setShowAllActiveRows(prev => !prev)}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+              >
+                {showAllActiveRows ? '접기' : `전체 ${filteredRows.length}개 ETF 펼쳐보기`}
+              </button>
+            )}
           </div>
         )}
       </section>

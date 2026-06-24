@@ -1,7 +1,7 @@
 export const THEME_RULES = [
   { id: 'semi', name: '반도체', pattern: /코리아테크TOP10|반도체|SK하이닉스|삼성전자/ },
   { id: 'valueup', name: '밸류업', pattern: /밸류업/ },
-  { id: 'index', name: '지수', pattern: /코스피|코스닥|KOSPI|KOSDAQ/ },
+  { id: 'index', name: '지수', pattern: /코스피|코스닥|KOSPI|KOSDAQ|(?:^|\s)(?:200|100)액티브|코스닥?150액티브/i },
   { id: 'battery', name: '2차전지', pattern: /2차전지|배터리|전고체|양극재|리튬/ },
   { id: 'ai-robot', name: 'AI·로봇', pattern: /인공지능|로봇|휴머노이드|딥러닝|소프트웨어|온디바이스|(?:^|[^A-Z])AI(?:[^A-Z]|$)/i },
   { id: 'defense', name: '방산·우주', pattern: /방산|우주|항공/ },
