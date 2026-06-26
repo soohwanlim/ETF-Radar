@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Database, Mail, ShieldAlert, UserRound } from 'lucide-react';
 
-const UPDATED_AT = '2026-06-16';
+const UPDATED_AT = '2026-06-26';
 
 function Section({ title, icon: Icon, children }) {
   return (
@@ -41,8 +41,8 @@ export default function Policy() {
           페이지 조회, 국가, 기기 유형 등 집계 통계를 제공하며, 개별 사용자를 식별하기 위한 목적으로 사용하지 않습니다.
         </p>
         <p>
-          향후 Google AdSense 등 광고 서비스가 적용되면 광고 제공 과정에서 Google 또는 제3자가 쿠키, 광고 식별자,
-          유사 기술을 사용할 수 있습니다. 광고 적용 전 관련 고지를 본 페이지에 추가합니다.
+          Google AdSense 등 광고 서비스가 적용되면 광고 제공 과정에서 Google 또는 제3자가 쿠키, 광고 식별자,
+          유사 기술을 사용할 수 있습니다. 사용자는 브라우저 또는 Google 광고 설정을 통해 개인화 광고를 관리할 수 있습니다.
         </p>
       </Section>
 
