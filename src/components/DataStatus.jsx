@@ -20,6 +20,8 @@ const STATE_STYLE = {
   },
 };
 
+const STATUS_BAR_INNER_CLASS = 'mx-auto flex min-h-9 max-w-6xl flex-wrap items-center gap-x-3 gap-y-1 px-6 py-2 text-[11px]';
+
 const CHECK_LABEL = {
   updated: '데이터 갱신',
   partial: '부분 갱신',
@@ -97,12 +99,22 @@ export default function DataStatus() {
       .catch(() => setUnavailable(true));
   }, []);
 
-  if (!status && !unavailable) return null;
+  if (!status && !unavailable) {
+    return (
+      <div className="border-b border-slate-100 bg-white text-slate-400">
+        <div className={STATUS_BAR_INNER_CLASS} aria-hidden="true">
+          <span className="flex items-center gap-1.5 font-bold">
+            <Clock3 size={13} /> 데이터 상태 확인 중
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   if (unavailable) {
     return (
       <div className="border-b border-amber-200 bg-amber-50 text-amber-700">
-        <div className="mx-auto flex max-w-6xl items-center gap-2 px-6 py-2 text-[11px]">
+        <div className={STATUS_BAR_INNER_CLASS}>
           <Clock3 size={13} />
           데이터 수집 상태를 확인할 수 없습니다.
         </div>
@@ -121,7 +133,7 @@ export default function DataStatus() {
 
   return (
     <div className={`border-b ${config.className}`}>
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-3 gap-y-1 px-6 py-2 text-[11px]">
+      <div className={STATUS_BAR_INNER_CLASS}>
         <span className="flex items-center gap-1.5 font-bold">
           <Icon size={13} />
           {config.label}

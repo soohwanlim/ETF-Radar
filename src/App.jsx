@@ -96,7 +96,7 @@ export default function App() {
         <DataStatus />
 
         <main className="mx-auto w-full max-w-6xl px-5 py-7 pb-24 md:px-6 md:py-12 md:pb-12">
-          <Suspense fallback={<div className="py-24 text-center text-sm text-slate-500">페이지를 불러오는 중입니다.</div>}>
+          <Suspense fallback={<div className="flex min-h-[60vh] items-center justify-center py-24 text-center text-sm text-slate-500">페이지를 불러오는 중입니다.</div>}>
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/theme" element={<Theme />} />
