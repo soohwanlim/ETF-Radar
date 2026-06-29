@@ -1,10 +1,10 @@
 import { lazy, Suspense } from 'react';
+import Home from './pages/Home';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Activity, ArrowLeftRight, BarChart3, Grid2X2, RefreshCw, ShieldAlert, Star, X } from 'lucide-react';
 import { useCompareStore } from './store/compareStore';
 import DataStatus from './components/DataStatus';
 
-const Home = lazy(() => import('./pages/Home'));
 const About = lazy(() => import('./pages/About'));
 const Theme = lazy(() => import('./pages/Theme'));
 const Compare = lazy(() => import('./pages/Compare'));
