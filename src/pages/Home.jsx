@@ -239,7 +239,7 @@ export default function Home() {
         </div>
       </section>
 
-      <div className="min-h-[980px] space-y-10 md:min-h-[720px]">
+      <div className="min-h-[1480px] space-y-10 md:min-h-[780px]">
         {mainSignals.length > 0 && (
         <section>
           <div className="mb-4 flex items-end justify-between gap-4">
@@ -387,7 +387,7 @@ export default function Home() {
             </button>
           </div>
 
-          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div className="min-h-[2480px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
             {etfsLoading ? (
               <div className="flex h-52 items-center justify-center gap-2 text-sm text-slate-500"><Loader2 className="animate-spin" size={18} />ETF를 불러오는 중입니다.</div>
             ) : etfsError ? (
