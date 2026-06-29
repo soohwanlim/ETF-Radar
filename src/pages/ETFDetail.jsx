@@ -16,7 +16,7 @@ export default function ETFDetail() {
 
   if (detailLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[500px] text-slate-600 space-y-4">
+      <div className="flex min-h-[1800px] flex-col items-center justify-center space-y-4 text-slate-600 md:min-h-[900px]">
         <Loader2 className="animate-spin text-blue-500" size={36} />
         <span>ETF 상세 정보와 구성종목 조회 중...</span>
       </div>
@@ -25,7 +25,7 @@ export default function ETFDetail() {
 
   if (detailError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[500px] text-rose-500 space-y-4">
+      <div className="flex min-h-[900px] flex-col items-center justify-center space-y-4 text-rose-500">
         <h2 className="text-xl font-bold">오류가 발생했습니다</h2>
         <p className="text-sm text-slate-600">{detailError}</p>
         <Link to="/" className="text-xs px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-700">
@@ -46,7 +46,7 @@ export default function ETFDetail() {
   }, []);
 
   return (
-    <div className="space-y-10 fade-in">
+    <div className="min-h-[1800px] space-y-10 fade-in md:min-h-[900px]">
       
       {/* Back button & Title */}
       <div className="flex items-center gap-4 py-4">
@@ -110,7 +110,7 @@ export default function ETFDetail() {
           )}
 
           {/* Timeline Section */}
-          <div className="glass p-6 rounded-3xl space-y-5">
+          <div className="glass min-h-[720px] p-6 rounded-3xl space-y-5">
             <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-200 pb-3">
               <RefreshCw size={16} className="text-violet-600 animate-spin-slow" />
               구성종목 변경 이력 (최근 1년)
