@@ -239,7 +239,8 @@ export default function Home() {
         </div>
       </section>
 
-      {mainSignals.length > 0 && (
+      <div className="min-h-[980px] space-y-10 md:min-h-[720px]">
+        {mainSignals.length > 0 && (
         <section>
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
@@ -352,6 +353,8 @@ export default function Home() {
           </div>
         </section>
       )}
+
+      </div>
 
       <section className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0">

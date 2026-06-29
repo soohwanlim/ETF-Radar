@@ -5,11 +5,13 @@ import { useCompareStore } from './store/compareStore';
 import DataStatus from './components/DataStatus';
 
 const Home = lazy(() => import('./pages/Home'));
+const About = lazy(() => import('./pages/About'));
 const Theme = lazy(() => import('./pages/Theme'));
 const Compare = lazy(() => import('./pages/Compare'));
 const Active = lazy(() => import('./pages/Active'));
 const ETFDetail = lazy(() => import('./pages/ETFDetail'));
 const Changes = lazy(() => import('./pages/Changes'));
+const Guide = lazy(() => import('./pages/Guide'));
 const Watchlist = lazy(() => import('./pages/Watchlist'));
 const Policy = lazy(() => import('./pages/Policy'));
 
@@ -99,10 +101,12 @@ export default function App() {
           <Suspense fallback={<div className="flex min-h-[60vh] items-center justify-center py-24 text-center text-sm text-slate-500">페이지를 불러오는 중입니다.</div>}>
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/about" element={<About />} />
               <Route path="/theme" element={<Theme />} />
               <Route path="/active" element={<Active />} />
               <Route path="/compare" element={<Compare />} />
               <Route path="/changes" element={<Changes />} />
+              <Route path="/guide" element={<Guide />} />
               <Route path="/watchlist" element={<Watchlist />} />
               <Route path="/etf/:code" element={<ETFDetail />} />
               <Route path="/policy" element={<Policy />} />
@@ -119,6 +123,8 @@ export default function App() {
                 <ShieldAlert size={14} /> 투자 유의사항
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-1 font-semibold text-slate-500">
+                <Link to="/about" className="hover:text-blue-600">서비스 소개</Link>
+                <Link to="/guide" className="hover:text-blue-600">데이터 해석 안내</Link>
                 <Link to="/policy" className="hover:text-blue-600">개인정보처리방침</Link>
                 <Link to="/policy" className="hover:text-blue-600">면책/투자 유의사항</Link>
                 <Link to="/policy" className="hover:text-blue-600">문의</Link>
