@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowDownRight, ArrowRight, ArrowUpRight, CalendarPlus, Check, ChevronDown, ChevronUp, Loader2, Search, Star } from 'lucide-react';
+import { ArrowDownRight, ArrowRight, ArrowUpRight, CalendarPlus, Check, ChevronDown, ChevronUp, Search, Star } from 'lucide-react';
 import { useWatchlistStore } from '../store/watchlistStore';
 import { useCompareStore } from '../store/compareStore';
 import { useETFData } from '../hooks/useETFData';
@@ -267,7 +267,7 @@ export default function Home() {
         </div>
       </section>
 
-      <div className="min-h-[980px] space-y-10 md:min-h-[720px]">
+      <div className="min-h-[1280px] space-y-10">
         {mainSignals.length > 0 && (
         <section>
           <div className="mb-4 flex items-end justify-between gap-4">
@@ -384,7 +384,7 @@ export default function Home() {
 
       </div>
 
-      <section className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <section className="grid min-h-[1180px] gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0">
           <div className="mb-5 flex flex-col gap-4">
             <div className="flex items-center justify-between">
@@ -417,7 +417,20 @@ export default function Home() {
 
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
             {etfsLoading ? (
-              <div className="flex h-52 items-center justify-center gap-2 text-sm text-slate-500"><Loader2 className="animate-spin" size={18} />ETF를 불러오는 중입니다.</div>
+              <div className="min-h-[980px] divide-y divide-slate-100">
+                {Array.from({ length: 12 }).map((_, index) => (
+                  <div key={index} className="flex items-center gap-3 px-4 py-4 md:px-5">
+                    <div className="h-9 w-9 shrink-0 animate-pulse rounded-full bg-slate-100" />
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="h-4 w-2/3 animate-pulse rounded bg-slate-100" />
+                      <div className="h-3 w-1/3 animate-pulse rounded bg-slate-100" />
+                    </div>
+                    <div className="h-4 w-16 animate-pulse rounded bg-slate-100" />
+                    <div className="hidden h-9 w-9 animate-pulse rounded-xl bg-slate-100 sm:block" />
+                    <div className="h-9 w-9 shrink-0 animate-pulse rounded-full bg-slate-100" />
+                  </div>
+                ))}
+              </div>
             ) : etfsError ? (
               <div className="p-12 text-center text-sm text-red-600">데이터를 불러오지 못했습니다: {etfsError}</div>
             ) : filteredEtfs.length === 0 ? (
@@ -475,7 +488,18 @@ export default function Home() {
 
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
             {changesLoading ? (
-              <div className="flex h-40 items-center justify-center"><Loader2 className="animate-spin text-slate-500" /></div>
+              <div className="min-h-[360px] divide-y divide-slate-100">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <div key={index} className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="h-4 w-32 animate-pulse rounded bg-slate-100" />
+                      <div className="h-6 w-16 animate-pulse rounded-full bg-slate-100" />
+                    </div>
+                    <div className="mt-3 h-3 w-full animate-pulse rounded bg-slate-100" />
+                    <div className="mt-2 h-3 w-2/3 animate-pulse rounded bg-slate-100" />
+                  </div>
+                ))}
+              </div>
             ) : changes.length > 0 ? changes.slice(0, 5).map((change, index) => (
               <Link key={`${change.code}-${index}`} to={`/etf/${change.code}`} className={`block p-4 transition-colors hover:bg-slate-100 ${index > 0 ? 'border-t border-slate-200' : ''}`}>
                 <div className="flex items-start justify-between gap-3">
