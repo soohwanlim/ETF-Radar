@@ -4,6 +4,7 @@ import {
   HeartPulse, Landmark, Layers3, Leaf, Network, Plane, RadioTower, Shield, Ship,
   Rocket, ShoppingBag, Zap,
 } from 'lucide-react';
+import { getEtfTheme } from '../data/themeRules';
 
 const BRAND_STYLES = [
   { pattern: /^(RISE)/i, background: '#ffcc00', foreground: '#402f00' },
@@ -23,7 +24,26 @@ const BRAND_STYLES = [
   { pattern: /^(UNICORN)/i, background: '#7c3aed', foreground: '#ffffff' },
 ];
 
+const THEME_ICON_BY_ID = {
+  semi: Cpu,
+  valueup: BarChart3,
+  index: BarChart3,
+  battery: BatteryCharging,
+  'ai-robot': Bot,
+  defense: Shield,
+  ship: Ship,
+  bio: HeartPulse,
+  finance: Landmark,
+  auto: Car,
+  energy: Zap,
+  content: ShoppingBag,
+  consumer: ShoppingBag,
+  industry: Factory,
+};
+
 const THEME_ICONS = [
+  { pattern: /금융|은행|증권|보험|고배당|배당|리츠|주주환원/i, icon: Landmark },
+  { pattern: /배터리|2차전지|전고체|리튬|양극재|전기차/i, icon: BatteryCharging },
   { pattern: /전력|전력설비|전기|에너지|ESS/i, icon: Zap },
   { pattern: /우주|스페이스/i, icon: Rocket },
   { pattern: /(?:^|[^A-Za-z])IT(?:[^A-Za-z]|$)|정보기술/i, icon: Cpu },
@@ -64,6 +84,9 @@ function getIcon(etf) {
   const name = etf?.name || '';
   const nameMatch = THEME_ICONS.find(item => item.pattern.test(name));
   if (nameMatch) return nameMatch.icon;
+
+  const themeIcon = THEME_ICON_BY_ID[getEtfTheme(etf).id];
+  if (themeIcon) return themeIcon;
 
   const metadata = `${etf?.benchmark || ''} ${etf?.fundType || ''}`;
   return THEME_ICONS.find(item => item.pattern.test(metadata))?.icon || Layers3;
