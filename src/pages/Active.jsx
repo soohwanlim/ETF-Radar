@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Activity, ArrowDownRight, ArrowUpRight, BarChart3, ChevronDown, Layers3, Loader2, RefreshCw, Search } from 'lucide-react';
 import ETFIcon from '../components/ETFIcon';
@@ -211,7 +211,8 @@ export default function Active() {
   const searchQuery = searchParams.get('q') || '';
   const [period, setPeriod] = useState('3m');
   const [themeId, setThemeId] = useState('all');
-  const search = searchQuery;
+  const [search, setSearch] = useState(() => searchQuery);
+  const isComposingSearch = useRef(false);
   const [expandedSignalKey, setExpandedSignalKey] = useState(null);
   const [expandedSignalSections, setExpandedSignalSections] = useState(() => new Set());
   const [showAllActiveRows, setShowAllActiveRows] = useState(false);
@@ -220,8 +221,7 @@ export default function Active() {
   const { etfs, loading, error } = useETFData(period);
 
 
-  function handleSearchChange(value) {
-    setShowAllActiveRows(false);
+  function updateSearchParams(value) {
     setSearchParams(currentParams => {
       const nextParams = new URLSearchParams(currentParams);
       const nextValue = value.trim();
@@ -232,6 +232,17 @@ export default function Active() {
       }
       return nextParams;
     }, { replace: true });
+  }
+
+  function handleSearchChange(value) {
+    setSearch(value);
+    setShowAllActiveRows(false);
+    if (!isComposingSearch.current) updateSearchParams(value);
+  }
+
+  function handleSearchCompositionEnd(event) {
+    isComposingSearch.current = false;
+    handleSearchChange(event.currentTarget.value);
   }
 
   useEffect(() => {
@@ -444,6 +455,8 @@ export default function Active() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={17} />
             <input
               value={search}
+              onCompositionStart={() => { isComposingSearch.current = true; }}
+              onCompositionEnd={handleSearchCompositionEnd}
               onChange={event => handleSearchChange(event.target.value)}
               placeholder="액티브 ETF 검색"
               className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none ring-blue-500 focus:bg-white focus:ring-2"

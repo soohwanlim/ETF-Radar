@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   RefreshCw, Filter, TrendingUp, TrendingDown,
@@ -215,9 +215,11 @@ export default function Changes() {
     return requestedTypes.length > 0 ? requestedTypes : ALL_TYPES;
   });
   const [selectedDays, setSelectedDays] = useState(7);
-  const searchCode = searchParams.get('q') || '';
+  const searchQuery = searchParams.get('q') || '';
+  const [searchCode, setSearchCode] = useState(() => searchQuery);
+  const isComposingSearch = useRef(false);
 
-  function handleSearchChange(value) {
+  function updateSearchParams(value) {
     setSearchParams(currentParams => {
       const nextParams = new URLSearchParams(currentParams);
       const nextValue = value.trim();
@@ -228,6 +230,16 @@ export default function Changes() {
       }
       return nextParams;
     }, { replace: true });
+  }
+
+  function handleSearchChange(value) {
+    setSearchCode(value);
+    if (!isComposingSearch.current) updateSearchParams(value);
+  }
+
+  function handleSearchCompositionEnd(event) {
+    isComposingSearch.current = false;
+    handleSearchChange(event.currentTarget.value);
   }
 
   const { changes, loading, error, lastUpdated, refetch } = useAllChanges(selectedDays);
@@ -304,6 +316,8 @@ export default function Changes() {
               type="text"
               placeholder="ETF 코드 또는 이름 검색..."
               value={searchCode}
+              onCompositionStart={() => { isComposingSearch.current = true; }}
+              onCompositionEnd={handleSearchCompositionEnd}
               onChange={e => handleSearchChange(e.target.value)}
               className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 transition-all"
             />
