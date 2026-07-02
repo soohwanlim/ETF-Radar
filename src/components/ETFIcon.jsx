@@ -2,7 +2,7 @@ import { createElement } from 'react';
 import {
   Atom, BarChart3, BatteryCharging, Bot, Building2, Car, Cpu, Factory,
   HeartPulse, Landmark, Layers3, Leaf, Network, Plane, RadioTower, Shield, Ship,
-  ShoppingBag, Zap,
+  Rocket, ShoppingBag, Zap,
 } from 'lucide-react';
 
 const BRAND_STYLES = [
@@ -24,6 +24,10 @@ const BRAND_STYLES = [
 ];
 
 const THEME_ICONS = [
+  { pattern: /전력|전력설비|전기|에너지|ESS/i, icon: Zap },
+  { pattern: /우주|스페이스/i, icon: Rocket },
+  { pattern: /(?:^|[^A-Za-z])IT(?:[^A-Za-z]|$)|정보기술/i, icon: Cpu },
+  { pattern: /휴머노이드|로봇/i, icon: Bot },
   { pattern: /네트워크|데이터센터|클라우드|인터넷/, icon: Network },
   { pattern: /5G|통신|통신장비/, icon: RadioTower },
   { pattern: /원자력|원전|우라늄/, icon: Atom },

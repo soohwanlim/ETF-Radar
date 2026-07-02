@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowDownRight, ArrowRight, ArrowUpRight, CalendarPlus, Check, ChevronDown, ChevronUp, Loader2, Search, Star } from 'lucide-react';
 import { useWatchlistStore } from '../store/watchlistStore';
 import { useCompareStore } from '../store/compareStore';
@@ -112,8 +112,10 @@ function buildActiveCommonSignals(etfs, changes) {
     .slice(0, 3);
 }
 export default function Home() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchQuery = searchParams.get('q') || '';
   const [period, setPeriod] = useState('3m');
-  const [search, setSearch] = useState('');
+  const search = searchQuery;
   const [showAllEtfs, setShowAllEtfs] = useState(false);
   const [activeOnly, setActiveOnly] = useState(false);
   const [themeSignals, setThemeSignals] = useState([]);
@@ -123,6 +125,21 @@ export default function Home() {
   const { selectedEtfs, addEtf, removeEtf } = useCompareStore();
   const { etfs, loading: etfsLoading, error: etfsError } = useETFData(period);
   const { changes, loading: changesLoading } = useChanges();
+
+
+  function handleSearchChange(value) {
+    setShowAllEtfs(false);
+    setSearchParams(currentParams => {
+      const nextParams = new URLSearchParams(currentParams);
+      const nextValue = value.trim();
+      if (nextValue) {
+        nextParams.set('q', nextValue);
+      } else {
+        nextParams.delete('q');
+      }
+      return nextParams;
+    }, { replace: true });
+  }
 
   const filteredEtfs = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -374,7 +391,7 @@ export default function Home() {
 
             <label className="relative block">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-              <input value={search} onChange={event => { setSearch(event.target.value); setShowAllEtfs(false); }} placeholder="ETF 이름이나 종목코드 검색" className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-sm text-slate-950 shadow-sm outline-none ring-blue-500 placeholder:text-slate-400 focus:ring-2" />
+              <input value={search} onChange={event => handleSearchChange(event.target.value)} placeholder="ETF 이름이나 종목코드 검색" className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-sm text-slate-950 shadow-sm outline-none ring-blue-500 placeholder:text-slate-400 focus:ring-2" />
             </label>
 
             <button

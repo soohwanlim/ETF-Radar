@@ -209,13 +209,26 @@ const DAYS_OPTIONS = [
 ];
 
 export default function Changes() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedTypes, setSelectedTypes] = useState(() => {
     const requestedTypes = (searchParams.get('types') || '').split(',').filter(type => ALL_TYPES.includes(type));
     return requestedTypes.length > 0 ? requestedTypes : ALL_TYPES;
   });
   const [selectedDays, setSelectedDays] = useState(7);
-  const [searchCode, setSearchCode] = useState('');
+  const searchCode = searchParams.get('q') || '';
+
+  function handleSearchChange(value) {
+    setSearchParams(currentParams => {
+      const nextParams = new URLSearchParams(currentParams);
+      const nextValue = value.trim();
+      if (nextValue) {
+        nextParams.set('q', nextValue);
+      } else {
+        nextParams.delete('q');
+      }
+      return nextParams;
+    }, { replace: true });
+  }
 
   const { changes, loading, error, lastUpdated, refetch } = useAllChanges(selectedDays);
 
@@ -291,7 +304,7 @@ export default function Changes() {
               type="text"
               placeholder="ETF 코드 또는 이름 검색..."
               value={searchCode}
-              onChange={e => setSearchCode(e.target.value)}
+              onChange={e => handleSearchChange(e.target.value)}
               className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 transition-all"
             />
           </div>

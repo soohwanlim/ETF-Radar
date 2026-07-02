@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Activity, ArrowDownRight, ArrowUpRight, BarChart3, ChevronDown, Layers3, Loader2, RefreshCw, Search } from 'lucide-react';
 import ETFIcon from '../components/ETFIcon';
 import { useETFData } from '../hooks/useETFData';
@@ -207,15 +207,32 @@ function filterChangesByDays(changes, days) {
 }
 
 export default function Active() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchQuery = searchParams.get('q') || '';
   const [period, setPeriod] = useState('3m');
   const [themeId, setThemeId] = useState('all');
-  const [search, setSearch] = useState('');
+  const search = searchQuery;
   const [expandedSignalKey, setExpandedSignalKey] = useState(null);
   const [expandedSignalSections, setExpandedSignalSections] = useState(() => new Set());
   const [showAllActiveRows, setShowAllActiveRows] = useState(false);
   const [changes, setChanges] = useState([]);
   const [changesLoading, setChangesLoading] = useState(true);
   const { etfs, loading, error } = useETFData(period);
+
+
+  function handleSearchChange(value) {
+    setShowAllActiveRows(false);
+    setSearchParams(currentParams => {
+      const nextParams = new URLSearchParams(currentParams);
+      const nextValue = value.trim();
+      if (nextValue) {
+        nextParams.set('q', nextValue);
+      } else {
+        nextParams.delete('q');
+      }
+      return nextParams;
+    }, { replace: true });
+  }
 
   useEffect(() => {
     let alive = true;
@@ -427,7 +444,7 @@ export default function Active() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={17} />
             <input
               value={search}
-              onChange={event => setSearch(event.target.value)}
+              onChange={event => handleSearchChange(event.target.value)}
               placeholder="액티브 ETF 검색"
               className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none ring-blue-500 focus:bg-white focus:ring-2"
             />
