@@ -213,7 +213,12 @@ export default function Home() {
                 종가 수익률, 신규 상장 ETF, TOP 10 구성자산 변화를 매일 종가 기준 데이터로 업데이트합니다.
               </p>
             </div>
-            {asOf && <p className="text-xs font-semibold text-slate-500">{asOf} 종가 기준 · 실시간 시세가 아닙니다</p>}
+            {asOf && (
+              <div className="space-y-1 text-xs font-semibold text-slate-500">
+                <p>{asOf} 종가 기준 · 실시간 시세가 아닙니다</p>
+                <p>다음 영업일 오전 9시 15분 전후 KRX API 기준으로 업데이트됩니다.</p>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-2 rounded-3xl border border-slate-200 bg-white/80 p-3 shadow-sm backdrop-blur">
