@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { HelpCircle } from 'lucide-react';
 
@@ -36,7 +37,35 @@ const FAQS = [
   },
 ];
 
+function useFaqStructuredData() {
+  useEffect(() => {
+    const id = 'faq-structured-data';
+    document.getElementById(id)?.remove();
+
+    const script = document.createElement('script');
+    script.id = id;
+    script.type = 'application/ld+json';
+    script.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: FAQS.map(item => ({
+        '@type': 'Question',
+        name: item.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: item.answer,
+        },
+      })),
+    });
+    document.head.appendChild(script);
+
+    return () => {
+      document.getElementById(id)?.remove();
+    };
+  }, []);
+}
 export default function Faq() {
+  useFaqStructuredData();
   return (
     <div className="mx-auto max-w-4xl space-y-6 fade-in">
       <section className="rounded-[2rem] border border-slate-200 bg-white p-7 shadow-sm">
