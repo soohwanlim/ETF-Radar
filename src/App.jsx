@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import Home from './pages/Home';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Activity, ArrowLeftRight, BarChart3, Grid2X2, RefreshCw, ShieldAlert, Star, X } from 'lucide-react';
@@ -24,6 +24,94 @@ const NAV_ITEMS = [
   { to: '/watchlist', label: '관심', desktopLabel: '즐겨찾기', icon: Star },
   { to: '/changes', label: '변경', desktopLabel: '변경 감지', icon: RefreshCw },
 ];
+const SITE_URL = 'https://etf-radar.net';
+
+const DEFAULT_META = {
+  title: 'ETF Radar | 국내 ETF 비교와 구성종목 변화',
+  description: '국내 주식형 ETF의 수익률, TOP 10 구성종목 변화, 신규 상장 ETF, 액티브 ETF 공통 매수 신호를 매일 종가 기준 데이터로 비교합니다.',
+  robots: 'index, follow',
+};
+
+const ROUTE_META = {
+  '/': DEFAULT_META,
+  '/theme': {
+    title: '테마 ETF 비교 | ETF Radar',
+    description: '반도체, 2차전지, 금융 등 국내 ETF를 테마별 수익률과 TOP 10 구성종목 변화로 비교합니다.',
+  },
+  '/active': {
+    title: '액티브 ETF 공통 매수 신호 | ETF Radar',
+    description: '여러 액티브 ETF가 최근 함께 늘린 종목과 1CU당 구성수량 변화를 확인합니다.',
+  },
+  '/compare': {
+    title: '국내 ETF 비교 | 수익률·구성종목 비교 - ETF Radar',
+    description: '국내 주식형 ETF의 기간 수익률, 기준일 종가, TOP 10 구성종목을 선택해 비교합니다.',
+  },
+  '/changes': {
+    title: 'ETF 구성종목 변화 감지 | ETF Radar',
+    description: '국내 ETF의 TOP 10 구성종목 진입·이탈과 1CU당 구성수량 변화를 기준일별로 확인합니다.',
+  },
+  '/about': {
+    title: 'ETF Radar 소개 | 데이터 출처와 운영 방식',
+    description: 'ETF Radar의 국내 ETF 데이터 출처, 자동 업데이트 방식, 서비스 목적과 투자 유의사항을 안내합니다.',
+  },
+  '/guide': {
+    title: 'ETF 데이터 해석 안내 | ETF Radar',
+    description: 'ETF 수익률, TOP 10 구성종목 변화, 1CU당 구성수량 변화, 액티브 ETF 신호를 해석하는 기준을 설명합니다.',
+  },
+  '/faq': {
+    title: 'ETF Radar FAQ | 자주 묻는 질문',
+    description: 'ETF Radar의 업데이트 시간, 데이터 출처, TOP 10 구성종목 변화, 액티브 ETF 신호에 대한 자주 묻는 질문입니다.',
+  },
+  '/policy': {
+    title: '개인정보처리방침과 이용 안내 | ETF Radar',
+    description: 'ETF Radar의 개인정보처리방침, 광고와 쿠키, 데이터 출처, 투자 유의사항과 문의 방법을 안내합니다.',
+  },
+  '/watchlist': {
+    title: '즐겨찾기 ETF | ETF Radar',
+    description: '브라우저에 저장한 관심 ETF를 다시 확인하는 개인화 도구입니다.',
+    robots: 'noindex, follow',
+  },
+};
+
+function upsertMeta(selector, createAttrs, content) {
+  let element = document.head.querySelector(selector);
+  if (!element) {
+    element = document.createElement('meta');
+    Object.entries(createAttrs).forEach(([key, value]) => element.setAttribute(key, value));
+    document.head.appendChild(element);
+  }
+  element.setAttribute('content', content);
+}
+
+function RouteMeta() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    const routeKey = ROUTE_META[pathname] ? pathname : pathname.startsWith('/etf/') ? '/compare' : '/';
+    const meta = { ...DEFAULT_META, ...ROUTE_META[routeKey] };
+    const canonicalPath = meta.robots?.includes('noindex') ? '/' : pathname;
+    const canonicalUrl = `${SITE_URL}${canonicalPath === '/' ? '/' : canonicalPath}`;
+
+    document.title = meta.title;
+    upsertMeta('meta[name="description"]', { name: 'description' }, meta.description);
+    upsertMeta('meta[name="robots"]', { name: 'robots' }, meta.robots);
+    upsertMeta('meta[property="og:title"]', { property: 'og:title' }, meta.title);
+    upsertMeta('meta[property="og:description"]', { property: 'og:description' }, meta.description);
+    upsertMeta('meta[property="og:url"]', { property: 'og:url' }, canonicalUrl);
+    upsertMeta('meta[name="twitter:title"]', { name: 'twitter:title' }, meta.title);
+    upsertMeta('meta[name="twitter:description"]', { name: 'twitter:description' }, meta.description);
+
+    let canonical = document.head.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', canonicalUrl);
+  }, [pathname]);
+
+  return null;
+}
 
 function useActivePath() {
   const location = useLocation();
@@ -94,6 +182,7 @@ function Navigation() {
 export default function App() {
   return (
     <Router>
+      <RouteMeta />
       <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#eff6ff_0,#f8fafc_36%,#f8fafc_100%)] text-slate-950">
         <Navigation />
         <DataStatus />

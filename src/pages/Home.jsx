@@ -422,6 +422,7 @@ export default function Home() {
           <Link to="/guide" className="rounded-full bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">데이터 해석 안내</Link>
           <Link to="/about" className="rounded-full border border-slate-200 px-4 py-2 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">서비스 소개</Link>
           <Link to="/compare" className="rounded-full border border-slate-200 px-4 py-2 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">ETF 비교하기</Link>
+          <Link to="/faq" className="rounded-full border border-slate-200 px-4 py-2 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">FAQ</Link>
         </div>
       </section>
       <section className="grid min-h-[1180px] gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
