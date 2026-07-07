@@ -206,11 +206,11 @@ export default function Home() {
       <section className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:p-8">
         <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-end">
           <div className="space-y-4">
-            <span className="inline-flex w-fit rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">국내 현물 ETF 레이더</span>
+            <span className="inline-flex w-fit rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">국내 ETF 비교 레이더</span>
             <div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-slate-950 md:text-5xl">수익률과 구성 변화로 보는 국내 ETF</h1>
+              <h1 className="text-3xl font-extrabold tracking-tight text-slate-950 md:text-5xl">국내 ETF 비교와 구성종목 변화</h1>
               <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 md:text-base">
-                종가 수익률, 신규 상장 ETF, TOP 10 구성자산 변화를 매일 종가 기준 데이터로 업데이트합니다.
+                수익률, 신규 상장 ETF, TOP 10 구성자산 변화, 액티브 ETF 공통 매수 신호를 매일 종가 기준 데이터로 비교합니다.
               </p>
             </div>
             {asOf && (
