@@ -29,3 +29,8 @@ dist-ssr
 .env.*
 !.env.example
 backfill/
+# Local notes and scratch files
+/요청.md
+/etf-radar-prd-v3.md
+/cookies.txt
+/naver_test.html
