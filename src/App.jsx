@@ -12,6 +12,7 @@ const Active = lazy(() => import('./pages/Active'));
 const ETFDetail = lazy(() => import('./pages/ETFDetail'));
 const Changes = lazy(() => import('./pages/Changes'));
 const Guide = lazy(() => import('./pages/Guide'));
+const Faq = lazy(() => import('./pages/Faq'));
 const Watchlist = lazy(() => import('./pages/Watchlist'));
 const Policy = lazy(() => import('./pages/Policy'));
 
@@ -107,6 +108,7 @@ export default function App() {
               <Route path="/compare" element={<Compare />} />
               <Route path="/changes" element={<Changes />} />
               <Route path="/guide" element={<Guide />} />
+              <Route path="/faq" element={<Faq />} />
               <Route path="/watchlist" element={<Watchlist />} />
               <Route path="/etf/:code" element={<ETFDetail />} />
               <Route path="/policy" element={<Policy />} />
@@ -125,6 +127,7 @@ export default function App() {
               <div className="flex flex-wrap gap-x-4 gap-y-1 font-semibold text-slate-500">
                 <Link to="/about" className="hover:text-blue-600">서비스 소개</Link>
                 <Link to="/guide" className="hover:text-blue-600">데이터 해석 안내</Link>
+                <Link to="/faq" className="hover:text-blue-600">FAQ</Link>
                 <Link to="/policy" className="hover:text-blue-600">개인정보처리방침</Link>
                 <Link to="/policy" className="hover:text-blue-600">면책/투자 유의사항</Link>
                 <Link to="/policy" className="hover:text-blue-600">문의</Link>
