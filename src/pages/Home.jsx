@@ -389,6 +389,41 @@ export default function Home() {
 
       </div>
 
+      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-7">
+        <div className="max-w-3xl">
+          <p className="text-sm font-bold text-blue-600">ETF Radar 활용 방법</p>
+          <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950">국내 ETF를 수익률만이 아니라 구성 변화까지 함께 비교합니다</h2>
+          <p className="mt-3 text-sm leading-relaxed text-slate-600">
+            ETF Radar는 국내 주식형 현물 ETF의 종가 수익률, 신규 상장 ETF, TOP 10 구성자산 변화, 액티브 ETF의 공통 구성수량 증가 신호를 매일 같은 기준으로 정리합니다.
+            ETF를 고를 때 단순히 오늘 많이 오른 상품만 보는 것이 아니라, 어떤 종목이 여러 ETF에서 함께 늘었는지와 최근 운용 방향에 변화가 있는지도 함께 확인할 수 있습니다.
+          </p>
+        </div>
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <div className="rounded-2xl bg-slate-50 p-4">
+            <h3 className="font-extrabold text-slate-950">수익률 비교</h3>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              1일, 1주, 1개월, 3개월, 1년, 10년 수익률을 기준일 종가로 비교합니다. KOSPI200·KOSDAQ150 대표 ETF와의 차이도 함께 볼 수 있습니다.
+            </p>
+          </div>
+          <div className="rounded-2xl bg-slate-50 p-4">
+            <h3 className="font-extrabold text-slate-950">구성종목 변화 확인</h3>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              네이버 금융 TOP 10 구성자산 스냅샷을 비교해 진입·이탈, 1CU당 구성수량 변화, 수량 감소에도 비중이 유지되는 경우를 구분합니다.
+            </p>
+          </div>
+          <div className="rounded-2xl bg-slate-50 p-4">
+            <h3 className="font-extrabold text-slate-950">액티브 ETF 관찰</h3>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              최근 7일 동안 여러 액티브 ETF가 함께 늘린 종목을 모아 보여줍니다. 운용사들의 공통 관심을 살피는 참고 신호로 활용할 수 있습니다.
+            </p>
+          </div>
+        </div>
+        <div className="mt-5 flex flex-wrap gap-2 text-sm font-bold">
+          <Link to="/guide" className="rounded-full bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">데이터 해석 안내</Link>
+          <Link to="/about" className="rounded-full border border-slate-200 px-4 py-2 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">서비스 소개</Link>
+          <Link to="/compare" className="rounded-full border border-slate-200 px-4 py-2 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">ETF 비교하기</Link>
+        </div>
+      </section>
       <section className="grid min-h-[1180px] gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0">
           <div className="mb-5 flex flex-col gap-4">
