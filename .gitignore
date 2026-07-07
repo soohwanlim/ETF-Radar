@@ -34,3 +34,8 @@ backfill/
 /etf-radar-prd-v3.md
 /cookies.txt
 /naver_test.html
+# Local AI assistant instructions
+/AGENTS.md
+/CLAUDE.md
+/.agents/
+/.codex/
