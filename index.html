@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#2563eb" />
     <meta
       name="description"
-      content="국내 주식형 ETF의 수익률, TOP 10 구성종목 변화, 신규 상장 ETF, 액티브 ETF 공통 매수 신호를 매일 종가 기준 데이터로 비교합니다."
+      content="국내 주식형 현물 ETF의 종가 수익률, TOP 10 구성종목 변화, 신규 상장 ETF, 액티브 ETF 공통 매수 신호를 매일 종가 기준 데이터로 비교합니다."
     />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://etf-radar.net/" />
@@ -19,10 +19,10 @@
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="ko_KR" />
     <meta property="og:site_name" content="ETF Radar" />
-    <meta property="og:title" content="ETF Radar | 국내 ETF 비교와 구성종목 변화" />
+    <meta property="og:title" content="ETF Radar | 국내 ETF 수익률과 구성종목 변화" />
     <meta
       property="og:description"
-      content="국내 주식형 ETF의 수익률, TOP 10 구성종목 변화, 신규 상장 ETF, 액티브 ETF 공통 매수 신호를 매일 종가 기준 데이터로 비교합니다."
+      content="국내 주식형 현물 ETF의 종가 수익률, TOP 10 구성종목 변화, 신규 상장 ETF, 액티브 ETF 공통 매수 신호를 매일 종가 기준 데이터로 비교합니다."
     />
     <meta property="og:url" content="https://etf-radar.net/" />
     <meta property="og:image" content="https://etf-radar.net/og-image.png" />
@@ -30,14 +30,14 @@
     <meta property="og:image:height" content="630" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="ETF Radar | 국내 ETF 비교와 구성종목 변화" />
+    <meta name="twitter:title" content="ETF Radar | 국내 ETF 수익률과 구성종목 변화" />
     <meta
       name="twitter:description"
-      content="국내 주식형 ETF의 수익률, TOP 10 구성종목 변화, 신규 상장 ETF, 액티브 ETF 공통 매수 신호를 매일 종가 기준 데이터로 비교합니다."
+      content="국내 주식형 현물 ETF의 종가 수익률, TOP 10 구성종목 변화, 신규 상장 ETF, 액티브 ETF 공통 매수 신호를 매일 종가 기준 데이터로 비교합니다."
     />
     <meta name="twitter:image" content="https://etf-radar.net/og-image.png" />
 
-    <title>ETF Radar | 국내 ETF 비교와 구성종목 변화</title>
+    <title>ETF Radar | 국내 ETF 수익률과 구성종목 변화</title>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3179365880590413" crossorigin="anonymous"></script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-GBJFHJ9V1X"></script>
@@ -51,11 +51,37 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "ETF Radar",
-        "url": "https://etf-radar.net/",
-        "description": "국내 주식형 ETF의 수익률, TOP 10 구성종목 변화, 신규 상장 ETF, 액티브 ETF 공통 매수 신호를 매일 종가 기준 데이터로 비교하는 서비스",
-        "inLanguage": "ko-KR"
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://etf-radar.net/#organization",
+            "name": "ETF Radar",
+            "url": "https://etf-radar.net/",
+            "logo": "https://etf-radar.net/logo-512.png",
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "contactType": "customer support",
+              "url": "https://etf-radar.net/contact",
+              "availableLanguage": ["ko"]
+            }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://etf-radar.net/#website",
+            "name": "ETF Radar",
+            "url": "https://etf-radar.net/",
+            "description": "국내 주식형 현물 ETF의 종가 수익률, TOP 10 구성종목 변화, 신규 상장 ETF, 액티브 ETF 공통 매수 신호를 매일 종가 기준 데이터로 비교합니다.",
+            "inLanguage": "ko-KR",
+            "publisher": {
+              "@id": "https://etf-radar.net/#organization"
+            },
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://etf-radar.net/?q={search_term_string}",
+              "query-input": "required name=search_term_string"
+            }
+          }
+        ]
       }
     </script>
   </head>
