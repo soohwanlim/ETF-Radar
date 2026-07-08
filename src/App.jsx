@@ -14,6 +14,7 @@ const Changes = lazy(() => import('./pages/Changes'));
 const Guide = lazy(() => import('./pages/Guide'));
 const Faq = lazy(() => import('./pages/Faq'));
 const Contact = lazy(() => import('./pages/Contact'));
+const Insights = lazy(() => import('./pages/Insights'));
 const Watchlist = lazy(() => import('./pages/Watchlist'));
 const Policy = lazy(() => import('./pages/Policy'));
 
@@ -58,6 +59,10 @@ const ROUTE_META = {
   '/guide': {
     title: 'ETF 데이터 해석 안내 | ETF Radar',
     description: 'ETF 수익률, TOP 10 구성종목 변화, 1CU당 구성수량 변화, 액티브 ETF 신호를 해석하는 기준을 설명합니다.',
+  },
+  '/insights': {
+    title: 'ETF Radar 인사이트 | ETF 구성종목 변화와 액티브 ETF 해석',
+    description: 'ETF TOP 10 구성종목 변화, 1CU당 구성수량 변화, 액티브 ETF 공통 매수 신호를 읽는 방법과 ETF Radar 데이터 운영 방식을 설명합니다.',
   },
   '/faq': {
     title: 'ETF Radar FAQ | 자주 묻는 질문',
@@ -201,6 +206,7 @@ export default function App() {
               <Route path="/compare" element={<Compare />} />
               <Route path="/changes" element={<Changes />} />
               <Route path="/guide" element={<Guide />} />
+              <Route path="/insights" element={<Insights />} />
               <Route path="/faq" element={<Faq />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/watchlist" element={<Watchlist />} />
@@ -221,6 +227,7 @@ export default function App() {
               <div className="flex flex-wrap gap-x-4 gap-y-1 font-semibold text-slate-500">
                 <Link to="/about" className="hover:text-blue-600">서비스 소개</Link>
                 <Link to="/guide" className="hover:text-blue-600">데이터 해석 안내</Link>
+                <Link to="/insights" className="hover:text-blue-600">ETF 인사이트</Link>
                 <Link to="/faq" className="hover:text-blue-600">FAQ</Link>
                 <Link to="/policy" className="hover:text-blue-600">개인정보처리방침</Link>
                 <Link to="/policy" className="hover:text-blue-600">면책/투자 유의사항</Link>
