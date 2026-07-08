@@ -12,6 +12,7 @@ const Active = lazy(() => import('./pages/Active'));
 const ETFDetail = lazy(() => import('./pages/ETFDetail'));
 const Changes = lazy(() => import('./pages/Changes'));
 const Guide = lazy(() => import('./pages/Guide'));
+const Methodology = lazy(() => import('./pages/Methodology'));
 const Faq = lazy(() => import('./pages/Faq'));
 const Contact = lazy(() => import('./pages/Contact'));
 const Insights = lazy(() => import('./pages/Insights'));
@@ -59,6 +60,10 @@ const ROUTE_META = {
   '/guide': {
     title: 'ETF 데이터 해석 안내 | ETF Radar',
     description: 'ETF 수익률, TOP 10 구성종목 변화, 1CU당 구성수량 변화, 액티브 ETF 신호를 해석하는 기준을 설명합니다.',
+  },
+  '/methodology': {
+    title: 'ETF Radar 데이터 방법론 | 수집 기준과 한계',
+    description: 'ETF Radar의 KRX Open API 종가 수집, 네이버 금융 TOP 10 구성종목 스냅샷, 변경 감지 기준, 업데이트 시간과 데이터 한계를 설명합니다.',
   },
   '/insights': {
     title: 'ETF Radar 인사이트 | ETF 구성종목 변화와 액티브 ETF 해석',
@@ -206,6 +211,7 @@ export default function App() {
               <Route path="/compare" element={<Compare />} />
               <Route path="/changes" element={<Changes />} />
               <Route path="/guide" element={<Guide />} />
+              <Route path="/methodology" element={<Methodology />} />
               <Route path="/insights" element={<Insights />} />
               <Route path="/faq" element={<Faq />} />
               <Route path="/contact" element={<Contact />} />
@@ -227,6 +233,7 @@ export default function App() {
               <div className="flex flex-wrap gap-x-4 gap-y-1 font-semibold text-slate-500">
                 <Link to="/about" className="hover:text-blue-600">서비스 소개</Link>
                 <Link to="/guide" className="hover:text-blue-600">데이터 해석 안내</Link>
+                <Link to="/methodology" className="hover:text-blue-600">데이터 방법론</Link>
                 <Link to="/insights" className="hover:text-blue-600">ETF 인사이트</Link>
                 <Link to="/faq" className="hover:text-blue-600">FAQ</Link>
                 <Link to="/policy" className="hover:text-blue-600">개인정보처리방침</Link>
