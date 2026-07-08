@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Activity, BarChart3, GitBranch, Layers3, SearchCheck, ShieldAlert } from 'lucide-react';
 
@@ -51,7 +52,59 @@ const checks = [
   '액티브 ETF 공통 신호는 매수 추천이 아니라 운용 변화 관찰용 참고 지표로 사용합니다.',
 ];
 
+const SITE_URL = 'https://etf-radar.net';
+
+function useInsightsStructuredData() {
+  useEffect(() => {
+    const id = 'insights-structured-data';
+    document.getElementById(id)?.remove();
+
+    const script = document.createElement('script');
+    script.id = id;
+    script.type = 'application/ld+json';
+    script.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: 'ETF Radar 인사이트',
+      headline: 'ETF Radar 인사이트',
+      description: 'ETF TOP 10 구성종목 변화, 1CU당 구성수량 변화, 액티브 ETF 공통 매수 신호를 읽는 방법과 ETF Radar 데이터 운영 방식을 설명합니다.',
+      url: `${SITE_URL}/insights`,
+      isPartOf: {
+        '@type': 'WebSite',
+        name: 'ETF Radar',
+        url: SITE_URL,
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: 'ETF Radar',
+        url: SITE_URL,
+      },
+      hasPart: articles.map((article, index) => ({
+        '@type': 'Article',
+        position: index + 1,
+        headline: article.title,
+        description: article.summary,
+        articleBody: article.paragraphs.join('\n\n'),
+        author: {
+          '@type': 'Organization',
+          name: 'ETF Radar',
+        },
+        publisher: {
+          '@type': 'Organization',
+          name: 'ETF Radar',
+        },
+        mainEntityOfPage: `${SITE_URL}/insights`,
+      })),
+    });
+    document.head.appendChild(script);
+
+    return () => {
+      document.getElementById(id)?.remove();
+    };
+  }, []);
+}
 export default function Insights() {
+  useInsightsStructuredData();
   return (
     <div className="mx-auto max-w-5xl space-y-8 fade-in">
       <section className="rounded-[2rem] border border-slate-200 bg-white p-7 shadow-sm">
