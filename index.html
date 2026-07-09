@@ -85,8 +85,16 @@
       }
     </script>
     <style>
+      body {
+        margin: 0;
+      }
+
       .initial-shell {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
         min-height: 100vh;
+        overflow: auto;
         background: radial-gradient(circle at top left, #eff6ff 0, #f8fafc 36%, #f8fafc 100%);
         color: #0f172a;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;

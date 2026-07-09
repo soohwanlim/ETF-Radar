@@ -19,6 +19,14 @@ const Insights = lazy(() => import('./pages/Insights'));
 const Watchlist = lazy(() => import('./pages/Watchlist'));
 const Policy = lazy(() => import('./pages/Policy'));
 
+const ROUTE_PREFETCHERS = [
+  () => import('./pages/Theme'),
+  () => import('./pages/Active'),
+  () => import('./pages/Compare'),
+  () => import('./pages/Changes'),
+  () => import('./pages/Watchlist'),
+  () => import('./pages/ETFDetail'),
+];
 const NAV_ITEMS = [
   { to: '/', label: '홈', desktopLabel: '수익률', icon: BarChart3 },
   { to: '/theme', label: '테마', desktopLabel: '테마 ETF', icon: Grid2X2 },
@@ -132,6 +140,34 @@ function useActivePath() {
   return path => path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
 }
 
+function RoutePrefetcher() {
+  useEffect(() => {
+    let cancelled = false;
+    let idleId;
+    let timeoutId;
+
+    const prefetchRoutes = () => {
+      if (cancelled) return;
+      ROUTE_PREFETCHERS.forEach(loadRoute => {
+        loadRoute().catch(() => {});
+      });
+    };
+
+    if ('requestIdleCallback' in window) {
+      idleId = window.requestIdleCallback(prefetchRoutes, { timeout: 2500 });
+    } else {
+      timeoutId = window.setTimeout(prefetchRoutes, 1500);
+    }
+
+    return () => {
+      cancelled = true;
+      if (idleId && 'cancelIdleCallback' in window) window.cancelIdleCallback(idleId);
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+  }, []);
+
+  return null;
+}
 function FloatingCompareBar() {
   const { selectedEtfs, clearSelected } = useCompareStore();
   const location = useLocation();
@@ -197,6 +233,7 @@ export default function App() {
   return (
     <Router>
       <RouteMeta />
+      <RoutePrefetcher />
       <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#eff6ff_0,#f8fafc_36%,#f8fafc_100%)] text-slate-950">
         <Navigation />
         <DataStatus />
