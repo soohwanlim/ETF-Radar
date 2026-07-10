@@ -1,18 +1,49 @@
+import { useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, BarChart2, Info, Loader2 } from 'lucide-react';
-import { useETFDetail, useETFHoldings, useETFHistory } from '../hooks/useETFData';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
+import { ArrowLeft, RefreshCw, BarChart2, Info, Loader2, LineChart as LineChartIcon } from 'lucide-react';
+import { useETFDetail, useETFHoldings, useETFHistory, useETFPriceSeries } from '../hooks/useETFData';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, LineChart, Line } from 'recharts';
 import ETFIcon from '../components/ETFIcon';
 
 const COLORS = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#EC4899', '#14B8A6'];
+const PRICE_PERIODS = [
+  ['1m', '1개월', 30],
+  ['3m', '3개월', 90],
+  ['1y', '1년', 365],
+  ['all', '전체', null],
+];
 
 export default function ETFDetail() {
   const { code } = useParams();
+  const [pricePeriod, setPricePeriod] = useState('3m');
 
   // Load detail, holdings, and history from the latest daily static snapshot.
   const { detail, loading: detailLoading, error: detailError } = useETFDetail(code);
   const { holdings, loading: holdingsLoading, error: holdingsError } = useETFHoldings(code);
   const { history, loading: historyLoading, error: historyError } = useETFHistory(code);
+  const { series: priceSeries, loading: priceLoading, error: priceError } = useETFPriceSeries(code);
+
+  const priceChartData = useMemo(() => {
+    const selectedPeriod = PRICE_PERIODS.find(([key]) => key === pricePeriod);
+    const days = selectedPeriod?.[2];
+    const source = days ? priceSeries.slice(-days) : priceSeries;
+
+    return source
+      .map((item) => {
+        const date = Array.isArray(item) ? item[0] : item?.date;
+        const close = Array.isArray(item) ? item[1] : item?.close;
+        return { date, close, label: date?.slice(5) };
+      })
+      .filter((item) => item.date && item.close != null);
+  }, [pricePeriod, priceSeries]);
+
+  const priceChangeRate = useMemo(() => {
+    if (priceChartData.length < 2) return null;
+    const first = priceChartData[0].close;
+    const last = priceChartData.at(-1).close;
+    if (!first || !last) return null;
+    return ((last - first) / first) * 100;
+  }, [priceChartData]);
 
   if (detailLoading) {
     return (
@@ -153,6 +184,87 @@ export default function ETFDetail() {
 
         {/* Charts & Distributions */}
         <div className="lg:col-span-2 space-y-6">
+
+          {/* Price History Line Chart */}
+          <div className="glass p-6 rounded-3xl space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
+                <LineChartIcon size={18} className="text-emerald-600" />
+                종가 흐름
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {PRICE_PERIODS.map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setPricePeriod(key)}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      pricePeriod === key
+                        ? 'border-slate-900 bg-white text-slate-950 shadow-sm ring-2 ring-slate-900/10'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-950'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {priceLoading ? (
+              <div className="flex h-[260px] items-center justify-center gap-2 text-sm text-slate-500">
+                <Loader2 className="animate-spin text-emerald-600" size={18} />
+                종가 흐름 불러오는 중...
+              </div>
+            ) : priceError ? (
+              <div className="flex h-[180px] items-center justify-center text-sm text-slate-500">
+                종가 흐름을 불러오지 못했습니다: {priceError}
+              </div>
+            ) : priceChartData.length > 1 ? (
+              <>
+                <div className="flex items-end justify-between gap-3">
+                  <div className="text-xs text-slate-500">
+                    {priceChartData[0].date} ~ {priceChartData.at(-1).date}
+                  </div>
+                  {priceChangeRate != null && (
+                    <div className={`text-sm font-bold ${priceChangeRate >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {priceChangeRate >= 0 ? '+' : ''}{priceChangeRate.toFixed(2)}%
+                    </div>
+                  )}
+                </div>
+                <div className="h-[260px] w-full pt-2">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={priceChartData} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" opacity={0.12} vertical={false} />
+                      <XAxis dataKey="label" stroke="#64748B" fontSize={10} tickLine={false} minTickGap={28} />
+                      <YAxis
+                        stroke="#64748B"
+                        fontSize={10}
+                        tickLine={false}
+                        width={58}
+                        tickFormatter={(value) => `${Number(value).toLocaleString()}원`}
+                        domain={['dataMin', 'dataMax']}
+                      />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#0F172A', borderColor: '#334155', borderRadius: '12px', fontSize: '12px' }}
+                        labelStyle={{ color: '#CBD5E1' }}
+                        formatter={(value) => [`${Number(value).toLocaleString()}원`, '종가']}
+                        labelFormatter={(_, payload) => payload?.[0]?.payload?.date || ''}
+                      />
+                      <Line type="monotone" dataKey="close" stroke="#10B981" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </>
+            ) : (
+              <div className="flex h-[180px] items-center justify-center text-sm text-slate-500">
+                아직 표시할 종가 이력이 충분하지 않습니다.
+              </div>
+            )}
+
+            <div className="text-right text-[10px] text-slate-500">
+              KRX 종가 기준 · 실시간 시세가 아닙니다
+            </div>
+          </div>
           
           {/* Holdings Bar Chart */}
           <div className="glass p-6 rounded-3xl space-y-4">

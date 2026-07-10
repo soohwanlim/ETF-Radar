@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { loadEtf, loadEtfHistory, loadEtfsSorted, loadHoldings } from '../data/staticData';
+import { loadEtf, loadEtfHistory, loadEtfsSorted, loadHoldings, loadPriceSeries } from '../data/staticData';
 
 export function useETFData(period = '3m') {
   const [etfs, setEtfs] = useState([]);
@@ -150,4 +150,42 @@ export function useETFHistory(code) {
   }, [code]);
 
   return { history, loading, error };
+}
+
+export function useETFPriceSeries(code) {
+  const [series, setSeries] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!code) return;
+    let active = true;
+
+    const fetchPriceSeries = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await loadPriceSeries(code);
+        if (active) {
+          setSeries(data);
+        }
+      } catch (err) {
+        if (active) {
+          setError(err.message);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchPriceSeries();
+
+    return () => {
+      active = false;
+    };
+  }, [code]);
+
+  return { series, loading, error };
 }

@@ -74,6 +74,11 @@ export function loadListings() {
   return loadJson('/data/listings.json');
 }
 
+export async function loadPriceSeries(code) {
+  const allSeries = await loadJson('/data/price-series.json');
+  return allSeries[code] || [];
+}
+
 function getCutoffDate(days) {
   const date = new Date();
   date.setUTCDate(date.getUTCDate() - days);
