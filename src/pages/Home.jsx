@@ -399,7 +399,7 @@ export default function Home() {
 
             <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
               {PERIODS.map(([key, label]) => (
-                <button key={key} type="button" onClick={() => { setPeriod(key); setShowAllEtfs(false); }} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${period === key ? 'border-slate-900 bg-white text-slate-950 shadow-sm ring-2 ring-slate-900/10' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-950'}`}>
+                <button key={key} type="button" onClick={() => { setPeriod(key); setShowAllEtfs(false); }} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${period === key ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-950'}`}>
                   {label}
                 </button>
               ))}
