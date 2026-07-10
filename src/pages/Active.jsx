@@ -213,7 +213,7 @@ export default function Active() {
   const [themeId, setThemeId] = useState('all');
   const [search, setSearch] = useState(() => searchQuery);
   const isComposingSearch = useRef(false);
-  const [expandedSignalKey, setExpandedSignalKey] = useState(null);
+  const [expandedSignalKeys, setExpandedSignalKeys] = useState(() => new Set());
   const [expandedSignalSections, setExpandedSignalSections] = useState(() => new Set());
   const [showAllActiveRows, setShowAllActiveRows] = useState(false);
   const [changes, setChanges] = useState([]);
@@ -288,6 +288,15 @@ export default function Active() {
   const commonIncreasesByCount = useMemo(() => sortSignalsByCount(commonIncreases), [commonIncreases]);
   const commonIncreasesByAverage = useMemo(() => sortSignalsByAverage(commonIncreases), [commonIncreases]);
 
+  const toggleSignalCard = signalKey => {
+    setExpandedSignalKeys(prev => {
+      const next = new Set(prev);
+      if (next.has(signalKey)) next.delete(signalKey);
+      else next.add(signalKey);
+      return next;
+    });
+  };
+
   const toggleSignalSection = sectionId => {
     setExpandedSignalSections(prev => {
       const next = new Set(prev);
@@ -332,17 +341,17 @@ export default function Active() {
   };
   const renderCommonSignalCard = (signal, sectionId) => {
     const signalKey = `${sectionId}-${getCommonSignalKey(signal)}`;
-    const isExpanded = expandedSignalKey === signalKey;
+    const isExpanded = expandedSignalKeys.has(signalKey);
     return (
       <div key={signalKey} className="rounded-2xl border border-red-100 bg-red-50 p-4">
         <button
           type="button"
-          onClick={() => setExpandedSignalKey(isExpanded ? null : signalKey)}
+          onClick={() => toggleSignalCard(signalKey)}
           className="flex w-full items-start justify-between gap-3 text-left"
           aria-expanded={isExpanded}
         >
           <div className="min-w-0">
-            <h3 className="truncate text-lg font-extrabold text-slate-950">{signal.holdingName}</h3>
+            <h3 className={`${isExpanded ? 'break-keep' : 'truncate'} text-lg font-extrabold text-slate-950`}>{signal.holdingName}</h3>
             <p className="mt-1 text-xs font-semibold text-red-700">{signal.etfCount}개 액티브 ETF에서 증가</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -362,7 +371,7 @@ export default function Active() {
             {signal.etfs.map(etf => (
               <Link key={etf.code} to={`/etf/${etf.code}`} className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 text-xs hover:text-blue-600">
                 <span className="min-w-0">
-                  <span className="block truncate font-semibold text-slate-700">{etf.name}</span>
+                  <span className={`${isExpanded ? 'break-keep' : 'truncate'} block font-semibold text-slate-700`}>{etf.name}</span>
                   <span className="mt-0.5 block text-[10px] font-semibold text-slate-400">{etf.themeName}</span>
                 </span>
                 <span className="shrink-0 font-bold text-red-600">+{etf.shareChangeRate}%</span>
