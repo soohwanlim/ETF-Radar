@@ -237,7 +237,7 @@ export default function Theme() {
         <div className="flex bg-white p-1 rounded-xl border border-slate-200">
           {PERIODS.map(item => (
             <button key={item.id} onClick={() => { setPeriod(item.id); setSelectedTheme(null); }}
-              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${period === item.id ? 'bg-emerald-500 text-slate-950' : 'text-slate-600 hover:text-slate-900'}`}>
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${period === item.id ? 'bg-emerald-500 text-white' : 'text-slate-600 hover:text-slate-900'}`}>
               {item.label}
             </button>
           ))}
