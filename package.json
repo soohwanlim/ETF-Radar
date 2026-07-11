@@ -7,12 +7,14 @@
     "dev": "vite",
     "build": "vite build",
     "collect:data": "node scripts/collect-static-data.mjs",
+    "backfill:ohlc": "node scripts/backfill-ohlc.mjs",
     "check:health": "node scripts/check-deployed-health.mjs",
     "test": "node scripts/test-static-data.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "lightweight-charts": "^5.2.0",
     "lucide-react": "^1.17.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",

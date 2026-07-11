@@ -39,3 +39,12 @@ backfill/
 /CLAUDE.md
 /.agents/
 /.codex/
+/public/data/ohlc-sample/
+
+# Test, browser, and performance reports
+/coverage/
+/playwright-report/
+/test-results/
+/lhci_reports/
+/lighthouse-*.html
+/.vite/

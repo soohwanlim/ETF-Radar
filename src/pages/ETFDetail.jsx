@@ -1,18 +1,38 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, RefreshCw, BarChart2, Info, Loader2 } from 'lucide-react';
 import { useETFDetail, useETFHoldings, useETFHistory } from '../hooks/useETFData';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
 import ETFIcon from '../components/ETFIcon';
+import CandlestickChart from '../components/CandlestickChart';
 
 const COLORS = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#EC4899', '#14B8A6'];
 
 export default function ETFDetail() {
   const { code } = useParams();
+  const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
+  const historyDateRefs = useRef({});
 
   // Load detail, holdings, and history from the latest daily static snapshot.
   const { detail, loading: detailLoading, error: detailError } = useETFDetail(code);
   const { holdings, loading: holdingsLoading, error: holdingsError } = useETFHoldings(code);
   const { history, loading: historyLoading, error: historyError } = useETFHistory(code);
+
+  const chartChangeEvents = useMemo(() => {
+    const groupedDates = new Map();
+    for (const item of history || []) {
+      groupedDates.set(item.date, (groupedDates.get(item.date) || 0) + 1);
+    }
+    return [...groupedDates.entries()].map(([date, count]) => ({ date, count }));
+  }, [history]);
+
+  useEffect(() => {
+    if (!selectedHistoryDate) return;
+    historyDateRefs.current[selectedHistoryDate]?.scrollIntoView({
+      block: 'nearest',
+      behavior: 'smooth',
+    });
+  }, [selectedHistoryDate]);
 
   if (detailLoading) {
     return (
@@ -66,6 +86,61 @@ export default function ETFDetail() {
         
         {/* Basic Information & Historical Timeline (P0 Core) */}
         <div className="lg:col-span-1 space-y-6">
+          {/* Timeline Section */}
+          <div className="glass min-h-[720px] p-6 rounded-3xl space-y-5">
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-200 pb-3">
+              <RefreshCw size={16} className="text-violet-600 animate-spin-slow" />
+              구성종목 변경 이력 (2026-06-12 이후)
+            </h2>
+            
+            <p className="text-[11px] leading-relaxed text-slate-500">
+              변경 이력은 ETF Radar가 구성종목 데이터를 수집하기 시작한 2026년 6월 12일 이후 기록에 한해 표시됩니다.
+            </p>
+
+            {historyLoading ? (
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <Loader2 className="animate-spin" size={14} />
+                변경 이력 불러오는 중...
+              </div>
+            ) : historyError ? (
+              <div className="text-xs text-slate-500">이력을 불러오지 못했습니다.</div>
+            ) : history && history.length > 0 ? (
+              <div className="max-h-[620px] space-y-6 overflow-y-auto pr-2">
+                {historyGroups.map((group, groupIndex) => {
+                  const isSelectedDate = selectedHistoryDate === group.date;
+                  return (
+                  <div
+                    key={group.date}
+                    ref={node => {
+                      if (node) historyDateRefs.current[group.date] = node;
+                    }}
+                    className={`${groupIndex > 0 ? 'border-t border-slate-200 pt-5' : ''} ${isSelectedDate ? 'rounded-2xl bg-blue-50/80 p-4 ring-2 ring-blue-300' : ''}`}
+                  >
+                    <div className="relative pl-6 border-l border-slate-200 space-y-4">
+                      {group.items.map((hist, idx) => (
+                        <div key={`${hist.date}-${idx}-${hist.message}`} className="relative">
+                          <span className={`absolute -left-[30px] top-1.5 w-2 h-2 rounded-full border-2 ${
+                            hist.type === 'swap' ? 'bg-amber-500 border-amber-950 shadow-md shadow-amber-500/20' :
+                            hist.type === 'new' ? 'bg-emerald-500 border-emerald-950' :
+                            hist.type === 'out' ? 'bg-rose-500 border-rose-950' :
+                            'bg-slate-500 border-slate-200'
+                          }`} />
+
+                          <span className={`block font-mono text-[10px] font-semibold ${isSelectedDate ? 'text-blue-700' : 'text-slate-500'}`}>{hist.date}</span>
+                          <p className={`mt-1 text-xs ${isSelectedDate ? 'font-bold text-slate-950' : 'text-slate-700'}`}>{hist.message}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+                })}
+              </div>
+            ) : (
+              <div className="text-xs text-slate-500 py-4 text-center">최근 1년간 큰 변동 사항이 없습니다.</div>
+            )}
+          </div>
+
+
           {detail && (
             <div className="glass p-6 rounded-3xl space-y-5">
               <h2 className="text-lg font-bold text-slate-900 border-b border-slate-200 pb-3">ETF 기본정보</h2>
@@ -109,50 +184,18 @@ export default function ETFDetail() {
             </div>
           )}
 
-          {/* Timeline Section */}
-          <div className="glass min-h-[720px] p-6 rounded-3xl space-y-5">
-            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-200 pb-3">
-              <RefreshCw size={16} className="text-violet-600 animate-spin-slow" />
-              구성종목 변경 이력 (최근 1년)
-            </h2>
-            
-            {historyLoading ? (
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <Loader2 className="animate-spin" size={14} />
-                변경 이력 불러오는 중...
-              </div>
-            ) : historyError ? (
-              <div className="text-xs text-slate-500">이력을 불러오지 못했습니다.</div>
-            ) : history && history.length > 0 ? (
-              <div className="space-y-6">
-                {historyGroups.map((group, groupIndex) => (
-                  <div key={group.date} className={groupIndex > 0 ? 'border-t border-slate-200 pt-5' : ''}>
-                    <div className="relative pl-6 border-l border-slate-200 space-y-4">
-                      {group.items.map((hist, idx) => (
-                        <div key={`${hist.date}-${idx}-${hist.message}`} className="relative">
-                          <span className={`absolute -left-[30px] top-1.5 w-2 h-2 rounded-full border-2 ${
-                            hist.type === 'swap' ? 'bg-amber-500 border-amber-950 shadow-md shadow-amber-500/20' :
-                            hist.type === 'new' ? 'bg-emerald-500 border-emerald-950' :
-                            hist.type === 'out' ? 'bg-rose-500 border-rose-950' :
-                            'bg-slate-500 border-slate-200'
-                          }`} />
-
-                          <span className="text-[10px] text-slate-500 block font-mono font-semibold">{hist.date}</span>
-                          <p className="text-xs text-slate-700 mt-1">{hist.message}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-xs text-slate-500 py-4 text-center">최근 1년간 큰 변동 사항이 없습니다.</div>
-            )}
-          </div>
         </div>
 
         {/* Charts & Distributions */}
         <div className="lg:col-span-2 space-y-6">
+          <CandlestickChart
+            key={code}
+            code={code}
+            selectedDate={selectedHistoryDate}
+            onDateSelect={setSelectedHistoryDate}
+            changeEvents={chartChangeEvents}
+          />
+
           
           {/* Holdings Bar Chart */}
           <div className="glass p-6 rounded-3xl space-y-4">

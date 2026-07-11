@@ -80,6 +80,17 @@ function getCutoffDate(days) {
   return date.toISOString().slice(0, 10);
 }
 
+export async function loadOhlcSeries(code) {
+  const path = '/data/ohlc/' + encodeURIComponent(code) + '.json';
+  if (!cache.has(path)) {
+    cache.set(path, fetch(path).then(response => {
+      if (response.status === 404) return null;
+      if (!response.ok) throw new Error('Failed to load OHLC data: ' + path);
+      return response.json();
+    }));
+  }
+  return cache.get(path);
+}
 export async function loadCompareData(codes, period) {
   const periodDays = { '1d': 1, '1w': 7, '1m': 30, '3m': 90, '1y': 365, '10y': 3650 };
   const days = periodDays[period];
