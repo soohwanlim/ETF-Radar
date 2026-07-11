@@ -8,6 +8,7 @@
     "build": "vite build",
     "collect:data": "node scripts/collect-static-data.mjs",
     "backfill:ohlc": "node scripts/backfill-ohlc.mjs",
+    "append:ohlc": "node scripts/append-ohlc.mjs",
     "check:health": "node scripts/check-deployed-health.mjs",
     "test": "node scripts/test-static-data.mjs",
     "lint": "eslint .",

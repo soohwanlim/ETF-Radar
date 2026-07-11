@@ -34,12 +34,18 @@ jobs:
       - run: npm run collect:data
         env:
           KRX_API_KEY: ${{ secrets.KRX_API_KEY }}
+      - run: npm run append:ohlc
+        env:
+          KRX_API_KEY: ${{ secrets.KRX_API_KEY }}
 
       - name: Write collection summary
         shell: bash
         run: |
           if [ -f public/data/status.json ]; then
             node -e "const s=require('./public/data/status.json'); console.log('## ETF collection\n\n- Date: '+s.asOf+'\n- State: '+s.state+'\n- Last check: '+(s.lastCheckedAt || 'n/a')+'\n- Latest KRX date: '+(s.latestAvailableAsOf || s.asOf || 'n/a')+'\n- Check result: '+(s.lastCheckState || 'n/a')+'\n- ETFs: '+s.etfCount+'\n- Changes: '+s.changeCount+'\n- Failures: '+s.failedCount)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f public/data/ohlc/manifest.json ]; then
+            node -e "const m=require('./public/data/ohlc/manifest.json'); const latest=[...new Set(m.items.map(i=>i.to))].sort().at(-1); console.log('\n## OHLC\n\n- Latest OHLC date: '+(latest || 'n/a')+'\n- ETFs: '+m.etfCount)" >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Commit changed data
