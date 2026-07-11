@@ -137,8 +137,16 @@ function ThemeSignalPanel({ signals, themeId }) {
           const increase = signal.direction === 'increase';
           const quantitySignal = signal.signalType === 'per_cu_quantity';
           const Icon = increase ? ArrowUpRight : ArrowDownRight;
+          const signalKey = [
+            signal.themeId,
+            signal.date,
+            signal.signalType,
+            signal.holdingCode,
+            signal.holdingName,
+            signal.direction,
+          ].join('-');
           return (
-            <details key={`${signal.holdingCode}-${signal.direction}`} className="rounded-xl border border-blue-100 bg-white px-3 py-3">
+            <details key={signalKey} className="rounded-xl border border-blue-100 bg-white px-3 py-3">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
                   <span className={`rounded-full p-1.5 ${increase ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}><Icon size={15} /></span>
@@ -276,7 +284,7 @@ export default function Theme() {
             })}
           </div>
 
-          <div className="md:col-span-2 glass p-6 rounded-3xl space-y-5">
+          <div key={`${activeTheme?.id || 'empty'}-${period}`} className="md:col-span-2 glass p-6 rounded-3xl space-y-5">
             {activeTheme && (
               <>
                 <div>
@@ -285,8 +293,8 @@ export default function Theme() {
                   <p className="text-xs text-slate-600 mt-1">{period === '1w' ? '최근 1주' : '최근 1개월'} 수익률이 높은 순서입니다.</p>
                 </div>
                 <div className="space-y-4">
-                  <ThemeSignalPanel signals={signals} themeId={activeTheme.id} />
-                  <ThemeEtfList theme={activeTheme} period={period} />
+                  <ThemeSignalPanel key={`${activeTheme.id}-${period}-signals`} signals={signals} themeId={activeTheme.id} />
+                  <ThemeEtfList key={`${activeTheme.id}-${period}-etfs`} theme={activeTheme} period={period} />
                 </div>
               </>
             )}
@@ -325,8 +333,8 @@ export default function Theme() {
                     <div className="px-1 pt-1 text-xs font-semibold text-slate-500">
                       {period === '1w' ? '최근 1주' : '최근 1개월'} 수익률 상위 ETF
                     </div>
-                    <ThemeSignalPanel signals={signals} themeId={theme.id} />
-                    <ThemeEtfList theme={theme} period={period} />
+                    <ThemeSignalPanel key={`${theme.id}-${period}-signals`} signals={signals} themeId={theme.id} />
+                    <ThemeEtfList key={`${theme.id}-${period}-etfs`} theme={theme} period={period} />
                   </div>
                 )}
               </section>
