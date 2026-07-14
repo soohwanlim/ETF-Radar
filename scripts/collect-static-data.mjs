@@ -12,6 +12,7 @@ import {
   parseNumber,
 } from './static-data-lib.mjs';
 import { buildThemeSignals } from './theme-signals.mjs';
+import { buildHoldingIndex } from './holding-index.mjs';
 
 const KRX_URL = 'https://data-dbg.krx.co.kr/svc/apis/etp/etf_bydd_trd';
 const NAVER_LIST_URL = 'https://finance.naver.com/api/sise/etfItemList.nhn';
@@ -357,6 +358,10 @@ async function main() {
   }
 
   const generatedAt = new Date().toISOString();
+  const holdingIndex = buildHoldingIndex(etfs, holdings, {
+    asOf: market.asOf,
+    generatedAt,
+  });
   const collectionState = failures.length === 0 ? 'success' : 'partial';
   const status = {
     generatedAt,
@@ -368,6 +373,7 @@ async function main() {
     etfCount: etfs.length,
     marketRowCount: marketRows.length,
     holdingsCount: Object.keys(holdings).length,
+    holdingIndexCount: holdingIndex.count,
     changeCount: changes.length,
     themeSignalCount: themeSignals.length,
     recentListingCount: listingCalendar.recent.length,
@@ -387,6 +393,7 @@ async function main() {
       etfCount: etfs.length,
       status: collectionState,
       failedCount: failures.length,
+      holdingIndexCount: holdingIndex.count,
       changeCount: changes.length,
       themeSignalCount: themeSignals.length,
       recentListingCount: listingCalendar.recent.length,
@@ -396,6 +403,7 @@ async function main() {
     writeJson('status.json', status),
     writeJson('etfs.json', etfs),
     writeJson('holdings.json', holdings),
+    writeJson('holding-index.json', holdingIndex),
     writeJson('price-series.json', series),
     writeJson('changes/latest.json', changes),
     writeJson('changes/history.json', history),

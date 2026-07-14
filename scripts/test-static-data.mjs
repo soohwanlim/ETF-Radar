@@ -8,6 +8,7 @@ import {
   parseNaverHoldings,
 } from './static-data-lib.mjs';
 import { buildThemeSignals } from './theme-signals.mjs';
+import { buildHoldingIndex } from './holding-index.mjs';
 
 assert.equal(isSupportedDomesticSpotEtf({ etfTabCode: 1, itemname: 'KODEX 200' }), true);
 assert.equal(isSupportedDomesticSpotEtf({ etfTabCode: 1, itemname: 'KODEX 미국S&P500' }), false);
@@ -71,5 +72,20 @@ assert.equal(increaseSignal.signalType, 'per_cu_quantity');
 assert.equal(increaseSignal.averageShareChangeRate, 7.5);
 assert.equal(heldDecreaseSignal.direction, 'decrease');
 assert.equal(heldDecreaseSignal.signalType, 'per_cu_quantity');
-
+const holdingIndex = buildHoldingIndex(
+  [
+    { code: 'A', name: 'KODEX 반도체' },
+    { code: 'B', name: 'TIME 액티브 반도체' },
+  ],
+  {
+    A: [{ code: '005930', name: '삼성전자', shares: 10, weight: 25, asOf: '2026-06-12' }],
+    B: [{ code: '005930', name: '삼성전자', shares: 20, weight: 30, asOf: '2026-06-12' }],
+  },
+  { asOf: '2026-06-12' },
+);
+assert.equal(holdingIndex.count, 1);
+assert.equal(holdingIndex.items[0].code, '005930');
+assert.equal(holdingIndex.items[0].etfCount, 2);
+assert.equal(holdingIndex.items[0].activeEtfCount, 1);
+assert.equal(holdingIndex.items[0].etfs[0].code, 'B');
 console.log('Static data tests passed');

@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "collect:data": "node scripts/collect-static-data.mjs",
+    "build:holding-index": "node scripts/build-holding-index.mjs",
     "backfill:ohlc": "node scripts/backfill-ohlc.mjs",
     "append:ohlc": "node scripts/append-ohlc.mjs",
     "check:health": "node scripts/check-deployed-health.mjs",

@@ -6,10 +6,10 @@ import { useCompareStore } from '../store/compareStore';
 import { useETFData } from '../hooks/useETFData';
 import { useChanges } from '../hooks/useChanges';
 import ETFIcon from '../components/ETFIcon';
-import { loadChangesHistory, loadListings, loadThemeSignals } from '../data/staticData';
+import { loadChangesHistory, loadHoldingIndex, loadListings, loadThemeSignals } from '../data/staticData';
 
 const PERIODS = [
-  ['1d', '오늘'], ['1w', '1주'], ['1m', '1개월'], ['3m', '3개월'], ['1y', '1년'], ['10y', '10년'],
+  ['1d', '1일'], ['1w', '1주'], ['1m', '1개월'], ['3m', '3개월'], ['1y', '1년'], ['10y', '10년'],
 ];
 const COLLAPSED_ETF_COUNT = 30;
 const ACTIVE_COMMON_SIGNAL_DAYS = 7;
@@ -38,6 +38,23 @@ function Rate({ value, large = false }) {
   );
 }
 
+function PeriodTabs({ period, onChange, size = 'md' }) {
+  const isCompact = size === 'sm';
+  return (
+    <div className="no-scrollbar flex max-w-full gap-1.5 overflow-x-auto rounded-full border border-slate-200 bg-white p-1 shadow-sm" aria-label="수익률 기간 선택">
+      {PERIODS.map(([key, label]) => (
+        <button
+          key={key}
+          type="button"
+          onClick={() => onChange(key)}
+          className={`shrink-0 rounded-full font-bold transition-colors ${isCompact ? 'px-3 py-1.5 text-xs' : 'px-4 py-2 text-sm'} ${period === key ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-950'}`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
 function selectMainSignals(signals) {
   const selected = [];
   const themeCounts = new Map();
@@ -63,6 +80,10 @@ function filterChangesByDays(changes, days) {
   cutoff.setUTCDate(cutoff.getUTCDate() - days + 1);
   const cutoffDate = cutoff.toISOString().slice(0, 10);
   return changes.filter(change => change.date >= cutoffDate);
+}
+
+function getHoldingPath(signal, fallback) {
+  return signal?.holdingCode ? `/holding/${signal.holdingCode}` : fallback;
 }
 
 function buildActiveCommonSignals(etfs, changes) {
@@ -122,6 +143,7 @@ export default function Home() {
   const [themeSignals, setThemeSignals] = useState([]);
   const [activeSignalChanges, setActiveSignalChanges] = useState([]);
   const [listings, setListings] = useState({ recent: [], upcoming: [] });
+  const [holdingIndex, setHoldingIndex] = useState({ items: [] });
   const { watchlist, toggleWatchlist } = useWatchlistStore();
   const { selectedEtfs, addEtf, removeEtf } = useCompareStore();
   const { etfs, loading: etfsLoading, error: etfsError } = useETFData(period);
@@ -160,7 +182,14 @@ export default function Home() {
       return keywordOk && activeOk;
     });
   }, [activeOnly, etfs, search]);
-  const visibleEtfs = showAllEtfs ? filteredEtfs : filteredEtfs.slice(0, COLLAPSED_ETF_COUNT);
+  const filteredHoldings = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    if (!keyword || activeOnly) return [];
+    return (holdingIndex.items || [])
+      .filter(item => item.name.toLowerCase().includes(keyword) || item.code.includes(keyword))
+      .slice(0, 6);
+  }, [activeOnly, holdingIndex, search]);
+    const visibleEtfs = showAllEtfs ? filteredEtfs : filteredEtfs.slice(0, COLLAPSED_ETF_COUNT);
   const canToggleEtfs = filteredEtfs.length > COLLAPSED_ETF_COUNT;
 
   const leaders = etfs.slice(0, 3);
@@ -193,6 +222,7 @@ export default function Home() {
     loadThemeSignals().then(data => active && setThemeSignals(data)).catch(() => active && setThemeSignals([]));
     loadChangesHistory().then(data => active && setActiveSignalChanges(data)).catch(() => active && setActiveSignalChanges([]));
     loadListings().then(data => active && setListings(data)).catch(() => active && setListings({ recent: [], upcoming: [] }));
+    loadHoldingIndex().then(data => active && setHoldingIndex(data)).catch(() => active && setHoldingIndex({ items: [] }));
     return () => { active = false; };
   }, []);
 
@@ -244,15 +274,18 @@ export default function Home() {
             <p className="text-sm text-slate-500">{periodLabel} 수익률</p>
             <h2 className="mt-1 text-xl font-bold text-slate-950">지금 가장 많이 오른 ETF</h2>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {marketReturns.map(proxy => (
-              <div key={proxy.code} className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs shadow-sm" title={`${proxy.name} 기준`}>
-                <span className="font-semibold text-slate-500">{periodLabel} {proxy.label}</span>
-                <span className={`ml-2 font-extrabold tabular-nums ${proxy.rate == null ? 'text-slate-500' : proxy.rate >= 0 ? 'text-red-600' : 'text-blue-600'}`}>
-                  {proxy.rate == null ? '-' : `${proxy.rate >= 0 ? '+' : ''}${proxy.rate}%`}
-                </span>
-              </div>
-            ))}
+          <div className="flex flex-col items-start gap-2 sm:items-end">
+            <PeriodTabs period={period} onChange={key => { setPeriod(key); setShowAllEtfs(false); }} size="sm" />
+            <div className="flex flex-wrap gap-2 sm:justify-end">
+              {marketReturns.map(proxy => (
+                <div key={proxy.code} className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs shadow-sm" title={`${proxy.name} 기준`}>
+                  <span className="font-semibold text-slate-500">{periodLabel} {proxy.label}</span>
+                  <span className={`ml-2 font-extrabold tabular-nums ${proxy.rate == null ? 'text-slate-500' : proxy.rate >= 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                    {proxy.rate == null ? '-' : `${proxy.rate >= 0 ? '+' : ''}${proxy.rate}%`}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
         <div className="grid gap-3 md:grid-cols-3">
@@ -287,7 +320,7 @@ export default function Home() {
               return (
                 <Link
                   key={`${signal.themeId}-${signal.holdingCode}-${signal.direction}`}
-                  to={`/theme?theme=${signal.themeId}`}
+                  to={getHoldingPath(signal, `/theme?theme=${signal.themeId}`)}
                   className="min-w-[270px] rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md md:min-w-0"
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -327,7 +360,7 @@ export default function Home() {
             {activeCommonSignals.map(signal => (
               <Link
                 key={`${signal.holdingCode || signal.holdingName}-${signal.holdingName}`}
-                to="/active"
+                to={getHoldingPath(signal, '/active')}
                 className="min-w-[270px] rounded-3xl border border-red-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md md:min-w-0"
               >
                 <div className="flex items-start justify-between gap-3">
@@ -397,19 +430,32 @@ export default function Home() {
               <span className="text-xs text-slate-500">{filteredEtfs.length}개</span>
             </div>
 
-            <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
-              {PERIODS.map(([key, label]) => (
-                <button key={key} type="button" onClick={() => { setPeriod(key); setShowAllEtfs(false); }} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${period === key ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-950'}`}>
-                  {label}
-                </button>
-              ))}
-            </div>
+            <PeriodTabs period={period} onChange={key => { setPeriod(key); setShowAllEtfs(false); }} />
 
             <label className="relative block">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-              <input value={search} onCompositionStart={() => { isComposingSearch.current = true; }} onCompositionEnd={handleSearchCompositionEnd} onChange={event => handleSearchChange(event.target.value)} placeholder="ETF 이름이나 종목코드 검색" className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-sm text-slate-950 shadow-sm outline-none ring-blue-500 placeholder:text-slate-400 focus:ring-2" />
+              <input value={search} onCompositionStart={() => { isComposingSearch.current = true; }} onCompositionEnd={handleSearchCompositionEnd} onChange={event => handleSearchChange(event.target.value)} placeholder="ETF명·구성종목명·종목코드 검색" className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-sm text-slate-950 shadow-sm outline-none ring-blue-500 placeholder:text-slate-400 focus:ring-2" />
             </label>
 
+            {filteredHoldings.length > 0 && (
+              <div className="rounded-3xl border border-blue-100 bg-blue-50/60 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-extrabold text-slate-950">구성종목 검색 결과</h3>
+                  <span className="text-xs font-bold text-blue-700">TOP 10 보유 ETF 기준</span>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {filteredHoldings.map(item => (
+                    <Link key={item.code} to={`/holding/${item.code}`} className="group flex items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-white px-4 py-3 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-extrabold text-slate-950 group-hover:text-blue-700">{item.name}</div>
+                        <div className="mt-1 text-xs font-semibold text-slate-500">{item.code} · {item.etfCount}개 ETF · {item.themeCount}개 테마</div>
+                      </div>
+                      <ArrowRight className="shrink-0 text-blue-600" size={17} />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
             <button
               type="button"
               onClick={() => { setActiveOnly(value => !value); setShowAllEtfs(false); }}
@@ -525,7 +571,7 @@ export default function Home() {
           <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950">국내 ETF를 수익률만이 아니라 구성 변화까지 함께 비교합니다</h2>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
             ETF Radar는 국내 주식형 현물 ETF의 종가 수익률, 신규 상장 ETF, TOP 10 구성자산 변화, 액티브 ETF의 공통 구성수량 증가 신호를 매일 같은 기준으로 정리합니다.
-            ETF를 고를 때 단순히 오늘 많이 오른 상품만 보는 것이 아니라, 어떤 종목이 여러 ETF에서 함께 늘었는지와 최근 운용 방향에 변화가 있는지도 함께 확인할 수 있습니다.
+            ETF를 고를 때 단순히 1일 수익률이 높은 상품만 보는 것이 아니라, 어떤 종목이 여러 ETF에서 함께 늘었는지와 최근 운용 방향에 변화가 있는지도 함께 확인할 수 있습니다.
           </p>
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-3">

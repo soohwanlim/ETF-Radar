@@ -43,6 +43,15 @@ export async function loadHoldings(code) {
   return holdings[code] || [];
 }
 
+export function loadHoldingIndex() {
+  return loadJson('/data/holding-index.json');
+}
+
+export async function loadHoldingDetail(code) {
+  const index = await loadHoldingIndex();
+  return index.items.find(item => item.code === code) || null;
+}
+
 export async function loadEtfHistory(code) {
   if (!derivedCache.has('changes:historyByCode')) {
     derivedCache.set('changes:historyByCode', loadChangesHistory().then(history => {

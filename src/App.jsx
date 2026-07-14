@@ -10,6 +10,7 @@ const Theme = lazy(() => import('./pages/Theme'));
 const Compare = lazy(() => import('./pages/Compare'));
 const Active = lazy(() => import('./pages/Active'));
 const ETFDetail = lazy(() => import('./pages/ETFDetail'));
+const HoldingDetail = lazy(() => import('./pages/HoldingDetail'));
 const Changes = lazy(() => import('./pages/Changes'));
 const Guide = lazy(() => import('./pages/Guide'));
 const Methodology = lazy(() => import('./pages/Methodology'));
@@ -26,6 +27,7 @@ const ROUTE_PREFETCHERS = [
   () => import('./pages/Changes'),
   () => import('./pages/Watchlist'),
   () => import('./pages/ETFDetail'),
+  () => import('./pages/HoldingDetail'),
 ];
 const NAV_ITEMS = [
   { to: '/', label: '홈', desktopLabel: '수익률', icon: BarChart3 },
@@ -109,7 +111,7 @@ function RouteMeta() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    const routeKey = ROUTE_META[pathname] ? pathname : pathname.startsWith('/etf/') ? '/compare' : '/';
+    const routeKey = ROUTE_META[pathname] ? pathname : pathname.startsWith('/etf/') ? '/compare' : pathname.startsWith('/holding/') ? '/changes' : '/';
     const meta = { ...DEFAULT_META, ...ROUTE_META[routeKey] };
     const canonicalPath = meta.robots?.includes('noindex') ? '/' : pathname;
     const canonicalUrl = `${SITE_URL}${canonicalPath === '/' ? '/' : canonicalPath}`;
@@ -254,6 +256,7 @@ export default function App() {
               <Route path="/contact" element={<Contact />} />
               <Route path="/watchlist" element={<Watchlist />} />
               <Route path="/etf/:code" element={<ETFDetail />} />
+              <Route path="/holding/:code" element={<HoldingDetail />} />
               <Route path="/policy" element={<Policy />} />
             </Routes>
           </Suspense>

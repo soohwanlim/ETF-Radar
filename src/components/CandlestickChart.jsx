@@ -184,7 +184,7 @@ export default function CandlestickChart({ code, selectedDate, onDateSelect, cha
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
         textColor: '#64748b',
-        fontFamily: 'Inter, system-ui, sans-serif',
+        fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       },
       grid: {
         vertLines: { color: 'rgba(148, 163, 184, 0.18)' },
@@ -285,7 +285,7 @@ export default function CandlestickChart({ code, selectedDate, onDateSelect, cha
             <TrendingUp size={18} className="text-blue-600" />
             가격 흐름
           </h2>
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-mono text-slate-500">
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold tabular-nums text-slate-500">
             <button
               type="button"
               onClick={() => displayCandle?.time && onDateSelect?.(displayCandle.time)}
@@ -340,7 +340,7 @@ export default function CandlestickChart({ code, selectedDate, onDateSelect, cha
 
       <div ref={containerRef} className="h-[300px] w-full" />
 
-      <div className="text-right text-[10px] text-slate-500">
+      <div className="text-right text-[10px] font-semibold text-slate-500">
         KRX Open API 일별 OHLC 기준 · 마우스 휠/드래그로 확대와 이동 가능
       </div>
     </div>
