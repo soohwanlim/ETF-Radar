@@ -151,7 +151,17 @@ function ThemeSignalPanel({ signals, themeId }) {
                 <div className="flex min-w-0 items-center gap-2">
                   <span className={`rounded-full p-1.5 ${increase ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}><Icon size={15} /></span>
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-bold text-slate-900">{signal.holdingName}</div>
+                    {signal.holdingCode ? (
+                      <Link
+                        to={`/holding/${signal.holdingCode}`}
+                        onClick={event => event.stopPropagation()}
+                        className="block truncate text-sm font-bold text-slate-900 hover:text-blue-600"
+                      >
+                        {signal.holdingName}
+                      </Link>
+                    ) : (
+                      <div className="truncate text-sm font-bold text-slate-900">{signal.holdingName}</div>
+                    )}
                     <div className="mt-0.5 text-[10px] font-bold text-blue-600">{quantitySignal ? '1CU 수량 변화' : 'TOP 10·비중 변화'}</div>
                     <div className="text-[11px] text-slate-500">{signal.etfCount}개 ETF에서 {quantitySignal ? '1CU당 수량' : 'TOP 10 공통'} {increase ? '증가' : '감소'}</div>
                   </div>

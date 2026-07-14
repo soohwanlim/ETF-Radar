@@ -1,33 +1,48 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { Component, lazy, Suspense, useEffect } from 'react';
 import Home from './pages/Home';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Activity, ArrowLeftRight, BarChart3, Grid2X2, RefreshCw, ShieldAlert, Star, X } from 'lucide-react';
 import { useCompareStore } from './store/compareStore';
 import DataStatus from './components/DataStatus';
 
-const About = lazy(() => import('./pages/About'));
-const Theme = lazy(() => import('./pages/Theme'));
-const Compare = lazy(() => import('./pages/Compare'));
-const Active = lazy(() => import('./pages/Active'));
-const ETFDetail = lazy(() => import('./pages/ETFDetail'));
-const HoldingDetail = lazy(() => import('./pages/HoldingDetail'));
-const Changes = lazy(() => import('./pages/Changes'));
-const Guide = lazy(() => import('./pages/Guide'));
-const Methodology = lazy(() => import('./pages/Methodology'));
-const Faq = lazy(() => import('./pages/Faq'));
-const Contact = lazy(() => import('./pages/Contact'));
-const Insights = lazy(() => import('./pages/Insights'));
-const Watchlist = lazy(() => import('./pages/Watchlist'));
-const Policy = lazy(() => import('./pages/Policy'));
+const LAZY_RELOAD_KEY = 'etf-radar-lazy-reload-attempted';
+
+function isChunkLoadError(error) {
+  const message = String(error?.message || '');
+  return error?.name === 'ChunkLoadError'
+    || message.includes('Failed to fetch dynamically imported module')
+    || message.includes('Importing a module script failed')
+    || message.includes('Loading chunk');
+}
+
+function lazyWithRetry(loadRoute) {
+  return lazy(() => loadRoute().catch(error => {
+    if (isChunkLoadError(error) && !sessionStorage.getItem(LAZY_RELOAD_KEY)) {
+      sessionStorage.setItem(LAZY_RELOAD_KEY, '1');
+      window.location.reload();
+    }
+    throw error;
+  }));
+}
+const About = lazyWithRetry(() => import('./pages/About'));
+const Theme = lazyWithRetry(() => import('./pages/Theme'));
+const Compare = lazyWithRetry(() => import('./pages/Compare'));
+const Active = lazyWithRetry(() => import('./pages/Active'));
+const ETFDetail = lazyWithRetry(() => import('./pages/ETFDetail'));
+const HoldingDetail = lazyWithRetry(() => import('./pages/HoldingDetail'));
+const Changes = lazyWithRetry(() => import('./pages/Changes'));
+const Guide = lazyWithRetry(() => import('./pages/Guide'));
+const Methodology = lazyWithRetry(() => import('./pages/Methodology'));
+const Faq = lazyWithRetry(() => import('./pages/Faq'));
+const Contact = lazyWithRetry(() => import('./pages/Contact'));
+const Insights = lazyWithRetry(() => import('./pages/Insights'));
+const Watchlist = lazyWithRetry(() => import('./pages/Watchlist'));
+const Policy = lazyWithRetry(() => import('./pages/Policy'));
 
 const ROUTE_PREFETCHERS = [
   () => import('./pages/Theme'),
   () => import('./pages/Active'),
-  () => import('./pages/Compare'),
   () => import('./pages/Changes'),
-  () => import('./pages/Watchlist'),
-  () => import('./pages/ETFDetail'),
-  () => import('./pages/HoldingDetail'),
 ];
 const NAV_ITEMS = [
   { to: '/', label: '홈', desktopLabel: '수익률', icon: BarChart3 },
@@ -191,6 +206,49 @@ function FloatingCompareBar() {
   );
 }
 
+class RouteErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.pathname !== this.props.pathname && this.state.hasError) {
+      this.setState({ hasError: false });
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="mx-auto flex min-h-[50vh] max-w-xl flex-col items-center justify-center gap-4 text-center">
+          <h1 className="text-xl font-extrabold text-slate-950">페이지를 다시 불러와야 합니다</h1>
+          <p className="text-sm leading-relaxed text-slate-600">
+            새 배포 직후 오래된 화면에서 이동했거나 일시적으로 페이지 파일을 불러오지 못했습니다.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500"
+          >
+            새로고침
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+function RouteErrorReset({ children }) {
+  const location = useLocation();
+  return <RouteErrorBoundary pathname={location.pathname}>{children}</RouteErrorBoundary>;
+}
 function Navigation() {
   const isActive = useActivePath();
 
@@ -241,7 +299,8 @@ export default function App() {
         <DataStatus />
 
         <main className="mx-auto w-full max-w-6xl px-5 py-7 pb-24 md:px-6 md:py-12 md:pb-12">
-          <Suspense fallback={<div className="flex min-h-[60vh] items-center justify-center py-24 text-center text-sm text-slate-500">페이지를 불러오는 중입니다.</div>}>
+          <RouteErrorReset>
+            <Suspense fallback={<div className="flex min-h-[60vh] items-center justify-center py-24 text-center text-sm text-slate-500">페이지를 불러오는 중입니다.</div>}>
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/about" element={<About />} />
@@ -259,7 +318,8 @@ export default function App() {
               <Route path="/holding/:code" element={<HoldingDetail />} />
               <Route path="/policy" element={<Policy />} />
             </Routes>
-          </Suspense>
+            </Suspense>
+          </RouteErrorReset>
         </main>
 
         <FloatingCompareBar />
