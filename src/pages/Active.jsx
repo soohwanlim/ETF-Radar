@@ -344,38 +344,41 @@ export default function Active() {
     const isExpanded = expandedSignalKeys.has(signalKey);
     return (
       <div key={signalKey} className="rounded-2xl border border-red-100 bg-red-50 p-4">
-        <div className="flex w-full items-start justify-between gap-3">
+        <div>
           <div className="min-w-0">
             {signal.holdingCode ? (
               <Link
                 to={`/holding/${signal.holdingCode}`}
-                className="group inline-flex max-w-full items-center gap-1 text-lg font-extrabold text-slate-950 hover:text-red-700"
+                title={signal.holdingName}
+                className="group inline-flex max-w-full items-start gap-1 text-lg font-extrabold text-slate-950 hover:text-red-700"
               >
-                <span className={isExpanded ? 'break-keep' : 'truncate'}>{signal.holdingName}</span>
-                <ArrowUpRight size={14} className="shrink-0 text-red-300 transition-colors group-hover:text-red-600" />
+                <span className={isExpanded ? 'break-keep' : 'line-clamp-2 break-keep'}>{signal.holdingName}</span>
+                <ArrowUpRight size={14} className="mt-1 shrink-0 text-red-300 transition-colors group-hover:text-red-600" />
               </Link>
             ) : (
-              <h3 className={`${isExpanded ? 'break-keep' : 'truncate'} text-lg font-extrabold text-slate-950`}>{signal.holdingName}</h3>
+              <h3 title={signal.holdingName} className={`${isExpanded ? 'break-keep' : 'line-clamp-2 break-keep'} text-lg font-extrabold text-slate-950`}>{signal.holdingName}</h3>
             )}
-            <p className="mt-1 text-xs font-semibold text-red-700">{signal.etfCount}개 액티브 ETF에서 증가</p>
           </div>
-          <button
-            type="button"
-            onClick={() => toggleSignalCard(signalKey)}
-            className="flex shrink-0 items-center gap-2 text-left"
-            aria-expanded={isExpanded}
-            aria-label={`${signal.holdingName} 상세 ETF 목록 ${isExpanded ? '접기' : '펼치기'}`}
-          >
-            {signal.averageShareChangeRate != null && (
-              <span className="rounded-full bg-white px-2.5 py-1 text-xs font-extrabold text-red-600">
-                평균 +{signal.averageShareChangeRate}%
-              </span>
-            )}
-            <ChevronDown
-              size={17}
-              className={`text-red-600 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-            />
-          </button>
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold text-red-700">{signal.etfCount}개 액티브 ETF에서 증가</p>
+            <button
+              type="button"
+              onClick={() => toggleSignalCard(signalKey)}
+              className="flex shrink-0 items-center gap-2 text-left"
+              aria-expanded={isExpanded}
+              aria-label={`${signal.holdingName} 상세 ETF 목록 ${isExpanded ? '접기' : '펼치기'}`}
+            >
+              {signal.averageShareChangeRate != null && (
+                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-extrabold text-red-600">
+                  평균 +{signal.averageShareChangeRate}%
+                </span>
+              )}
+              <ChevronDown
+                size={17}
+                className={`text-red-600 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+              />
+            </button>
+          </div>
         </div>
         {isExpanded && (
           <div className="mt-4 space-y-1.5">
