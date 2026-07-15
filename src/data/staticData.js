@@ -49,7 +49,8 @@ export function loadHoldingIndex() {
 
 export async function loadHoldingDetail(code) {
   const index = await loadHoldingIndex();
-  return index.items.find(item => item.code === code) || null;
+  const item = index.items.find(item => item.code === code) || null;
+  return item ? { ...item, asOf: index.asOf, coverage: index.coverage } : null;
 }
 
 export async function loadEtfHistory(code) {

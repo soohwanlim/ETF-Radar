@@ -1,22 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, BarChart2, Info, Loader2 } from 'lucide-react';
+import { ArrowLeft, RefreshCw, BarChart2, Info, Loader2, Star } from 'lucide-react';
 import { useETFDetail, useETFHoldings, useETFHistory } from '../hooks/useETFData';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
 import ETFIcon from '../components/ETFIcon';
 import CandlestickChart from '../components/CandlestickChart';
+import { useWatchlistStore } from '../store/watchlistStore';
 
 const COLORS = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#EC4899', '#14B8A6'];
 
 export default function ETFDetail() {
   const { code } = useParams();
   const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
+  const { toggleWatchlist, isWatched } = useWatchlistStore();
   const historyDateRefs = useRef({});
 
   // Load detail, holdings, and history from the latest daily static snapshot.
   const { detail, loading: detailLoading, error: detailError } = useETFDetail(code);
   const { holdings, loading: holdingsLoading, error: holdingsError } = useETFHoldings(code);
   const { history, loading: historyLoading, error: historyError } = useETFHistory(code);
+  const watched = isWatched(code);
 
   const chartChangeEvents = useMemo(() => {
     const groupedDates = new Map();
@@ -69,18 +72,33 @@ export default function ETFDetail() {
     <div className="min-h-[1800px] space-y-10 fade-in md:min-h-[900px]">
       
       {/* Back button & Title */}
-      <div className="flex items-center gap-4 py-4">
-        <Link to="/" className="p-2 bg-white border border-slate-200 text-slate-600 hover:text-slate-900 rounded-xl transition-all">
-          <ArrowLeft size={16} />
-        </Link>
+      <div className="flex flex-col gap-4 py-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-center gap-4">
+          <Link to="/" className="p-2 bg-white border border-slate-200 text-slate-600 hover:text-slate-900 rounded-xl transition-all">
+            <ArrowLeft size={16} />
+          </Link>
+          {detail && (
+            <>
+              <ETFIcon etf={detail} size="lg" />
+              <div>
+                <span className="text-xs font-mono text-slate-500">{detail.code}</span>
+                <h1 className="text-3xl font-extrabold text-slate-950">{detail.name} 상세</h1>
+              </div>
+            </>
+          )}
+        </div>
         {detail && (
-          <><ETFIcon etf={detail} size="lg" /><div>
-            <span className="text-xs font-mono text-slate-500">{detail.code}</span>
-            <h1 className="text-3xl font-extrabold text-slate-950">{detail.name} 상세</h1>
-          </div></>
+          <button
+            type="button"
+            onClick={() => toggleWatchlist(detail.code)}
+            className={`inline-flex w-fit items-center gap-2 rounded-3xl border px-4 py-3 text-xs font-bold transition-all ${watched ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-slate-200 bg-white text-slate-600 hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700'}`}
+            aria-pressed={watched}
+          >
+            <Star size={15} fill={watched ? 'currentColor' : 'none'} />
+            {watched ? 'ETF 즐겨찾기 저장됨' : 'ETF 즐겨찾기'}
+          </button>
         )}
       </div>
-
       {/* Grid: Basic Info & Timeline */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         

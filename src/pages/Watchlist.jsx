@@ -4,6 +4,7 @@ import { ArrowDownRight, ArrowUpRight, Loader2, Star } from 'lucide-react';
 import { useETFData } from '../hooks/useETFData';
 import { useCompareStore } from '../store/compareStore';
 import { useWatchlistStore } from '../store/watchlistStore';
+import { loadHoldingIndex } from '../data/staticData';
 import ETFIcon from '../components/ETFIcon';
 
 const PERIODS = [
@@ -31,6 +32,85 @@ function useNoIndexPage() {
   }, []);
 }
 
+function HoldingWatchlistSection() {
+  const { holdingWatchlist, toggleHoldingWatchlist } = useWatchlistStore();
+  const [holdings, setHoldings] = useState([]);
+
+  useEffect(() => {
+    if (holdingWatchlist.length === 0) return;
+
+    let active = true;
+    loadHoldingIndex()
+      .then(index => {
+        if (!active) return;
+        const itemByCode = new Map((index.items || []).map(item => [item.code, item]));
+        setHoldings(holdingWatchlist.map(code => itemByCode.get(code)).filter(Boolean));
+      })
+      .catch(() => {
+        if (active) setHoldings([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [holdingWatchlist]);
+
+  if (holdingWatchlist.length === 0) {
+    return (
+      <section className="rounded-3xl border border-dashed border-slate-200 bg-white/70 p-6 text-center shadow-sm">
+        <h2 className="text-lg font-extrabold text-slate-950">즐겨찾기 종목</h2>
+        <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-slate-500">
+          종목 역검색 상세 화면에서 별표를 누르면 삼성전자, SK하이닉스 같은 구성종목을 이곳에 저장하고 바로 다시 볼 수 있습니다.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-xl font-extrabold text-slate-950">즐겨찾기 종목</h2>
+          <p className="mt-1 text-sm text-slate-500">저장한 구성종목의 역검색 상세 페이지로 바로 이동합니다.</p>
+        </div>
+        <span className="w-fit rounded-full border border-blue-500/20 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700">
+          {holdingWatchlist.length}개 저장됨
+        </span>
+      </div>
+
+      {holdings.length > 0 ? (
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {holdings.map(item => (
+            <div key={item.code} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 transition-colors hover:border-blue-200 hover:bg-blue-50/50">
+              <div className="flex items-start justify-between gap-3">
+                <Link to={`/holding/${item.code}`} className="min-w-0">
+                  <p className="font-mono text-xs font-bold text-blue-600">{item.code}</p>
+                  <h3 className="mt-1 truncate text-lg font-extrabold text-slate-950">{item.name}</h3>
+                  <p className="mt-2 text-xs font-semibold text-slate-500">
+                    보유 ETF {item.etfCount ?? 0}개 · 관련 테마 {(item.themes || []).filter(theme => theme.id !== 'etc').length}개
+                  </p>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => toggleHoldingWatchlist(item.code)}
+                  className="rounded-xl border border-amber-200 bg-amber-50 p-2 text-amber-600 transition-colors hover:bg-amber-100"
+                  title="종목 즐겨찾기 해제"
+                  aria-label={`${item.name} 종목 즐겨찾기 해제`}
+                >
+                  <Star size={15} fill="currentColor" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-5 rounded-2xl bg-slate-50 p-5 text-center text-sm text-slate-500">
+          저장한 종목 정보를 찾지 못했습니다. 데이터 갱신 후 다시 확인해 주세요.
+        </div>
+      )}
+    </section>
+  );
+}
 export default function Watchlist() {
   useNoIndexPage();
   const [period, setPeriod] = useState('3m');
@@ -52,7 +132,8 @@ export default function Watchlist() {
             <Star className="text-amber-600" fill="currentColor" /> 즐겨찾기 ETF
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-slate-600">
-            관심 ETF를 브라우저에 저장해 기간 수익률과 기준일 종가를 다시 확인하는 개인화 도구입니다. 이 페이지는 사용자별 저장 목록이라 검색 색인 대상에서는 제외됩니다.
+            <span className="block">관심 ETF 및 종목을 브라우저에 저장해 기간 수익률과 기준일 종가를 다시 확인하는 도구입니다.</span>
+            <span className="mt-1 block">브라우저 데이터, 쿠키, 사이트 저장소를 삭제하거나 다른 기기에서 접속하면 저장 목록이 사라질 수 있습니다.</span>
           </p>
         </div>
         {watchlist.length > 0 && (
@@ -159,6 +240,7 @@ export default function Watchlist() {
           </div>
         </>
       )}
+      <HoldingWatchlistSection />
     </div>
   );
 }

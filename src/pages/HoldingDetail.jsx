@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowUpRight, BarChart3, Layers3, Search, TrendingDown, TrendingUp } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, BarChart3, Layers3, Search, Star, TrendingDown, TrendingUp } from 'lucide-react';
 import { loadChangesHistory, loadEtfs, loadHoldingDetail, loadHoldingIndex } from '../data/staticData';
 import ETFIcon from '../components/ETFIcon';
 import { getEtfTheme } from '../data/themeRules';
+import { useWatchlistStore } from '../store/watchlistStore';
 
 const THEME_CHANGE_LOOKBACK_DAYS = 30;
 
@@ -150,12 +151,14 @@ function buildThemeChangeSummaries(changes, holding, etfsByCode) {
 
 export default function HoldingDetail() {
   const { code } = useParams();
+  const { toggleHoldingWatchlist, isHoldingWatched } = useWatchlistStore();
   const [holding, setHolding] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
   const [etfsByCode, setEtfsByCode] = useState(new Map());
   const [changes, setChanges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const holdingWatched = isHoldingWatched(code);
 
   useEffect(() => {
     let active = true;
@@ -261,7 +264,7 @@ export default function HoldingDetail() {
         <Link to="/" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
           <ArrowLeft size={15} /> 검색으로 돌아가기
         </Link>
-        <div className="mt-6 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+        <div className="mt-6 flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
           <div>
             <p className="text-xs font-bold text-blue-600">{holding.code}</p>
             <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-slate-950 md:text-5xl">{holding.name}</h1>
@@ -269,8 +272,19 @@ export default function HoldingDetail() {
               이 종목을 TOP 10 구성자산으로 보유한 국내 주식형 현물 ETF를 역검색합니다.
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => toggleHoldingWatchlist(holding.code)}
+            className={`inline-flex items-center gap-2 self-start rounded-3xl border px-4 py-3 text-xs font-bold transition-all md:self-auto ${holdingWatched ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-slate-200 bg-white text-slate-600 hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700'}`}
+            aria-pressed={holdingWatched}
+          >
+            <Star size={15} fill={holdingWatched ? 'currentColor' : 'none'} />
+            {holdingWatched ? '종목 즐겨찾기 저장됨' : '종목 즐겨찾기'}
+          </button>
+        </div>
+        <div className="mt-5 flex justify-end">
           <div className="rounded-3xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs font-bold text-blue-700">
-            기준일 {holding.asOf || '-'} · 네이버 금융 TOP 10 기준
+            {holding.asOf ? `기준일 ${holding.asOf} · 네이버 금융 TOP 10 기준` : '네이버 금융 TOP 10 기준'}
           </div>
         </div>
       </section>
@@ -428,7 +442,7 @@ export default function HoldingDetail() {
                           <Icon size={16} />
                         </span>
                         <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2 md:justify-end">
                             <span className="text-xs font-extrabold text-slate-500">{change.date}</span>
                             <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${config.tone}`}>{getChangeLabel(change)}</span>
                           </div>
