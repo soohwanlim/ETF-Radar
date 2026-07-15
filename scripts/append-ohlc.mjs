@@ -42,11 +42,12 @@ function normalizeKrxRowCode(row) {
   return normalizeIssueCode(row.ISU_CD || row.ISU_SRT_CD || row.SRT_ISU_CD || row.SRT_CD || row.SHORT_CODE);
 }
 
-async function readJson(url, fallback = null) {
+async function readJson(url, fallback) {
   try {
     return JSON.parse(await readFile(url, 'utf8'));
   } catch (error) {
-    if (fallback !== null && error.code === 'ENOENT') return fallback;
+    // A missing OHLC file is expected for ETFs listed after the initial backfill.
+    if (arguments.length > 1 && error.code === 'ENOENT') return fallback;
     throw error;
   }
 }
