@@ -3,7 +3,8 @@ import { loadEtf, loadEtfHistory, loadEtfsSorted, loadHoldings } from '../data/s
 
 export function useETFData(period = '3m') {
   const [etfs, setEtfs] = useState([]);
-  const [loading, setLoading] = useState(false);
+  // Start in a loading state so the first paint reserves list space.
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {

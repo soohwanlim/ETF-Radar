@@ -468,8 +468,8 @@ export default function Home() {
 
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
             {etfsLoading ? (
-              <div className="min-h-[980px] divide-y divide-slate-100">
-                {Array.from({ length: 12 }).map((_, index) => (
+              <div className="min-h-[2040px] divide-y divide-slate-100">
+                {Array.from({ length: COLLAPSED_ETF_COUNT }).map((_, index) => (
                   <div key={index} className="flex items-center gap-3 px-4 py-4 md:px-5">
                     <div className="h-9 w-9 shrink-0 animate-pulse rounded-full bg-slate-100" />
                     <div className="min-w-0 flex-1 space-y-2">

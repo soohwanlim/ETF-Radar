@@ -3,7 +3,8 @@ import { loadChangesHistory } from '../data/staticData';
 
 export function useChanges() {
   const [changes, setChanges] = useState([]);
-  const [loading, setLoading] = useState(false);
+  // Avoid rendering an empty panel before the initial history request starts.
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
