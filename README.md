@@ -19,7 +19,7 @@ Repository description suggestion:
 
 ## Data flow
 
-1. GitHub Actions runs at 18:10 and 19:10 KST on weekdays.
+1. GitHub Actions runs at 8:00~9:00 KST once on weekdays.
 2. `npm run collect:data` reads KRX closing data and Naver ETF metadata/holdings.
 3. Generated JSON is committed under `public/data`.
 4. Cloudflare Pages redeploys the static React site.
