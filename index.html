@@ -291,6 +291,16 @@
         </main>
       </div>
     </div>
+    <script>
+      window.setTimeout(() => {
+        if (window.__ETF_RADAR_BOOTED__) return;
+        const retryKey = 'etf-radar-bootstrap-retry';
+        if (!window.sessionStorage.getItem(retryKey)) {
+          window.sessionStorage.setItem(retryKey, '1');
+          window.location.reload();
+        }
+      }, 5000);
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
