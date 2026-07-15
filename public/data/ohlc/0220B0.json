@@ -1,0 +1,1 @@
+{"version":1,"source":"KRX Open API etf_bydd_trd","generatedAt":"2026-07-15T01:37:51.032Z","code":"0220B0","name":"DS 코스닥액티브","from":"2026-07-14","to":"2026-07-14","fields":["date","open","high","low","close"],"rowCount":1,"missingCount":0,"missingSample":[],"rows":[["2026-07-14",11395,11715,10730,11715]]}
