@@ -1,3 +1,5 @@
+import { isKrxTradingDate, previousKrxTradingDate } from '../src/data/marketCalendar.js';
+
 const DEFAULT_STATUS_URL = 'https://etf-radar.net/data/status.json';
 const MIN_ETF_COUNT = 300;
 const MAX_BUSINESS_DAY_LAG = 0;
@@ -9,16 +11,6 @@ function parseArgs(argv) {
     if (arg.startsWith('--url=')) options.url = arg.slice('--url='.length);
   }
   return options;
-}
-
-function toKstDate(date = new Date()) {
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Seoul',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
-  return formatter.format(date);
 }
 
 function toKstParts(date = new Date()) {
@@ -37,38 +29,19 @@ function toKstParts(date = new Date()) {
   };
 }
 
-function parseDate(dateString) {
-  if (!dateString || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return null;
-  return new Date(`${dateString}T00:00:00+09:00`);
-}
-
-function isWeekend(date) {
-  const day = date.getDay();
-  return day === 0 || day === 6;
-}
-
-function previousBusinessDate(date) {
-  const next = new Date(date);
-  do {
-    next.setDate(next.getDate() - 1);
-  } while (isWeekend(next));
-  return next;
-}
-
 function latestExpectedBusinessDate(now = new Date()) {
   const kst = toKstParts(now);
-  const todayKst = parseDate(kst.date);
-  if (isWeekend(todayKst)) return previousBusinessDate(todayKst);
-  if (kst.hour < MARKET_DATA_READY_HOUR_KST) return previousBusinessDate(todayKst);
-  return todayKst;
+  if (!isKrxTradingDate(kst.date)) return previousKrxTradingDate(kst.date);
+  if (kst.hour < MARKET_DATA_READY_HOUR_KST) return previousKrxTradingDate(kst.date);
+  return kst.date;
 }
 
 function businessDayLag(expectedDate, actualDate) {
   if (actualDate >= expectedDate) return 0;
   let lag = 0;
-  let cursor = new Date(expectedDate);
+  let cursor = expectedDate;
   while (cursor > actualDate) {
-    cursor = previousBusinessDate(cursor);
+    cursor = previousKrxTradingDate(cursor);
     lag += 1;
   }
   return lag;
@@ -87,7 +60,7 @@ async function fetchStatus(url) {
 function evaluateStatus(status, now = new Date()) {
   const problems = [];
   const latestExpected = latestExpectedBusinessDate(now);
-  const asOfDate = parseDate(status.asOf);
+  const asOfDate = /^\d{4}-\d{2}-\d{2}$/.test(status.asOf || '') ? status.asOf : null;
 
   if (status.state !== 'success') {
     problems.push(`state is ${status.state || 'missing'}`);
@@ -97,7 +70,7 @@ function evaluateStatus(status, now = new Date()) {
   } else {
     const lag = businessDayLag(latestExpected, asOfDate);
     if (lag > MAX_BUSINESS_DAY_LAG) {
-      problems.push(`asOf ${status.asOf} is ${lag} business days behind expected ${toKstDate(latestExpected)}`);
+      problems.push(`asOf ${status.asOf} is ${lag} trading days behind expected ${latestExpected}`);
     }
   }
   if ((status.etfCount || 0) < MIN_ETF_COUNT) {
@@ -110,7 +83,7 @@ function evaluateStatus(status, now = new Date()) {
   return {
     ok: problems.length === 0,
     problems,
-    expectedAsOf: toKstDate(latestExpected),
+    expectedAsOf: latestExpected,
     statusSummary: {
       lastCheckState: status.lastCheckState || 'n/a',
       latestAvailableAsOf: status.latestAvailableAsOf || 'n/a',

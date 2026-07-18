@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Clock3 } from 'lucide-react';
 import { loadDataStatus } from '../data/staticData';
+import { getKrxClosureName, isKrxTradingDate, previousKrxTradingDate } from '../data/marketCalendar';
 
 const STATE_STYLE = {
   success: {
@@ -27,7 +28,7 @@ const CHECK_LABEL = {
   partial: '부분 갱신',
   no_new_data: '최신 기준일 유지',
   krx_unavailable: 'KRX 응답 대기',
-  krx_forbidden: 'KRX 접근 제한',
+  krx_forbidden: 'KRX 요청 제한',
 };
 
 function formatKstDateTime(value) {
@@ -60,21 +61,13 @@ function toDateKey(date) {
   return date.toISOString().slice(0, 10);
 }
 
-function previousWeekday(date) {
-  const candidate = new Date(date);
-  do {
-    candidate.setUTCDate(candidate.getUTCDate() - 1);
-  } while ([0, 6].includes(candidate.getUTCDay()));
-  return toDateKey(candidate);
-}
-
 function getExpectedMarketDate(now = new Date()) {
   const parts = getKstParts(now);
   const candidate = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
-  const isWeekday = candidate.getUTCDay() >= 1 && candidate.getUTCDay() <= 5;
+  const candidateKey = toDateKey(candidate);
   const isAfterClose = parts.hour > 15 || (parts.hour === 15 && parts.minute >= 30);
-  if (isWeekday && isAfterClose) return toDateKey(candidate);
-  return previousWeekday(candidate);
+  if (isKrxTradingDate(candidateKey) && isAfterClose) return candidateKey;
+  return previousKrxTradingDate(candidateKey);
 }
 
 function formatKoreanMonthDay(dateKey) {
@@ -87,6 +80,19 @@ function getPendingDataLabel(asOf) {
   const expectedMarketDate = getExpectedMarketDate();
   if (expectedMarketDate <= asOf) return null;
   return `${formatKoreanMonthDay(expectedMarketDate)} 데이터 대기 중 · 다음 자동 수집 예정`;
+}
+
+function getRecentMarketClosureLabel(now = new Date()) {
+  const parts = getKstParts(now);
+  const today = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+  const todayKey = toDateKey(today);
+  const todayClosure = getKrxClosureName(todayKey);
+  if (todayClosure) return `${formatKoreanMonthDay(todayKey)} 한국 증시 휴장 (${todayClosure})`;
+
+  today.setUTCDate(today.getUTCDate() - 1);
+  const yesterdayKey = toDateKey(today);
+  const yesterdayClosure = getKrxClosureName(yesterdayKey);
+  return yesterdayClosure ? `${formatKoreanMonthDay(yesterdayKey)} 한국 증시 휴장 (${yesterdayClosure})` : null;
 }
 
 export default function DataStatus() {
@@ -130,6 +136,7 @@ export default function DataStatus() {
   const checkedAt = formatKstDateTime(status.lastCheckedAt);
   const checkLabel = CHECK_LABEL[status.lastCheckState];
   const pendingDataLabel = getPendingDataLabel(status.asOf);
+  const marketClosureLabel = getRecentMarketClosureLabel();
 
   return (
     <div className={`border-b ${config.className}`}>
@@ -139,6 +146,9 @@ export default function DataStatus() {
           {config.label}
         </span>
         <span className="text-slate-600">{status.asOf} 종가 기준</span>
+        {marketClosureLabel && !pendingDataLabel && (
+          <span className="font-medium text-slate-600">{marketClosureLabel}</span>
+        )}
         {pendingDataLabel && (
           <span className="font-medium text-amber-700">{pendingDataLabel}</span>
         )}
@@ -154,7 +164,7 @@ export default function DataStatus() {
         <span className="text-slate-500">ETF {status.etfCount}개</span>
         <span className="text-slate-500">변경 {status.changeCount}건</span>
         {status.failedCount > 0 && (
-          <span className="text-amber-300">실패 {status.failedCount}개</span>
+          <span className="text-amber-700">실패 {status.failedCount}개</span>
         )}
       </div>
     </div>

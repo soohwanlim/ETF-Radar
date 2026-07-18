@@ -13,6 +13,7 @@ import {
 } from './static-data-lib.mjs';
 import { buildThemeSignals } from './theme-signals.mjs';
 import { buildHoldingIndex } from './holding-index.mjs';
+import { isKrxTradingDate } from '../src/data/marketCalendar.js';
 
 const KRX_URL = 'https://data-dbg.krx.co.kr/svc/apis/etp/etf_bydd_trd';
 const NAVER_LIST_URL = 'https://finance.naver.com/api/sise/etfItemList.nhn';
@@ -31,11 +32,6 @@ function formatDate(date) {
 
 function compactDate(date) {
   return formatDate(date).replaceAll('-', '');
-}
-
-function isWeekendDate(date) {
-  const day = date.getUTCDay();
-  return day === 0 || day === 6;
 }
 
 function countMatchedMarketRows(rows, universeCodes) {
@@ -105,8 +101,8 @@ async function fetchKrxClose(apiKey, universeCodes = null) {
   for (let offset = 0; offset < 10; offset++) {
     const date = new Date(Date.now() + 9 * 60 * 60 * 1000 - offset * 86400000);
     const basDd = compactDate(date);
-    if (isWeekendDate(date)) {
-      attempts.push(`${basDd}:weekend`);
+    if (!isKrxTradingDate(formatDate(date))) {
+      attempts.push(`${basDd}:market_closed`);
       continue;
     }
     try {

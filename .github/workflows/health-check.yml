@@ -67,7 +67,7 @@ jobs:
           
           First checks:
           - Did the 06:00 KST or 08:00 KST fallback collection workflow succeed?
-          - If collection succeeded, does status.json show lastCheckState=no_new_data or latestAvailableAsOf behind the expected trading date?
+          - Is the latest expected KRX trading day a market holiday, or is status.json actually behind that trading day?
           - Did Cloudflare Pages finish deploying after the data commit?
           - Is KRX/Naver temporarily delayed or unavailable?"
           

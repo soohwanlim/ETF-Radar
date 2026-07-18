@@ -9,6 +9,12 @@ import {
 } from './static-data-lib.mjs';
 import { buildThemeSignals } from './theme-signals.mjs';
 import { buildHoldingIndex } from './holding-index.mjs';
+import { getKrxClosureName, isKrxTradingDate, previousKrxTradingDate } from '../src/data/marketCalendar.js';
+
+assert.equal(getKrxClosureName('2026-07-17'), '제헌절');
+assert.equal(isKrxTradingDate('2026-07-17'), false);
+assert.equal(previousKrxTradingDate('2026-07-18'), '2026-07-16');
+assert.equal(previousKrxTradingDate('2026-07-20'), '2026-07-16');
 
 assert.equal(isSupportedDomesticSpotEtf({ etfTabCode: 1, itemname: 'KODEX 200' }), true);
 assert.equal(isSupportedDomesticSpotEtf({ etfTabCode: 1, itemname: 'KODEX 미국S&P500' }), false);
