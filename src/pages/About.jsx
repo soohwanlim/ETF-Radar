@@ -25,7 +25,7 @@ export default function About() {
         </h1>
         <p className="mt-4 text-sm leading-relaxed text-slate-600">
           ETF Radar는 국내 주식형 현물 ETF를 매일 같은 기준으로 모아 비교하기 위해 만든 정적 데이터 서비스입니다.
-          종가 수익률, 신규 상장 ETF, 네이버 금융 TOP 10 구성자산 변화, 액티브 ETF의 공통 매수 신호를 한 화면에서 확인할 수 있도록 정리합니다.
+          종가 수익률, 신규 상장 ETF, 네이버 금융 TOP 10 구성자산 변화, 액티브 ETF의 공통 증가 종목을 한 화면에서 확인할 수 있도록 정리합니다.
           특정 상품을 추천하기보다 사용자가 ETF의 성과와 포트폴리오 변화를 스스로 비교할 수 있게 돕는 것이 목적입니다.
         </p>
         <p className="mt-3 text-sm leading-relaxed text-slate-600">

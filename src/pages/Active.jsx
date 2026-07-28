@@ -441,7 +441,7 @@ export default function Active() {
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-sm font-bold text-red-600">액티브 공통 매수 신호</p>
+              <p className="text-sm font-bold text-red-600">액티브 공통 증가 종목</p>
               <h2 className="text-xl font-extrabold text-slate-950">여러 액티브 ETF가 함께 늘린 종목</h2>
             </div>
             <span className="text-xs font-semibold text-slate-500">최근 {ACTIVE_COMMON_SIGNAL_DAYS}일 · 1CU당 구성수량 증가 기준</span>

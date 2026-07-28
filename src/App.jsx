@@ -56,7 +56,7 @@ const SITE_URL = 'https://etf-radar.net';
 
 const DEFAULT_META = {
   title: 'ETF Radar | 국내 ETF 비교와 구성종목 변화',
-  description: '국내 주식형 ETF의 수익률, TOP 10 구성종목 변화, 신규 상장 ETF, 액티브 ETF 공통 매수 신호를 매일 종가 기준 데이터로 비교합니다.',
+  description: '국내 주식형 ETF의 수익률, TOP 10 구성종목 변화, 신규 상장 ETF, 액티브 ETF 공통 증가 종목을 매일 종가 기준 데이터로 비교합니다.',
   robots: 'index, follow',
 };
 
@@ -67,7 +67,7 @@ const ROUTE_META = {
     description: '반도체, 2차전지, 금융 등 국내 ETF를 테마별 수익률과 TOP 10 구성종목 변화로 비교합니다.',
   },
   '/active': {
-    title: '액티브 ETF 공통 매수 신호 | ETF Radar',
+    title: '액티브 ETF 공통 증가 종목 | ETF Radar',
     description: '여러 액티브 ETF가 최근 함께 늘린 종목과 1CU당 구성수량 변화를 확인합니다.',
   },
   '/compare': {
@@ -92,7 +92,7 @@ const ROUTE_META = {
   },
   '/insights': {
     title: 'ETF Radar 인사이트 | ETF 구성종목 변화와 액티브 ETF 해석',
-    description: 'ETF TOP 10 구성종목 변화, 1CU당 구성수량 변화, 액티브 ETF 공통 매수 신호를 읽는 방법과 ETF Radar 데이터 운영 방식을 설명합니다.',
+    description: 'ETF TOP 10 구성종목 변화, 1CU당 구성수량 변화, 액티브 ETF 공통 증가 종목을 읽는 방법과 ETF Radar 데이터 운영 방식을 설명합니다.',
   },
   '/faq': {
     title: 'ETF Radar FAQ | 자주 묻는 질문',

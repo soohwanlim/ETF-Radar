@@ -240,7 +240,7 @@ export default function Home() {
             <div>
               <h1 className="text-3xl font-extrabold tracking-tight text-slate-950 md:text-5xl">국내 ETF 비교와 구성종목 변화</h1>
               <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 md:text-base">
-                수익률, 신규 상장 ETF, TOP 10 구성자산 변화, 액티브 ETF 공통 매수 신호를 매일 종가 기준 데이터로 비교합니다.
+                수익률, 신규 상장 ETF, TOP 10 구성자산 변화, 액티브 ETF 공통 증가 종목을 매일 종가 기준 데이터로 비교합니다.
               </p>
             </div>
             {asOf && (
