@@ -108,15 +108,11 @@ function normalizeChartDate(time) {
   return null;
 }
 function buildChangeMarkers(changeEvents, candles, interval) {
-  if (!changeEvents?.length || !candles.length) return [];
+  if (interval !== 'day' || !changeEvents?.length || !candles.length) return [];
   const candleTimes = new Set(candles.map(candle => candle.time));
   const markerByTime = new Map();
   for (const event of changeEvents) {
-    let time = event.date;
-    if (!candleTimes.has(time) && interval !== 'day') {
-      const eventBucket = bucketKey(event.date, interval);
-      time = candles.find(candle => bucketKey(candle.time, interval) === eventBucket)?.time;
-    }
+    const time = event.date;
     if (!time || !candleTimes.has(time)) continue;
     markerByTime.set(time, {
       time,

@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   LayoutGrid, Cpu, BatteryCharging, Bot, Shield, Ship, HeartPulse, ArrowDownRight, ArrowUpRight,
   Landmark, Car, Zap, MonitorPlay, Building2, ChevronDown, Loader2, TrendingUp, BarChart3,
@@ -122,8 +122,11 @@ function ThemeEtfCard({ etf, period }) {
 }
 
 function ThemeSignalPanel({ signals, themeId }) {
+  const navigate = useNavigate();
+  const [expandedSignalKey, setExpandedSignalKey] = useState(null);
   const themeSignals = signals.filter(signal => signal.themeId === themeId);
   const visibleSignals = themeSignals.slice(0, 5);
+
   if (themeSignals.length === 0) return null;
 
   return (
@@ -145,9 +148,18 @@ function ThemeSignalPanel({ signals, themeId }) {
             signal.holdingName,
             signal.direction,
           ].join('-');
+          const isExpanded = expandedSignalKey === signalKey;
+          const handleSignalClick = event => {
+            event.preventDefault();
+            if (isExpanded && signal.holdingCode) {
+              navigate(`/holding/${signal.holdingCode}`);
+              return;
+            }
+            setExpandedSignalKey(isExpanded ? null : signalKey);
+          };
           return (
-            <details key={signalKey} className="rounded-xl border border-blue-100 bg-white px-3 py-3">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+            <details key={signalKey} open={isExpanded} className="rounded-xl border border-blue-100 bg-white px-3 py-3">
+              <summary onClick={handleSignalClick} className="flex cursor-pointer list-none items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
                   <span className={`rounded-full p-1.5 ${increase ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}><Icon size={15} /></span>
                   <div className="min-w-0">
