@@ -216,6 +216,7 @@ export default function Home() {
   const recentListings = listings.recent?.length ? listings.recent : fallbackRecentListings;
   const mainSignals = useMemo(() => selectMainSignals(themeSignals), [themeSignals]);
   const activeCommonSignals = useMemo(() => buildActiveCommonSignals(etfs, activeSignalChanges), [activeSignalChanges, etfs]);
+  const hasHomeSignalSections = mainSignals.length > 0 || activeCommonSignals.length > 0 || recentListings.length > 0;
 
   useEffect(() => {
     let active = true;
@@ -305,7 +306,8 @@ export default function Home() {
         </div>
       </section>
 
-      <div className="min-h-[1280px] space-y-10">
+      {hasHomeSignalSections && (
+      <div className="space-y-10">
         {mainSignals.length > 0 && (
         <section>
           <div className="mb-4 flex items-end justify-between gap-4">
@@ -421,6 +423,7 @@ export default function Home() {
       )}
 
       </div>
+      )}
 
       <section className="grid min-h-[1180px] gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0">
