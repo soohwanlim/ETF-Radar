@@ -107,13 +107,26 @@ function normalizeChartDate(time) {
   }
   return null;
 }
-function buildChangeMarkers(changeEvents, candles, interval) {
-  if (interval !== 'day' || !changeEvents?.length || !candles.length) return [];
-  const candleTimes = new Set(candles.map(candle => candle.time));
+function buildChangeMarkerData(changeEvents, candles, interval) {
+  if (!changeEvents?.length || !candles.length) {
+    return { markers: [], targetDateByTime: new Map() };
+  }
+
+  const candleByBucket = new Map(candles.map(candle => [bucketKey(candle.time, interval), candle]));
   const markerByTime = new Map();
-  for (const event of changeEvents) {
-    const time = event.date;
-    if (!time || !candleTimes.has(time)) continue;
+  const targetDateByTime = new Map();
+  const sortedEvents = [...changeEvents]
+    .filter(event => event.date)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  for (const event of sortedEvents) {
+    const candle = candleByBucket.get(bucketKey(event.date, interval));
+    if (!candle) continue;
+
+    const time = candle.time;
+    if (!targetDateByTime.has(time)) {
+      targetDateByTime.set(time, event.date);
+    }
     markerByTime.set(time, {
       time,
       position: 'aboveBar',
@@ -122,7 +135,11 @@ function buildChangeMarkers(changeEvents, candles, interval) {
       size: 1.15,
     });
   }
-  return [...markerByTime.values()].sort((a, b) => a.time.localeCompare(b.time));
+
+  return {
+    markers: [...markerByTime.values()].sort((a, b) => a.time.localeCompare(b.time)),
+    targetDateByTime,
+  };
 }
 export default function CandlestickChart({ code, selectedDate, onDateSelect, changeEvents = [] }) {
   const containerRef = useRef(null);
@@ -163,10 +180,11 @@ export default function CandlestickChart({ code, selectedDate, onDateSelect, cha
     ));
     return aggregateCandles(daily, interval);
   }, [interval, rawRows]);
-  const changeMarkers = useMemo(
-    () => buildChangeMarkers(changeEvents, candles, interval),
+  const changeMarkerData = useMemo(
+    () => buildChangeMarkerData(changeEvents, candles, interval),
     [candles, changeEvents, interval],
   );
+  const changeMarkers = changeMarkerData.markers;
   const displayCandle = hovered || candles.at(-1) || null;
   const displayRate = candleRate(displayCandle);
 
@@ -238,7 +256,7 @@ export default function CandlestickChart({ code, selectedDate, onDateSelect, cha
     });
     chart.subscribeClick(param => {
       const date = normalizeChartDate(param.time);
-      if (date) onDateSelect?.(date);
+      if (date) onDateSelect?.(changeMarkerData.targetDateByTime.get(date) || date);
     });
 
     chartRef.current = chart;
@@ -250,7 +268,7 @@ export default function CandlestickChart({ code, selectedDate, onDateSelect, cha
       markerApi.detach?.();
       chart.remove();
     };
-  }, [candles, changeMarkers, interval, onDateSelect, period]);
+  }, [candles, changeMarkerData, changeMarkers, interval, onDateSelect, period]);
 
   if (loading) {
     return (
