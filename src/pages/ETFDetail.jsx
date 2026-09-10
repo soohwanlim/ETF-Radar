@@ -14,6 +14,7 @@ import {
   compareWithBenchmark,
   findSimilarEtfs,
 } from '../data/etfAnalysis';
+import { isLinkableHolding } from '../data/holdingSearchQuality';
 
 const COLORS = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#EC4899', '#14B8A6'];
 const ANALYSIS_PERIODS = [
@@ -192,7 +193,7 @@ export default function ETFDetail() {
                 <div className="mt-4 space-y-2 text-xs text-slate-600">
                   <p><strong className="text-xl text-slate-950">{analysis.concentration.top3Weight}%</strong> <span>상위 3종목 합계</span></p>
                   <p>TOP 10 합계 <strong className="text-slate-900">{analysis.concentration.top10Weight}%</strong></p>
-                  <p>최대 비중 <Link to={`/holding/${analysis.concentration.topHolding.code}`} className="font-bold text-blue-600 hover:text-blue-700">{analysis.concentration.topHolding.name} {analysis.concentration.topHolding.weight}%</Link></p>
+                  <p>최대 비중 {isLinkableHolding(analysis.concentration.topHolding) ? <Link to={`/holding/${analysis.concentration.topHolding.code}`} className="inline-flex min-h-11 items-center rounded-lg px-1 font-bold text-blue-600 hover:bg-blue-100 hover:text-blue-700">{analysis.concentration.topHolding.name} {analysis.concentration.topHolding.weight}%</Link> : <strong className="text-slate-900">{analysis.concentration.topHolding.name} {analysis.concentration.topHolding.weight}%</strong>}</p>
                   <span className="inline-flex rounded-full bg-violet-50 px-2.5 py-1 font-bold text-violet-700">{CONCENTRATION_LABELS[analysis.concentration.level]}</span>
                 </div>
               ) : <p className="mt-4 text-xs text-slate-500">구성종목 데이터가 없습니다.</p>}
@@ -272,6 +273,11 @@ export default function ETFDetail() {
 
                           <span className={`block font-mono text-[10px] font-semibold ${isSelectedDate ? 'text-blue-700' : 'text-slate-500'}`}>{hist.date}</span>
                           <p className={`mt-1 text-xs ${isSelectedDate ? 'font-bold text-slate-950' : 'text-slate-700'}`}>{hist.message}</p>
+                          {isLinkableHolding({ code: hist.holdingCode, name: hist.holdingName }) && (
+                            <Link to={`/holding/${hist.holdingCode}`} className="mt-2 inline-flex min-h-11 items-center rounded-xl bg-blue-50 px-3 py-2 font-bold text-blue-700 hover:bg-blue-100">
+                              {hist.holdingName} 종목 상세
+                            </Link>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -376,7 +382,26 @@ export default function ETFDetail() {
             </div>
             )}
             {holdings.length > 0 && (
-              <div className="text-[10px] text-slate-500 text-right">
+              <ul className="grid gap-2 border-t border-slate-200 pt-4 sm:grid-cols-2" aria-label="구성종목 상세 링크 목록">
+                {holdings.map(holding => (
+                  <li key={`${holding.code}-${holding.name}`}>
+                    {isLinkableHolding(holding) ? (
+                      <Link to={`/holding/${holding.code}`} className="flex min-h-12 items-center justify-between gap-3 rounded-xl border border-slate-200 px-3 py-2 text-sm hover:border-blue-300 hover:bg-blue-50">
+                        <span className="min-w-0 truncate font-bold text-slate-900">{holding.name}</span>
+                        <span className="shrink-0 tabular-nums text-blue-700">{Number(holding.weight ?? holding.value).toFixed(2)}%</span>
+                      </Link>
+                    ) : (
+                      <div className="flex min-h-12 items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                        <span className="min-w-0 truncate">{holding.name}</span>
+                        <span className="shrink-0 tabular-nums">{Number(holding.weight ?? holding.value).toFixed(2)}%</span>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {holdings.length > 0 && (
+              <div className="text-right text-[10px] text-slate-500">
                 기준일 {holdings[0].asOf} · 출처 {holdings[0].source}
                 {holdings[0].coverage === 'top10' ? ' (상위 10개 구성자산)' : ' (전체 PDF)'}
               </div>

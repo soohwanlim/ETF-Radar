@@ -1,4 +1,5 @@
 import { getEtfTheme } from '../src/data/themeRules.js';
+import { isLinkableHolding } from '../src/data/holdingSearchQuality.js';
 
 export function isActiveEtf(etf = {}) {
   return /액티브|Active/i.test(`${etf.name || ''} ${etf.description || ''}`);
@@ -16,7 +17,7 @@ export function buildHoldingIndex(etfs = [], holdingsByEtf = {}, metadata = {}) 
     const active = isActiveEtf(etf);
 
     for (const holding of holdings) {
-      if (!holding?.code || !holding?.name) continue;
+      if (!isLinkableHolding(holding)) continue;
 
       const current = grouped.get(holding.code) || {
         code: holding.code,

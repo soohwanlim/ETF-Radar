@@ -6,7 +6,8 @@ import { useCompareStore } from './store/compareStore';
 import DataStatus from './components/DataStatus';
 import { getInsightArticle } from './data/insightArticles';
 import { getEtfMeta, meetsEtfSearchQuality } from './data/etfSearchQuality';
-import { loadEtf, loadHoldings } from './data/staticData';
+import { loadEtf, loadHoldingDetail, loadHoldings } from './data/staticData';
+import { getHoldingMeta, meetsHoldingSearchQuality } from './data/holdingSearchQuality';
 
 const LAZY_RELOAD_KEY = 'etf-radar-lazy-reload-attempted';
 
@@ -175,10 +176,10 @@ function RouteMeta() {
     }
 
     if (normalizedPath.startsWith('/holding/')) {
-      applyMeta({
-        ...ROUTE_META['/changes'],
-        robots: 'noindex, follow',
-      }, '/changes');
+      const code = normalizedPath.slice('/holding/'.length);
+      loadHoldingDetail(code)
+        .then(holding => applyMeta(getHoldingMeta(holding, meetsHoldingSearchQuality(holding)), holding ? normalizedPath : '/changes'))
+        .catch(() => applyMeta(getHoldingMeta(null), '/changes'));
       return () => { active = false; };
     }
 
