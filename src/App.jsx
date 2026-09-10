@@ -5,6 +5,8 @@ import { Activity, ArrowLeftRight, BarChart3, Grid2X2, RefreshCw, ShieldAlert, S
 import { useCompareStore } from './store/compareStore';
 import DataStatus from './components/DataStatus';
 import { getInsightArticle } from './data/insightArticles';
+import { getEtfMeta, meetsEtfSearchQuality } from './data/etfSearchQuality';
+import { loadEtf, loadHoldings } from './data/staticData';
 
 const LAZY_RELOAD_KEY = 'etf-radar-lazy-reload-attempted';
 
@@ -17,7 +19,10 @@ function isChunkLoadError(error) {
 }
 
 function lazyWithRetry(loadRoute) {
-  return lazy(() => loadRoute().catch(error => {
+  return lazy(() => loadRoute().then(module => {
+    sessionStorage.removeItem(LAZY_RELOAD_KEY);
+    return module;
+  }).catch(error => {
     if (isChunkLoadError(error) && !sessionStorage.getItem(LAZY_RELOAD_KEY)) {
       sessionStorage.setItem(LAZY_RELOAD_KEY, '1');
       window.location.reload();
@@ -128,30 +133,45 @@ function RouteMeta() {
   const { pathname } = useLocation();
 
   useEffect(() => {
+    let active = true;
+    const applyMeta = (meta, canonicalPath = pathname) => {
+      if (!active) return;
+      const canonicalUrl = `${SITE_URL}${canonicalPath === '/' ? '/' : canonicalPath}`;
+
+      document.title = meta.title;
+      upsertMeta('meta[name="description"]', { name: 'description' }, meta.description);
+      upsertMeta('meta[name="robots"]', { name: 'robots' }, meta.robots || DEFAULT_META.robots);
+      upsertMeta('meta[property="og:title"]', { property: 'og:title' }, meta.title);
+      upsertMeta('meta[property="og:description"]', { property: 'og:description' }, meta.description);
+      upsertMeta('meta[property="og:url"]', { property: 'og:url' }, canonicalUrl);
+      upsertMeta('meta[name="twitter:title"]', { name: 'twitter:title' }, meta.title);
+      upsertMeta('meta[name="twitter:description"]', { name: 'twitter:description' }, meta.description);
+
+      let canonical = document.head.querySelector('link[rel="canonical"]');
+      if (!canonical) {
+        canonical = document.createElement('link');
+        canonical.setAttribute('rel', 'canonical');
+        document.head.appendChild(canonical);
+      }
+      canonical.setAttribute('href', canonicalUrl);
+    };
+
+    if (pathname.startsWith('/etf/')) {
+      const code = pathname.slice('/etf/'.length);
+      Promise.all([loadEtf(code), loadHoldings(code)])
+        .then(([etf, holdings]) => applyMeta(getEtfMeta(etf, meetsEtfSearchQuality(etf, holdings))))
+        .catch(() => applyMeta(getEtfMeta(null)));
+      return () => { active = false; };
+    }
+
     const insight = pathname.startsWith('/insights/') ? getInsightArticle(pathname.slice('/insights/'.length)) : null;
-    const routeKey = ROUTE_META[pathname] ? pathname : pathname.startsWith('/etf/') ? '/compare' : pathname.startsWith('/holding/') ? '/changes' : '/';
+    const routeKey = ROUTE_META[pathname] ? pathname : pathname.startsWith('/holding/') ? '/changes' : '/';
     const meta = insight
       ? { ...DEFAULT_META, title: `${insight.title} | ETF Radar`, description: insight.description }
       : { ...DEFAULT_META, ...ROUTE_META[routeKey] };
     const canonicalPath = meta.robots?.includes('noindex') ? '/' : pathname;
-    const canonicalUrl = `${SITE_URL}${canonicalPath === '/' ? '/' : canonicalPath}`;
-
-    document.title = meta.title;
-    upsertMeta('meta[name="description"]', { name: 'description' }, meta.description);
-    upsertMeta('meta[name="robots"]', { name: 'robots' }, meta.robots);
-    upsertMeta('meta[property="og:title"]', { property: 'og:title' }, meta.title);
-    upsertMeta('meta[property="og:description"]', { property: 'og:description' }, meta.description);
-    upsertMeta('meta[property="og:url"]', { property: 'og:url' }, canonicalUrl);
-    upsertMeta('meta[name="twitter:title"]', { name: 'twitter:title' }, meta.title);
-    upsertMeta('meta[name="twitter:description"]', { name: 'twitter:description' }, meta.description);
-
-    let canonical = document.head.querySelector('link[rel="canonical"]');
-    if (!canonical) {
-      canonical = document.createElement('link');
-      canonical.setAttribute('rel', 'canonical');
-      document.head.appendChild(canonical);
-    }
-    canonical.setAttribute('href', canonicalUrl);
+    applyMeta(meta, canonicalPath);
+    return () => { active = false; };
   }, [pathname]);
 
   return null;

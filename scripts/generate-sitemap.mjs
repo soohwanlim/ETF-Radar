@@ -3,6 +3,7 @@ import { access, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { INSIGHT_ARTICLES } from '../src/data/insightArticles.js';
+import { meetsEtfSearchQuality } from '../src/data/etfSearchQuality.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = path.join(ROOT, 'dist');
@@ -29,6 +30,20 @@ const insightRoutes = INSIGHT_ARTICLES.map(article => ({
   lastmod: article.updatedAt,
   prerendered: true,
 }));
+
+const [etfs, holdingsByCode] = await Promise.all([
+  readFile(path.join(ROOT, 'public/data/etfs.json'), 'utf8').then(JSON.parse),
+  readFile(path.join(ROOT, 'public/data/holdings.json'), 'utf8').then(JSON.parse),
+]);
+const etfRoutes = etfs
+  .filter(etf => meetsEtfSearchQuality(etf, holdingsByCode[etf.code]))
+  .map(etf => ({
+    pathname: `/etf/${etf.code}`,
+    changefreq: 'daily',
+    priority: '0.7',
+    lastmod: etf.asOf,
+    prerendered: true,
+  }));
 
 function escapeXml(value) {
   return String(value)
@@ -60,7 +75,7 @@ async function assertPrerendered(route) {
   assert.match(html, new RegExp(`<link rel="canonical" href="${SITE_URL}${route.pathname}"`), `Canonical mismatch: ${route.pathname}`);
 }
 
-const routes = [...PUBLIC_ROUTES, ...insightRoutes];
+const routes = [...PUBLIC_ROUTES, ...insightRoutes, ...etfRoutes];
 const pathnames = routes.map(route => route.pathname);
 assert.equal(new Set(pathnames).size, pathnames.length, 'Sitemap paths must be unique');
 assert.ok(!pathnames.includes('/compare'), 'Empty compare state must not be indexed');

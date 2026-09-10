@@ -20,6 +20,19 @@ import {
   compareWithBenchmark,
   findSimilarEtfs,
 } from '../src/data/etfAnalysis.js';
+import { getEtfMeta, meetsEtfSearchQuality } from '../src/data/etfSearchQuality.js';
+
+const qualityEtf = { code: '069500', name: 'KODEX 200', description: '가'.repeat(80), provider: '삼성자산운용', listingDate: '2002-10-14', asOf: '2026-09-09', price: 50000, rate1m: 1.2, rate3m: 3.4 };
+assert.equal(meetsEtfSearchQuality(qualityEtf, [{}, {}, {}]), true);
+assert.equal(meetsEtfSearchQuality({ ...qualityEtf, description: '짧음' }, [{}, {}, {}]), false);
+assert.equal(meetsEtfSearchQuality(qualityEtf, [{}, {}]), false);
+assert.deepEqual(getEtfMeta(null), {
+  title: 'ETF 상세 정보를 찾을 수 없습니다 | ETF Radar',
+  description: '요청한 ETF 상세 정보를 찾을 수 없습니다. ETF Radar 홈에서 지원하는 국내 ETF를 검색해 주세요.',
+  robots: 'noindex, follow',
+});
+assert.match(getEtfMeta(qualityEtf, true).title, /KODEX 200 \(069500\)/);
+assert.equal(getEtfMeta(qualityEtf, true).robots, 'index, follow');
 
 assert.equal(INSIGHT_ARTICLES.length, 4);
 assert.equal(new Set(INSIGHT_ARTICLES.map(article => article.slug)).size, INSIGHT_ARTICLES.length);
