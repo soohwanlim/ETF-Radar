@@ -10,6 +10,92 @@ import {
 import { buildThemeSignals } from './theme-signals.mjs';
 import { buildHoldingIndex } from './holding-index.mjs';
 import { getKrxClosureName, isKrxTradingDate, previousKrxTradingDate } from '../src/data/marketCalendar.js';
+import { getInsightArticle, INSIGHT_ARTICLES } from '../src/data/insightArticles.js';
+import {
+  calculateChangeActivity,
+  calculateHoldingConcentration,
+  calculateHoldingSimilarity,
+  calculateReturnRank,
+  calculateReturnRanks,
+  compareWithBenchmark,
+  findSimilarEtfs,
+} from '../src/data/etfAnalysis.js';
+
+assert.equal(INSIGHT_ARTICLES.length, 4);
+assert.equal(new Set(INSIGHT_ARTICLES.map(article => article.slug)).size, INSIGHT_ARTICLES.length);
+for (const article of INSIGHT_ARTICLES) {
+  assert.equal(getInsightArticle(article.slug), article);
+  assert.ok(article.title.length >= 20);
+  assert.ok(article.description.length >= 50);
+  assert.ok(article.sections.length >= 4);
+  assert.ok(article.sections.every(section => section.paragraphs.length >= 1));
+  assert.ok(article.checklist.length >= 4);
+}
+assert.equal(getInsightArticle('unknown-article'), null);
+
+const analysisEtfs = [
+  { code: 'A', name: 'A ETF', rate1m: 10, rate3m: 20 },
+  { code: 'B', name: 'B ETF', rate1m: 15, rate3m: 10 },
+  { code: 'C', name: 'C ETF', rate1m: 10, rate3m: null },
+  { code: 'D', name: 'D ETF', rate1m: -5, rate3m: 0 },
+];
+assert.deepEqual(calculateReturnRank(analysisEtfs, 'A', '1m'), {
+  period: '1m', rate: 10, rank: 2, total: 4, percentile: 66.7,
+});
+assert.equal(calculateReturnRank(analysisEtfs, 'C', '1m').rank, 2);
+assert.equal(calculateReturnRank(analysisEtfs, 'C', '3m'), null);
+assert.equal(calculateReturnRank(analysisEtfs, 'A', 'invalid'), null);
+assert.equal(calculateReturnRanks(analysisEtfs, 'A')['3m'].rank, 1);
+assert.deepEqual(compareWithBenchmark(analysisEtfs[0], analysisEtfs[1], '1m'), {
+  period: '1m', rate: 10, benchmarkCode: 'B', benchmarkName: 'B ETF', benchmarkRate: 15, difference: -5,
+});
+
+const analysisHoldings = [
+  { code: '001', name: '첫 종목', weight: 35 },
+  { code: '002', name: '둘째 종목', weight: 20 },
+  { code: '003', name: '셋째 종목', weight: 10 },
+  { code: '004', name: '넷째 종목', weight: 5 },
+];
+assert.deepEqual(calculateHoldingConcentration(analysisHoldings), {
+  holdingCount: 4,
+  topHolding: { code: '001', name: '첫 종목', weight: 35 },
+  top3Weight: 65,
+  top10Weight: 70,
+  level: 'high',
+  coverage: 'top10',
+});
+assert.equal(calculateHoldingConcentration([]), null);
+
+const activity = calculateChangeActivity([
+  { date: '2026-09-10', classification: 'top10_new' },
+  { date: '2026-09-05', classification: 'quantity_increase' },
+  { date: '2026-08-20', classification: 'top10_out' },
+  { date: '2026-08-01', classification: 'quantity_decrease' },
+  { date: '2026-09-11', classification: 'quantity_increase' },
+], '2026-09-10');
+assert.equal(activity.latestDate, '2026-09-10');
+assert.equal(activity.sevenDays.total, 2);
+assert.equal(activity.sevenDays.top10New, 1);
+assert.equal(activity.thirtyDays.total, 3);
+assert.equal(activity.thirtyDays.top10Out, 1);
+
+const otherHoldings = [
+  { code: '001', name: '첫 종목', weight: 30 },
+  { code: '003', name: '셋째 종목', weight: 15 },
+  { code: '005', name: '다섯째 종목', weight: 8 },
+];
+assert.deepEqual(calculateHoldingSimilarity(analysisHoldings, otherHoldings), {
+  commonCodes: ['001', '003'],
+  commonCount: 2,
+  unionCount: 5,
+  jaccardRate: 40,
+  weightedOverlap: 40,
+});
+assert.equal(calculateHoldingSimilarity([], []), null);
+assert.deepEqual(
+  findSimilarEtfs('A', analysisEtfs, { A: analysisHoldings, B: otherHoldings, C: [analysisHoldings[0]] }, 1),
+  [{ code: 'B', name: 'B ETF', commonCodes: ['001', '003'], commonCount: 2, unionCount: 5, jaccardRate: 40, weightedOverlap: 40 }],
+);
 
 assert.equal(getKrxClosureName('2026-07-17'), '제헌절');
 assert.equal(isKrxTradingDate('2026-07-17'), false);

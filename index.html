@@ -261,7 +261,7 @@
         </ul>
       </main>
     </noscript>
-    <div id="root">
+    <div id="root"><!-- prerender:start -->
       <div class="initial-shell" aria-label="ETF Radar 초기 화면">
         <header class="initial-shell__header">
           <div class="initial-shell__inner initial-shell__nav">
@@ -290,7 +290,7 @@
           </section>
         </main>
       </div>
-    </div>
+    <!-- prerender:end --></div>
     <script>
       window.setTimeout(() => {
         if (window.__ETF_RADAR_BOOTED__) return;
