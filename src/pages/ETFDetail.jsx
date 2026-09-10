@@ -1,17 +1,42 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, BarChart2, Info, Loader2, Star } from 'lucide-react';
+import { Activity, ArrowLeft, BarChart2, GitCompareArrows, Info, Layers3, Loader2, RefreshCw, Star, TrendingUp } from 'lucide-react';
 import { useETFDetail, useETFHoldings, useETFHistory } from '../hooks/useETFData';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
 import ETFIcon from '../components/ETFIcon';
 import CandlestickChart from '../components/CandlestickChart';
 import { useWatchlistStore } from '../store/watchlistStore';
+import { loadAllHoldings, loadEtfs } from '../data/staticData';
+import {
+  calculateChangeActivity,
+  calculateHoldingConcentration,
+  calculateReturnRanks,
+  compareWithBenchmark,
+  findSimilarEtfs,
+} from '../data/etfAnalysis';
 
 const COLORS = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#EC4899', '#14B8A6'];
+const ANALYSIS_PERIODS = [
+  { id: '1m', label: '1개월' },
+  { id: '3m', label: '3개월' },
+  { id: '1y', label: '1년' },
+];
+const CONCENTRATION_LABELS = {
+  high: '집중도가 높은 편',
+  medium: '집중도가 보통',
+  distributed: '비교적 분산',
+};
+
+function formatRate(value) {
+  if (Number.isFinite(value)) return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+  return '-';
+}
 
 export default function ETFDetail() {
   const { code } = useParams();
   const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
+  const [etfUniverse, setEtfUniverse] = useState([]);
+  const [allHoldings, setAllHoldings] = useState({});
   const { toggleWatchlist, isWatched } = useWatchlistStore();
   const historyDateRefs = useRef({});
 
@@ -21,6 +46,22 @@ export default function ETFDetail() {
   const { history, loading: historyLoading, error: historyError } = useETFHistory(code);
   const watched = isWatched(code);
 
+  useEffect(() => {
+    let active = true;
+    Promise.all([loadEtfs(), loadAllHoldings()])
+      .then(([etfs, holdingsByCode]) => {
+        if (!active) return;
+        setEtfUniverse(etfs);
+        setAllHoldings(holdingsByCode);
+      })
+      .catch(() => {
+        if (!active) return;
+        setEtfUniverse([]);
+        setAllHoldings({});
+      });
+    return () => { active = false; };
+  }, []);
+
   const chartChangeEvents = useMemo(() => {
     const groupedDates = new Map();
     for (const item of history || []) {
@@ -28,6 +69,19 @@ export default function ETFDetail() {
     }
     return [...groupedDates.entries()].map(([date, count]) => ({ date, count }));
   }, [history]);
+
+  const analysis = useMemo(() => {
+    if (!detail || etfUniverse.length === 0) return null;
+    const benchmarkCode = /코스닥\s*150/i.test(`${detail.benchmark || ''} ${detail.name || ''}`) ? '229200' : '069500';
+    const benchmarkEtf = etfUniverse.find(etf => etf.code === benchmarkCode);
+    return {
+      ranks: calculateReturnRanks(etfUniverse, detail.code),
+      benchmark: detail.code === benchmarkCode ? null : compareWithBenchmark(detail, benchmarkEtf, '3m'),
+      concentration: calculateHoldingConcentration(holdings),
+      activity: calculateChangeActivity(history || [], detail.asOf),
+      similarEtfs: findSimilarEtfs(detail.code, etfUniverse, allHoldings, 3),
+    };
+  }, [allHoldings, detail, etfUniverse, history, holdings]);
 
   useEffect(() => {
     if (!selectedHistoryDate) return;
@@ -99,6 +153,78 @@ export default function ETFDetail() {
           </button>
         )}
       </div>
+
+      {analysis && (
+        <section className="glass rounded-3xl p-6 md:p-8" aria-labelledby="etf-radar-analysis-title">
+          <div className="flex flex-col gap-3 border-b border-slate-200 pb-5 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs font-extrabold text-blue-600">ETF Radar 자체 계산</p>
+              <h2 id="etf-radar-analysis-title" className="mt-1 text-2xl font-extrabold text-slate-950">수익률 위치와 구성 특징</h2>
+            </div>
+            <p className="text-xs text-slate-500">기준일 {detail.asOf} · 종가 및 공개 TOP 10 기준</p>
+          </div>
+
+          <div className="mt-6 grid gap-4 lg:grid-cols-4">
+            <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-5 lg:col-span-2">
+              <div className="flex items-center gap-2 text-sm font-extrabold text-slate-900"><TrendingUp size={17} className="text-blue-600" /> 기간 수익률 순위</div>
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                {ANALYSIS_PERIODS.map(period => {
+                  const rank = analysis.ranks[period.id];
+                  return (
+                    <div key={period.id} className="rounded-xl bg-white p-3 text-center shadow-sm">
+                      <span className="block text-[11px] font-bold text-slate-500">{period.label}</span>
+                      <strong className={`mt-1 block text-base tabular-nums ${(rank?.rate ?? 0) >= 0 ? 'text-red-600' : 'text-blue-600'}`}>{formatRate(rank?.rate)}</strong>
+                      <span className="mt-1 block text-[10px] text-slate-500">{rank ? `${rank.total}개 중 ${rank.rank}위` : '비교 데이터 없음'}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              {analysis.benchmark && (
+                <p className="mt-4 text-xs leading-relaxed text-slate-600">
+                  3개월 기준 {analysis.benchmark.benchmarkName} 대비 <strong className={analysis.benchmark.difference >= 0 ? 'text-red-600' : 'text-blue-600'}>{analysis.benchmark.difference >= 0 ? '+' : ''}{analysis.benchmark.difference}%p</strong> 차이입니다.
+                </p>
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="flex items-center gap-2 text-sm font-extrabold text-slate-900"><Layers3 size={17} className="text-violet-600" /> TOP 10 집중도</div>
+              {analysis.concentration ? (
+                <div className="mt-4 space-y-2 text-xs text-slate-600">
+                  <p><strong className="text-xl text-slate-950">{analysis.concentration.top3Weight}%</strong> <span>상위 3종목 합계</span></p>
+                  <p>TOP 10 합계 <strong className="text-slate-900">{analysis.concentration.top10Weight}%</strong></p>
+                  <p>최대 비중 <Link to={`/holding/${analysis.concentration.topHolding.code}`} className="font-bold text-blue-600 hover:text-blue-700">{analysis.concentration.topHolding.name} {analysis.concentration.topHolding.weight}%</Link></p>
+                  <span className="inline-flex rounded-full bg-violet-50 px-2.5 py-1 font-bold text-violet-700">{CONCENTRATION_LABELS[analysis.concentration.level]}</span>
+                </div>
+              ) : <p className="mt-4 text-xs text-slate-500">구성종목 데이터가 없습니다.</p>}
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="flex items-center gap-2 text-sm font-extrabold text-slate-900"><Activity size={17} className="text-emerald-600" /> 최근 변화 강도</div>
+              <div className="mt-4 space-y-2 text-xs text-slate-600">
+                <p><strong className="text-xl text-slate-950">{analysis.activity?.sevenDays.total || 0}건</strong> <span>최근 7일</span></p>
+                <p>최근 30일 <strong className="text-slate-900">{analysis.activity?.thirtyDays.total || 0}건</strong></p>
+                <p>TOP 10 진입·이탈 <strong className="text-slate-900">{(analysis.activity?.thirtyDays.top10New || 0) + (analysis.activity?.thirtyDays.top10Out || 0)}건</strong></p>
+                <p>수량 관련 변화 <strong className="text-slate-900">{(analysis.activity?.thirtyDays.quantityIncrease || 0) + (analysis.activity?.thirtyDays.quantityDecrease || 0) + (analysis.activity?.thirtyDays.quantityDecreaseWeightHeld || 0)}건</strong></p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+            <div className="flex items-center gap-2 text-sm font-extrabold text-slate-900"><GitCompareArrows size={17} className="text-blue-600" /> TOP 10이 비슷한 ETF</div>
+            {analysis.similarEtfs.length > 0 ? (
+              <div className="mt-3 grid gap-2 md:grid-cols-3">
+                {analysis.similarEtfs.map(etf => (
+                  <Link key={etf.code} to={`/etf/${etf.code}`} className="rounded-xl border border-slate-200 bg-white px-4 py-3 hover:border-blue-200">
+                    <span className="block truncate text-sm font-bold text-slate-900">{etf.name}</span>
+                    <span className="mt-1 block text-[11px] text-slate-500">공통 {etf.commonCount}개 · 비중 중첩 {etf.weightedOverlap}%</span>
+                  </Link>
+                ))}
+              </div>
+            ) : <p className="mt-3 text-xs text-slate-500">비교 가능한 유사 ETF가 없습니다.</p>}
+            <p className="mt-3 text-[10px] leading-relaxed text-slate-500">순위와 유사도는 현재 지원 ETF 및 공개된 TOP 10 구성자산 기준의 자체 계산 결과이며, 전체 포트폴리오 분석이나 투자 추천이 아닙니다.</p>
+          </div>
+        </section>
+      )}
       {/* Grid: Basic Info & Timeline */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
