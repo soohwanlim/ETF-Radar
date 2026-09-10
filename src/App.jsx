@@ -67,6 +67,12 @@ const DEFAULT_META = {
   robots: 'index, follow',
 };
 
+const NOT_FOUND_META = {
+  title: '페이지를 찾을 수 없습니다 | ETF Radar',
+  description: '요청한 페이지를 찾을 수 없습니다. ETF Radar 홈에서 국내 ETF와 구성종목 변화를 확인해 주세요.',
+  robots: 'noindex, follow',
+};
+
 const ROUTE_META = {
   '/': DEFAULT_META,
   '/theme': {
@@ -134,7 +140,8 @@ function RouteMeta() {
 
   useEffect(() => {
     let active = true;
-    const applyMeta = (meta, canonicalPath = pathname) => {
+    const normalizedPath = pathname === '/' ? pathname : pathname.replace(/\/+$/, '');
+    const applyMeta = (meta, canonicalPath = normalizedPath) => {
       if (!active) return;
       const canonicalUrl = `${SITE_URL}${canonicalPath === '/' ? '/' : canonicalPath}`;
 
@@ -156,20 +163,42 @@ function RouteMeta() {
       canonical.setAttribute('href', canonicalUrl);
     };
 
-    if (pathname.startsWith('/etf/')) {
-      const code = pathname.slice('/etf/'.length);
+    if (normalizedPath.startsWith('/etf/')) {
+      const code = normalizedPath.slice('/etf/'.length);
       Promise.all([loadEtf(code), loadHoldings(code)])
-        .then(([etf, holdings]) => applyMeta(getEtfMeta(etf, meetsEtfSearchQuality(etf, holdings))))
-        .catch(() => applyMeta(getEtfMeta(null)));
+        .then(([etf, holdings]) => {
+          if (!etf) applyMeta(getEtfMeta(null), '/');
+          else applyMeta(getEtfMeta(etf, meetsEtfSearchQuality(etf, holdings)));
+        })
+        .catch(() => applyMeta(getEtfMeta(null), '/'));
       return () => { active = false; };
     }
 
-    const insight = pathname.startsWith('/insights/') ? getInsightArticle(pathname.slice('/insights/'.length)) : null;
-    const routeKey = ROUTE_META[pathname] ? pathname : pathname.startsWith('/holding/') ? '/changes' : '/';
+    if (normalizedPath.startsWith('/holding/')) {
+      applyMeta({
+        ...ROUTE_META['/changes'],
+        robots: 'noindex, follow',
+      }, '/changes');
+      return () => { active = false; };
+    }
+
+    const isInsightDetail = normalizedPath.startsWith('/insights/');
+    const insight = isInsightDetail ? getInsightArticle(normalizedPath.slice('/insights/'.length)) : null;
+    if (isInsightDetail && !insight) {
+      applyMeta(NOT_FOUND_META, '/insights');
+      return () => { active = false; };
+    }
+
+    if (!ROUTE_META[normalizedPath] && !insight) {
+      applyMeta(NOT_FOUND_META, '/');
+      return () => { active = false; };
+    }
+
+    const routeKey = ROUTE_META[normalizedPath] ? normalizedPath : '/';
     const meta = insight
       ? { ...DEFAULT_META, title: `${insight.title} | ETF Radar`, description: insight.description }
       : { ...DEFAULT_META, ...ROUTE_META[routeKey] };
-    const canonicalPath = meta.robots?.includes('noindex') ? '/' : pathname;
+    const canonicalPath = meta.robots?.includes('noindex') ? '/' : normalizedPath;
     applyMeta(meta, canonicalPath);
     return () => { active = false; };
   }, [pathname]);

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import {
   calculateRate,
   compareHoldings,
@@ -55,6 +56,12 @@ assert.deepEqual(getEtfMeta(null), {
 });
 assert.match(getEtfMeta(qualityEtf, true).title, /KODEX 200 \(069500\)/);
 assert.equal(getEtfMeta(qualityEtf, true).robots, 'index, follow');
+
+const prerenderSource = await readFile(new URL('./prerender-static-pages.mjs', import.meta.url), 'utf8');
+const sitemapSource = await readFile(new URL('./generate-sitemap.mjs', import.meta.url), 'utf8');
+assert.ok(prerenderSource.includes("`${pathname.replace(/^\\//, '')}.html`"));
+assert.ok(sitemapSource.includes("`${route.pathname.replace(/^\\//, '')}.html`"));
+assert.ok(!prerenderSource.includes("pathname.replace(/^\\//, ''), 'index.html'"));
 
 assert.equal(INSIGHT_ARTICLES.length, 4);
 assert.equal(new Set(INSIGHT_ARTICLES.map(article => article.slug)).size, INSIGHT_ARTICLES.length);
