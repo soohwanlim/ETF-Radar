@@ -68,7 +68,7 @@ function renderUrl(route) {
 
 async function assertPrerendered(route) {
   if (!route.prerendered) return;
-  const file = path.join(DIST, route.pathname.replace(/^\//, ''), 'index.html');
+  const file = path.join(DIST, `${route.pathname.replace(/^\//, '')}.html`);
   await access(file);
   const html = await readFile(file, 'utf8');
   assert.match(html, /<main class="prerender-main">/, `Missing prerendered body: ${route.pathname}`);

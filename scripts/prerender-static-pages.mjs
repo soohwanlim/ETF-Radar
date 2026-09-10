@@ -137,7 +137,7 @@ function renderDocument(template, { title, description, pathname, body, schema }
 }
 
 async function writePage(template, pathname, options) {
-  const output = path.join(DIST, pathname.replace(/^\//, ''), 'index.html');
+  const output = path.join(DIST, `${pathname.replace(/^\//, '')}.html`);
   const html = renderDocument(template, { ...options, pathname });
   await mkdir(path.dirname(output), { recursive: true });
   await writeFile(output, html);
