@@ -14,6 +14,7 @@ import {
   compareWithBenchmark,
   findSimilarEtfs,
 } from '../data/etfAnalysis';
+import { isLinkableHolding } from '../data/holdingSearchQuality';
 
 const COLORS = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#EC4899', '#14B8A6'];
 const ANALYSIS_PERIODS = [
@@ -272,6 +273,15 @@ export default function ETFDetail() {
 
                           <span className={`block font-mono text-[10px] font-semibold ${isSelectedDate ? 'text-blue-700' : 'text-slate-500'}`}>{hist.date}</span>
                           <p className={`mt-1 text-xs ${isSelectedDate ? 'font-bold text-slate-950' : 'text-slate-700'}`}>{hist.message}</p>
+                          {isLinkableHolding({ code: hist.holdingCode, name: hist.holdingName }) && (
+                            <Link
+                              to={`/holding/${hist.holdingCode}`}
+                              className="mt-2 inline-flex rounded-lg bg-slate-100 px-2.5 py-1.5 text-[11px] font-bold text-blue-700 hover:bg-blue-50"
+                              aria-label={`${hist.holdingName} 종목 상세 보기`}
+                            >
+                              {hist.holdingName} 종목 상세
+                            </Link>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -376,9 +386,28 @@ export default function ETFDetail() {
             </div>
             )}
             {holdings.length > 0 && (
-              <div className="text-[10px] text-slate-500 text-right">
-                기준일 {holdings[0].asOf} · 출처 {holdings[0].source}
-                {holdings[0].coverage === 'top10' ? ' (상위 10개 구성자산)' : ' (전체 PDF)'}
+              <div className="space-y-3">
+                <div className="grid gap-2 sm:grid-cols-2" aria-label="구성종목 상세 링크">
+                  {holdings.map(holding => isLinkableHolding(holding) ? (
+                    <Link
+                      key={holding.code}
+                      to={`/holding/${holding.code}`}
+                      className="flex min-h-11 items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs hover:border-blue-200 hover:bg-blue-50"
+                      aria-label={`${holding.name} 종목 상세 보기`}
+                    >
+                      <span className="font-bold text-slate-800">{holding.name}</span>
+                      <span className="tabular-nums text-blue-700">{holding.weight}%</span>
+                    </Link>
+                  ) : (
+                    <div key={`${holding.code}-${holding.name}`} className="flex min-h-11 items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                      <span>{holding.name}</span><span>{holding.weight}%</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="text-right text-[10px] text-slate-500">
+                  기준일 {holdings[0].asOf} · 출처 {holdings[0].source}
+                  {holdings[0].coverage === 'top10' ? ' (상위 10개 구성자산)' : ' (전체 PDF)'}
+                </div>
               </div>
             )}
           </div>

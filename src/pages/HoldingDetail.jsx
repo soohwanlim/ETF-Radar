@@ -5,6 +5,7 @@ import { loadChangesHistory, loadEtfs, loadHoldingDetail, loadHoldingIndex } fro
 import ETFIcon from '../components/ETFIcon';
 import { getEtfTheme } from '../data/themeRules';
 import { useWatchlistStore } from '../store/watchlistStore';
+import { calculateHoldingAnalysis } from '../data/holdingSearchQuality';
 
 const THEME_CHANGE_LOOKBACK_DAYS = 30;
 
@@ -190,6 +191,7 @@ export default function HoldingDetail() {
   const classifiedThemes = useMemo(() => (holding?.themes || []).filter(theme => theme.id !== 'etc'), [holding]);
   const topThemes = useMemo(() => classifiedThemes.slice(0, 6), [classifiedThemes]);
   const activeEtfs = useMemo(() => (holding?.etfs || []).filter(etf => etf.active), [holding]);
+  const holdingAnalysis = useMemo(() => calculateHoldingAnalysis(holding, changes), [changes, holding]);
   const themeChangeSummaries = useMemo(() => buildThemeChangeSummaries(changes, holding, etfsByCode), [changes, etfsByCode, holding]);
   const maxThemeDirectionalCount = useMemo(() => Math.max(...themeChangeSummaries.flatMap(theme => [theme.positive, theme.negative]), 1), [themeChangeSummaries]);
   const changeEtfByCode = useMemo(() => {
@@ -289,7 +291,7 @@ export default function HoldingDetail() {
         </div>
       </section>
 
-      <section className="grid gap-3 md:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-bold text-slate-500">보유 ETF</p>
           <p className="mt-2 text-3xl font-extrabold text-slate-950">{holding.etfCount}</p>
@@ -305,6 +307,11 @@ export default function HoldingDetail() {
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-bold text-slate-500">최근 변화</p>
           <p className="mt-2 text-3xl font-extrabold text-slate-950">{changes.length}</p>
+        </div>
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-bold text-slate-500">ETF별 비중 합계</p>
+          <p className="mt-2 text-3xl font-extrabold text-violet-600">{holdingAnalysis?.totalTop10Weight || 0}%</p>
+          <p className="mt-1 text-[10px] leading-relaxed text-slate-400">각 ETF의 TOP 10 내 비중을 단순 합산</p>
         </div>
       </section>
 

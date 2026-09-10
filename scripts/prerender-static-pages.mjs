@@ -4,6 +4,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { INSIGHT_ARTICLES } from '../src/data/insightArticles.js';
 import { getEtfMeta, meetsEtfSearchQuality } from '../src/data/etfSearchQuality.js';
+import {
+  calculateHoldingAnalysis,
+  getHoldingChanges,
+  getHoldingMeta,
+  isLinkableHolding,
+  meetsHoldingSearchQuality,
+} from '../src/data/holdingSearchQuality.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = path.join(ROOT, 'dist');
@@ -79,7 +86,10 @@ function collectionHtml() {
 }
 
 function etfHtml(etf, holdings) {
-  const topHoldings = holdings.slice(0, 10).map(holding => `<li>${escapeHtml(holding.name)}${Number.isFinite(holding.weight) ? ` ${escapeHtml(holding.weight)}%` : ''}</li>`).join('');
+  const topHoldings = holdings.slice(0, 10).map(holding => {
+    const label = `${escapeHtml(holding.name)}${Number.isFinite(holding.weight) ? ` ${escapeHtml(holding.weight)}%` : ''}`;
+    return `<li>${isLinkableHolding(holding) ? `<a href="/holding/${escapeHtml(holding.code)}">${label}</a>` : label}</li>`;
+  }).join('');
   const rates = [['1개월', etf.rate1m], ['3개월', etf.rate3m], ['1년', etf.rate1y]]
     .filter(([, value]) => Number.isFinite(value))
     .map(([label, value]) => `<li>${label} 수익률 ${value >= 0 ? '+' : ''}${escapeHtml(value)}%</li>`).join('');
@@ -87,6 +97,20 @@ function etfHtml(etf, holdings) {
     <header class="prerender-card"><p class="prerender-kicker">국내 ETF 상세</p><h1>${escapeHtml(etf.name)} (${escapeHtml(etf.code)})</h1><p>${escapeHtml(etf.description)}</p><p class="prerender-meta">기준일 ${escapeHtml(etf.asOf)} · ${escapeHtml(etf.provider)}</p></header>
     <section class="prerender-card"><h2>기간별 수익률</h2><ul>${rates}</ul></section>
     <section class="prerender-card"><h2>TOP 10 구성종목</h2><ul>${topHoldings}</ul><a class="prerender-link" href="/etf/${escapeHtml(etf.code)}">최신 상세 분석 보기</a></section>
+  </article>`);
+}
+
+function holdingHtml(holding, changes) {
+  const analysis = calculateHoldingAnalysis(holding, changes);
+  const topEtfs = analysis.topEtfs.map(etf => `<li><a href="/etf/${escapeHtml(etf.code)}">${escapeHtml(etf.name)}</a> ${escapeHtml(etf.weight)}%</li>`).join('');
+  const topThemes = (holding.themes || []).filter(theme => theme.id !== 'etc').slice(0, 5)
+    .map(theme => `<li>${escapeHtml(theme.name)} ${escapeHtml(theme.count)}개 ETF</li>`).join('');
+  return pageShell(`<article>
+    <header class="prerender-card"><p class="prerender-kicker">ETF 구성종목 상세</p><h1>${escapeHtml(holding.name)} (${escapeHtml(holding.code)})</h1><p>이 종목을 공개된 TOP 10 구성자산으로 보유한 국내 주식형 현물 ETF를 분석합니다.</p><p class="prerender-meta">기준일 ${escapeHtml(holding.asOf)} · 네이버 금융 TOP 10 기준</p></header>
+    <section class="prerender-card"><h2>ETF 보유 현황</h2><p>보유 ETF ${escapeHtml(holding.etfCount)}개 · 액티브 ETF ${escapeHtml(holding.activeEtfCount)}개 · ETF별 TOP 10 비중 합계 ${escapeHtml(analysis.totalTop10Weight)}%</p><ul>${topEtfs}</ul></section>
+    ${topThemes ? `<section class="prerender-card"><h2>관련 ETF 테마</h2><ul>${topThemes}</ul></section>` : ''}
+    <section class="prerender-card"><h2>최근 구성 변화</h2><p>최근 기록 ${escapeHtml(analysis.changeCount)}건 · 진입 ${escapeHtml(analysis.entries)}건 · 이탈 ${escapeHtml(analysis.exits)}건 · 수량 증가 ${escapeHtml(analysis.increases)}건 · 수량 감소 ${escapeHtml(analysis.decreases)}건</p></section>
+    <section class="prerender-card"><h2>데이터 해석 유의사항</h2><p>표시값은 ETF 전체 포트폴리오가 아닌 공개된 TOP 10 구성자산 기준이며 투자 추천이 아닙니다.</p></section>
   </article>`);
 }
 
@@ -99,6 +123,17 @@ function etfStructuredData(etf) {
     identifier: etf.code,
     url: `${SITE_URL}/etf/${etf.code}`,
     provider: { '@type': 'Organization', name: etf.provider },
+  };
+}
+
+function holdingStructuredData(holding) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: `${holding.name} 보유 ETF 분석`,
+    description: `${holding.name}을 TOP 10 구성자산으로 보유한 ETF와 최근 구성 변화를 확인합니다.`,
+    url: `${SITE_URL}/holding/${holding.code}`,
+    dateModified: holding.asOf,
   };
 }
 
@@ -137,7 +172,7 @@ function renderDocument(template, { title, description, pathname, body, schema }
 }
 
 async function writePage(template, pathname, options) {
-  const output = path.join(DIST, pathname.replace(/^\//, ''), 'index.html');
+  const output = path.join(DIST, `${pathname.replace(/^\//, '')}.html`);
   const html = renderDocument(template, { ...options, pathname });
   await mkdir(path.dirname(output), { recursive: true });
   await writeFile(output, html);
@@ -161,9 +196,11 @@ for (const article of INSIGHT_ARTICLES) {
   }));
 }
 
-const [etfs, holdingsByCode] = await Promise.all([
+const [etfs, holdingsByCode, holdingIndex, changeHistory] = await Promise.all([
   readFile(path.join(ROOT, 'public/data/etfs.json'), 'utf8').then(JSON.parse),
   readFile(path.join(ROOT, 'public/data/holdings.json'), 'utf8').then(JSON.parse),
+  readFile(path.join(ROOT, 'public/data/holding-index.json'), 'utf8').then(JSON.parse),
+  readFile(path.join(ROOT, 'public/data/changes/history.json'), 'utf8').then(JSON.parse),
 ]);
 const searchableEtfs = etfs.filter(etf => meetsEtfSearchQuality(etf, holdingsByCode[etf.code]));
 for (const etf of searchableEtfs) {
@@ -176,12 +213,31 @@ for (const etf of searchableEtfs) {
   }));
 }
 
-assert.equal(generated.length, INSIGHT_ARTICLES.length + 1 + searchableEtfs.length);
+const changesByHolding = new Map();
+for (const change of changeHistory) {
+  if (!changesByHolding.has(change.holdingCode)) changesByHolding.set(change.holdingCode, []);
+  changesByHolding.get(change.holdingCode).push(change);
+}
+const searchableHoldings = holdingIndex.items
+  .map(holding => ({ ...holding, asOf: holdingIndex.asOf, coverage: holdingIndex.coverage }))
+  .filter(holding => meetsHoldingSearchQuality(holding, changesByHolding.get(holding.code) || []));
+for (const holding of searchableHoldings) {
+  const changes = getHoldingChanges(changeHistory, holding.code);
+  const meta = getHoldingMeta(holding, true);
+  generated.push(await writePage(template, `/holding/${holding.code}`, {
+    title: meta.title,
+    description: meta.description,
+    body: holdingHtml(holding, changes),
+    schema: holdingStructuredData(holding),
+  }));
+}
+
+assert.equal(generated.length, INSIGHT_ARTICLES.length + 1 + searchableEtfs.length + searchableHoldings.length);
 assert.equal(new Set(generated.map(page => page.html.match(/<title>([^<]+)<\/title>/)?.[1])).size, generated.length);
 for (const { html } of generated) {
   assert.doesNotMatch(html, /class="initial-shell"/);
   assert.match(html, /<main class="prerender-main">/);
-  assert.match(html, /<link rel="canonical" href="https:\/\/etf-radar\.net\/(?:insights|etf\/)/);
+  assert.match(html, /<link rel="canonical" href="https:\/\/etf-radar\.net\/(?:insights|etf\/|holding\/)/);
 }
 
-console.log(`Prerendered ${INSIGHT_ARTICLES.length + 1} insight and ${searchableEtfs.length} ETF pages`);
+console.log(`Prerendered ${INSIGHT_ARTICLES.length + 1} insight, ${searchableEtfs.length} ETF, and ${searchableHoldings.length} holding pages`);

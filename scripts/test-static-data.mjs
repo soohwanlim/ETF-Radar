@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import {
   calculateRate,
   compareHoldings,
@@ -21,6 +22,68 @@ import {
   findSimilarEtfs,
 } from '../src/data/etfAnalysis.js';
 import { getEtfMeta, meetsEtfSearchQuality } from '../src/data/etfSearchQuality.js';
+import { validateSnapshot } from './validate-static-data.mjs';
+import {
+  calculateHoldingAnalysis,
+  getHoldingMeta,
+  isLinkableHolding,
+  meetsHoldingSearchQuality,
+} from '../src/data/holdingSearchQuality.js';
+
+const qualityHolding = {
+  code: '005930', name: '삼성전자', asOf: '2026-09-09', etfCount: 3, activeEtfCount: 1,
+  etfs: [
+    { code: 'A', name: 'A ETF', weight: 30 },
+    { code: 'B', name: 'B ETF', weight: 20 },
+    { code: 'C', name: 'C ETF', weight: 10 },
+  ],
+};
+const qualityHoldingChanges = [
+  { holdingCode: '005930', date: '2026-09-09', type: 'new', classification: 'top10_new' },
+  { holdingCode: '005930', date: '2026-09-08', type: 'weight', classification: 'quantity_increase' },
+];
+assert.equal(isLinkableHolding(qualityHolding), true);
+assert.equal(isLinkableHolding({ code: 'CASH01', name: '원화예금' }), false);
+assert.equal(meetsHoldingSearchQuality(qualityHolding, qualityHoldingChanges), true);
+assert.equal(meetsHoldingSearchQuality({ ...qualityHolding, etfCount: 2 }, qualityHoldingChanges), false);
+assert.deepEqual(calculateHoldingAnalysis(qualityHolding, qualityHoldingChanges), {
+  totalTop10Weight: 60,
+  topEtfs: qualityHolding.etfs,
+  latestChangeDate: '2026-09-09',
+  changeCount: 2,
+  entries: 1,
+  exits: 0,
+  increases: 1,
+  decreases: 0,
+});
+assert.equal(getHoldingMeta(qualityHolding, true).robots, 'index, follow');
+assert.match(getHoldingMeta(qualityHolding, true).title, /삼성전자 \(005930\)/);
+assert.equal(getHoldingMeta(qualityHolding, false).robots, 'noindex, follow');
+
+const deployedHoldings = JSON.parse(await readFile(new URL('../public/data/holdings.json', import.meta.url), 'utf8'));
+assert.equal(deployedHoldings['479850'].length, 10);
+assert.ok(deployedHoldings['479850'].every(isLinkableHolding));
+
+const validSnapshot = {
+  etfs: [{ code: '069500', name: 'KODEX 200', asOf: '2026-09-09', price: 50000, aum: 1000 }],
+  holdings: { '069500': [{ code: '005930', name: '삼성전자', asOf: '2026-09-09', shares: 10, weight: 30 }] },
+  manifest: { asOf: '2026-09-09', etfCount: 1 },
+  status: { asOf: '2026-09-09', etfCount: 1, holdingsCount: 1, failedCount: 0, failures: [] },
+  ohlcManifest: { etfCount: 1, items: [{ code: '069500', from: '2026-09-08', to: '2026-09-09', rowCount: 2 }] },
+  ohlcByCode: new Map([['069500', {
+    code: '069500', from: '2026-09-08', to: '2026-09-09', rowCount: 2,
+    rows: [['2026-09-08', 100, 110, 90, 105], ['2026-09-09', 105, 115, 100, 110]],
+  }]]),
+};
+assert.deepEqual(validateSnapshot(validSnapshot), []);
+assert.ok(validateSnapshot({
+  ...validSnapshot,
+  etfs: [...validSnapshot.etfs, { ...validSnapshot.etfs[0], price: -1 }],
+}).some(problem => problem.includes('duplicate code')));
+assert.ok(validateSnapshot({
+  ...validSnapshot,
+  ohlcByCode: new Map([['069500', { ...validSnapshot.ohlcByCode.get('069500'), rows: [['2026-09-09', 100, 90, 95, 105]] }]]),
+}).some(problem => problem.includes('high is below')));
 
 const qualityEtf = { code: '069500', name: 'KODEX 200', description: '가'.repeat(80), provider: '삼성자산운용', listingDate: '2002-10-14', asOf: '2026-09-09', price: 50000, rate1m: 1.2, rate3m: 3.4 };
 assert.equal(meetsEtfSearchQuality(qualityEtf, [{}, {}, {}]), true);
@@ -33,6 +96,12 @@ assert.deepEqual(getEtfMeta(null), {
 });
 assert.match(getEtfMeta(qualityEtf, true).title, /KODEX 200 \(069500\)/);
 assert.equal(getEtfMeta(qualityEtf, true).robots, 'index, follow');
+
+const prerenderSource = await readFile(new URL('./prerender-static-pages.mjs', import.meta.url), 'utf8');
+const sitemapSource = await readFile(new URL('./generate-sitemap.mjs', import.meta.url), 'utf8');
+assert.ok(prerenderSource.includes("`${pathname.replace(/^\\//, '')}.html`"));
+assert.ok(sitemapSource.includes("`${route.pathname.replace(/^\\//, '')}.html`"));
+assert.ok(!prerenderSource.includes("pathname.replace(/^\\//, ''), 'index.html'"));
 
 assert.equal(INSIGHT_ARTICLES.length, 4);
 assert.equal(new Set(INSIGHT_ARTICLES.map(article => article.slug)).size, INSIGHT_ARTICLES.length);

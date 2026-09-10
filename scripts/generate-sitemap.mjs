@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { INSIGHT_ARTICLES } from '../src/data/insightArticles.js';
 import { meetsEtfSearchQuality } from '../src/data/etfSearchQuality.js';
+import { getHoldingChanges, meetsHoldingSearchQuality } from '../src/data/holdingSearchQuality.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = path.join(ROOT, 'dist');
@@ -31,9 +32,11 @@ const insightRoutes = INSIGHT_ARTICLES.map(article => ({
   prerendered: true,
 }));
 
-const [etfs, holdingsByCode] = await Promise.all([
+const [etfs, holdingsByCode, holdingIndex, changeHistory] = await Promise.all([
   readFile(path.join(ROOT, 'public/data/etfs.json'), 'utf8').then(JSON.parse),
   readFile(path.join(ROOT, 'public/data/holdings.json'), 'utf8').then(JSON.parse),
+  readFile(path.join(ROOT, 'public/data/holding-index.json'), 'utf8').then(JSON.parse),
+  readFile(path.join(ROOT, 'public/data/changes/history.json'), 'utf8').then(JSON.parse),
 ]);
 const etfRoutes = etfs
   .filter(etf => meetsEtfSearchQuality(etf, holdingsByCode[etf.code]))
@@ -42,6 +45,16 @@ const etfRoutes = etfs
     changefreq: 'daily',
     priority: '0.7',
     lastmod: etf.asOf,
+    prerendered: true,
+  }));
+const holdingRoutes = holdingIndex.items
+  .map(holding => ({ ...holding, asOf: holdingIndex.asOf, coverage: holdingIndex.coverage }))
+  .filter(holding => meetsHoldingSearchQuality(holding, getHoldingChanges(changeHistory, holding.code)))
+  .map(holding => ({
+    pathname: `/holding/${holding.code}`,
+    changefreq: 'daily',
+    priority: '0.6',
+    lastmod: holding.asOf,
     prerendered: true,
   }));
 
@@ -68,14 +81,14 @@ function renderUrl(route) {
 
 async function assertPrerendered(route) {
   if (!route.prerendered) return;
-  const file = path.join(DIST, route.pathname.replace(/^\//, ''), 'index.html');
+  const file = path.join(DIST, `${route.pathname.replace(/^\//, '')}.html`);
   await access(file);
   const html = await readFile(file, 'utf8');
   assert.match(html, /<main class="prerender-main">/, `Missing prerendered body: ${route.pathname}`);
   assert.match(html, new RegExp(`<link rel="canonical" href="${SITE_URL}${route.pathname}"`), `Canonical mismatch: ${route.pathname}`);
 }
 
-const routes = [...PUBLIC_ROUTES, ...insightRoutes, ...etfRoutes];
+const routes = [...PUBLIC_ROUTES, ...insightRoutes, ...etfRoutes, ...holdingRoutes];
 const pathnames = routes.map(route => route.pathname);
 assert.equal(new Set(pathnames).size, pathnames.length, 'Sitemap paths must be unique');
 assert.ok(!pathnames.includes('/compare'), 'Empty compare state must not be indexed');
