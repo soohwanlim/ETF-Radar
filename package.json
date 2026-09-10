@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/prerender-static-pages.mjs && node scripts/generate-sitemap.mjs",
     "collect:data": "node scripts/collect-static-data.mjs",
     "build:holding-index": "node scripts/build-holding-index.mjs",
     "backfill:ohlc": "node scripts/backfill-ohlc.mjs",

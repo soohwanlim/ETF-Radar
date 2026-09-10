@@ -4,6 +4,9 @@ import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react
 import { Activity, ArrowLeftRight, BarChart3, Grid2X2, RefreshCw, ShieldAlert, Star, X } from 'lucide-react';
 import { useCompareStore } from './store/compareStore';
 import DataStatus from './components/DataStatus';
+import { getInsightArticle } from './data/insightArticles';
+import { loadEtf, loadHoldings } from './data/staticData';
+import { getEtfIndexability } from './data/etfIndexing';
 
 const LAZY_RELOAD_KEY = 'etf-radar-lazy-reload-attempted';
 
@@ -16,13 +19,18 @@ function isChunkLoadError(error) {
 }
 
 function lazyWithRetry(loadRoute) {
-  return lazy(() => loadRoute().catch(error => {
-    if (isChunkLoadError(error) && !sessionStorage.getItem(LAZY_RELOAD_KEY)) {
-      sessionStorage.setItem(LAZY_RELOAD_KEY, '1');
-      window.location.reload();
-    }
-    throw error;
-  }));
+  return lazy(() => loadRoute()
+    .then(module => {
+      sessionStorage.removeItem(LAZY_RELOAD_KEY);
+      return module;
+    })
+    .catch(error => {
+      if (isChunkLoadError(error) && !sessionStorage.getItem(LAZY_RELOAD_KEY)) {
+        sessionStorage.setItem(LAZY_RELOAD_KEY, '1');
+        window.location.reload();
+      }
+      throw error;
+    }));
 }
 const About = lazyWithRetry(() => import('./pages/About'));
 const Theme = lazyWithRetry(() => import('./pages/Theme'));
@@ -36,6 +44,7 @@ const Methodology = lazyWithRetry(() => import('./pages/Methodology'));
 const Faq = lazyWithRetry(() => import('./pages/Faq'));
 const Contact = lazyWithRetry(() => import('./pages/Contact'));
 const Insights = lazyWithRetry(() => import('./pages/Insights'));
+const InsightDetail = lazyWithRetry(() => import('./pages/InsightDetail'));
 const Watchlist = lazyWithRetry(() => import('./pages/Watchlist'));
 const Policy = lazyWithRetry(() => import('./pages/Policy'));
 
@@ -126,27 +135,62 @@ function RouteMeta() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    const routeKey = ROUTE_META[pathname] ? pathname : pathname.startsWith('/etf/') ? '/compare' : pathname.startsWith('/holding/') ? '/changes' : '/';
-    const meta = { ...DEFAULT_META, ...ROUTE_META[routeKey] };
-    const canonicalPath = meta.robots?.includes('noindex') ? '/' : pathname;
-    const canonicalUrl = `${SITE_URL}${canonicalPath === '/' ? '/' : canonicalPath}`;
+    let active = true;
 
-    document.title = meta.title;
-    upsertMeta('meta[name="description"]', { name: 'description' }, meta.description);
-    upsertMeta('meta[name="robots"]', { name: 'robots' }, meta.robots);
-    upsertMeta('meta[property="og:title"]', { property: 'og:title' }, meta.title);
-    upsertMeta('meta[property="og:description"]', { property: 'og:description' }, meta.description);
-    upsertMeta('meta[property="og:url"]', { property: 'og:url' }, canonicalUrl);
-    upsertMeta('meta[name="twitter:title"]', { name: 'twitter:title' }, meta.title);
-    upsertMeta('meta[name="twitter:description"]', { name: 'twitter:description' }, meta.description);
+    const applyMeta = meta => {
+      if (!active) return;
+      const canonicalPath = meta.robots?.includes('noindex') ? '/' : pathname;
+      const canonicalUrl = `${SITE_URL}${canonicalPath === '/' ? '/' : canonicalPath}`;
+      document.title = meta.title;
+      upsertMeta('meta[name="description"]', { name: 'description' }, meta.description);
+      upsertMeta('meta[name="robots"]', { name: 'robots' }, meta.robots);
+      upsertMeta('meta[property="og:title"]', { property: 'og:title' }, meta.title);
+      upsertMeta('meta[property="og:description"]', { property: 'og:description' }, meta.description);
+      upsertMeta('meta[property="og:url"]', { property: 'og:url' }, canonicalUrl);
+      upsertMeta('meta[name="twitter:title"]', { name: 'twitter:title' }, meta.title);
+      upsertMeta('meta[name="twitter:description"]', { name: 'twitter:description' }, meta.description);
 
-    let canonical = document.head.querySelector('link[rel="canonical"]');
-    if (!canonical) {
-      canonical = document.createElement('link');
-      canonical.setAttribute('rel', 'canonical');
-      document.head.appendChild(canonical);
-    }
-    canonical.setAttribute('href', canonicalUrl);
+      let canonical = document.head.querySelector('link[rel="canonical"]');
+      if (!canonical) {
+        canonical = document.createElement('link');
+        canonical.setAttribute('rel', 'canonical');
+        document.head.appendChild(canonical);
+      }
+      canonical.setAttribute('href', canonicalUrl);
+    };
+
+    const resolveMeta = async () => {
+      const insight = pathname.startsWith('/insights/') ? getInsightArticle(pathname.slice('/insights/'.length)) : null;
+      if (insight) {
+        applyMeta({ ...DEFAULT_META, title: `${insight.title} | ETF Radar`, description: insight.description });
+        return;
+      }
+      if (pathname.startsWith('/etf/')) {
+        const code = pathname.slice('/etf/'.length);
+        try {
+          const [etf, holdings] = await Promise.all([loadEtf(code), loadHoldings(code)]);
+          if (etf) {
+            const indexability = getEtfIndexability(etf, holdings);
+            applyMeta({
+              ...DEFAULT_META,
+              title: `${etf.name} 수익률·구성종목 분석 | ETF Radar`,
+              description: `${etf.name}의 기간 수익률 순위, TOP 10 구성 집중도, 최근 구성종목 변화와 비슷한 국내 ETF를 ${etf.asOf} 종가 기준으로 확인합니다.`,
+              robots: indexability.indexable ? 'index, follow' : 'noindex, follow',
+            });
+            return;
+          }
+        } catch {
+          // Fall through to a safe noindex state when static detail data is unavailable.
+        }
+        applyMeta({ ...DEFAULT_META, title: 'ETF 상세 정보를 찾을 수 없습니다 | ETF Radar', robots: 'noindex, follow' });
+        return;
+      }
+      const routeKey = ROUTE_META[pathname] ? pathname : pathname.startsWith('/holding/') ? '/changes' : '/';
+      applyMeta({ ...DEFAULT_META, ...ROUTE_META[routeKey] });
+    };
+
+    resolveMeta();
+    return () => { active = false; };
   }, [pathname]);
 
   return null;
@@ -232,7 +276,10 @@ class RouteErrorBoundary extends Component {
           </p>
           <button
             type="button"
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              sessionStorage.removeItem(LAZY_RELOAD_KEY);
+              window.location.reload();
+            }}
             className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500"
           >
             새로고침
@@ -311,6 +358,7 @@ export default function App() {
               <Route path="/guide" element={<Guide />} />
               <Route path="/methodology" element={<Methodology />} />
               <Route path="/insights" element={<Insights />} />
+              <Route path="/insights/:slug" element={<InsightDetail />} />
               <Route path="/faq" element={<Faq />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/watchlist" element={<Watchlist />} />
