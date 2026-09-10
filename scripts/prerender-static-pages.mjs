@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { INSIGHT_ARTICLES } from '../src/data/insightArticles.js';
+import { getEtfMeta, meetsEtfSearchQuality } from '../src/data/etfSearchQuality.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = path.join(ROOT, 'dist');
@@ -77,6 +78,30 @@ function collectionHtml() {
   return pageShell(`<header class="prerender-card"><p class="prerender-kicker">ETF 해석 노트</p><h1>ETF Radar 인사이트</h1><p>ETF 수익률과 구성종목 변화의 계산 범위, 올바른 해석 순서와 한계를 주제별 독립 문서로 정리했습니다.</p></header>${cards}`);
 }
 
+function etfHtml(etf, holdings) {
+  const topHoldings = holdings.slice(0, 10).map(holding => `<li>${escapeHtml(holding.name)}${Number.isFinite(holding.weight) ? ` ${escapeHtml(holding.weight)}%` : ''}</li>`).join('');
+  const rates = [['1개월', etf.rate1m], ['3개월', etf.rate3m], ['1년', etf.rate1y]]
+    .filter(([, value]) => Number.isFinite(value))
+    .map(([label, value]) => `<li>${label} 수익률 ${value >= 0 ? '+' : ''}${escapeHtml(value)}%</li>`).join('');
+  return pageShell(`<article>
+    <header class="prerender-card"><p class="prerender-kicker">국내 ETF 상세</p><h1>${escapeHtml(etf.name)} (${escapeHtml(etf.code)})</h1><p>${escapeHtml(etf.description)}</p><p class="prerender-meta">기준일 ${escapeHtml(etf.asOf)} · ${escapeHtml(etf.provider)}</p></header>
+    <section class="prerender-card"><h2>기간별 수익률</h2><ul>${rates}</ul></section>
+    <section class="prerender-card"><h2>TOP 10 구성종목</h2><ul>${topHoldings}</ul><a class="prerender-link" href="/etf/${escapeHtml(etf.code)}">최신 상세 분석 보기</a></section>
+  </article>`);
+}
+
+function etfStructuredData(etf) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FinancialProduct',
+    name: etf.name,
+    description: etf.description,
+    identifier: etf.code,
+    url: `${SITE_URL}/etf/${etf.code}`,
+    provider: { '@type': 'Organization', name: etf.provider },
+  };
+}
+
 function structuredData(article) {
   return {
     '@context': 'https://schema.org',
@@ -136,12 +161,27 @@ for (const article of INSIGHT_ARTICLES) {
   }));
 }
 
-assert.equal(generated.length, INSIGHT_ARTICLES.length + 1);
+const [etfs, holdingsByCode] = await Promise.all([
+  readFile(path.join(ROOT, 'public/data/etfs.json'), 'utf8').then(JSON.parse),
+  readFile(path.join(ROOT, 'public/data/holdings.json'), 'utf8').then(JSON.parse),
+]);
+const searchableEtfs = etfs.filter(etf => meetsEtfSearchQuality(etf, holdingsByCode[etf.code]));
+for (const etf of searchableEtfs) {
+  const meta = getEtfMeta(etf, true);
+  generated.push(await writePage(template, `/etf/${etf.code}`, {
+    title: meta.title,
+    description: meta.description,
+    body: etfHtml(etf, holdingsByCode[etf.code]),
+    schema: etfStructuredData(etf),
+  }));
+}
+
+assert.equal(generated.length, INSIGHT_ARTICLES.length + 1 + searchableEtfs.length);
 assert.equal(new Set(generated.map(page => page.html.match(/<title>([^<]+)<\/title>/)?.[1])).size, generated.length);
 for (const { html } of generated) {
   assert.doesNotMatch(html, /class="initial-shell"/);
   assert.match(html, /<main class="prerender-main">/);
-  assert.match(html, /<link rel="canonical" href="https:\/\/etf-radar\.net\/insights/);
+  assert.match(html, /<link rel="canonical" href="https:\/\/etf-radar\.net\/(?:insights|etf\/)/);
 }
 
-console.log(`Prerendered ${generated.length} insight pages`);
+console.log(`Prerendered ${INSIGHT_ARTICLES.length + 1} insight and ${searchableEtfs.length} ETF pages`);
