@@ -104,8 +104,8 @@ export default function Policy() {
       </Section>
 
       <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
-        서비스 소개는 <Link to="/about" className="font-bold text-blue-600 hover:text-blue-700">About</Link>,
-        지표 해석 기준은 <Link to="/guide" className="font-bold text-blue-600 hover:text-blue-700">데이터 해석 안내</Link>에서 확인할 수 있습니다.
+        서비스 소개는 <Link to="/about/" className="font-bold text-blue-600 hover:text-blue-700">About</Link>,
+        지표 해석 기준은 <Link to="/guide/" className="font-bold text-blue-600 hover:text-blue-700">데이터 해석 안내</Link>에서 확인할 수 있습니다.
       </div>
     </div>
   );

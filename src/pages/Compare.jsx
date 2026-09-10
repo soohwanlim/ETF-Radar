@@ -40,7 +40,7 @@ function CompareCard({ etf, period, onRemove }) {
         <ETFIcon etf={etf} size="sm" />
         <div className="min-w-0">
         <span className="text-[10px] font-mono text-slate-500">{etf.code}</span>
-        <Link to={`/etf/${etf.code}`} className="font-extrabold text-slate-900 pr-6 hover:text-blue-600 block truncate">{etf.name}</Link>
+        <Link to={`/etf/${etf.code}/`} className="font-extrabold text-slate-900 pr-6 hover:text-blue-600 block truncate">{etf.name}</Link>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4 text-xs font-mono border-y border-slate-200 py-4">

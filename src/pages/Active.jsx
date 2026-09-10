@@ -383,7 +383,7 @@ export default function Active() {
         {isExpanded && (
           <div className="mt-4 space-y-1.5">
             {signal.etfs.map(etf => (
-              <Link key={etf.code} to={`/etf/${etf.code}`} className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 text-xs hover:text-blue-600">
+              <Link key={etf.code} to={`/etf/${etf.code}/`} className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 text-xs hover:text-blue-600">
                 <span className="min-w-0">
                   <span className={`${isExpanded ? 'break-keep' : 'truncate'} block font-semibold text-slate-700`}>{etf.name}</span>
                   <span className="mt-0.5 block text-[10px] font-semibold text-slate-400">{etf.themeName}</span>
@@ -502,7 +502,7 @@ export default function Active() {
                     <div className="flex items-center gap-3">
                       <ETFIcon etf={row.etf} size="sm" />
                       <div className="min-w-0">
-                        <Link to={`/etf/${row.etf.code}`} className="block truncate font-extrabold text-slate-950 hover:text-blue-600">{row.etf.name}</Link>
+                        <Link to={`/etf/${row.etf.code}/`} className="block truncate font-extrabold text-slate-950 hover:text-blue-600">{row.etf.name}</Link>
                         <div className="mt-1 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-500">
                           <span>{row.etf.code}</span>
                           <span>{row.theme.name}</span>

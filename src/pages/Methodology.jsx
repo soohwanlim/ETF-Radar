@@ -116,9 +116,9 @@ export default function Methodology() {
       </section>
 
       <section className="rounded-3xl border border-slate-200 bg-slate-50 p-6 text-sm leading-relaxed text-slate-600">
-        데이터 해석 방법은 <Link to="/guide" className="font-bold text-blue-600 hover:text-blue-700">데이터 해석 안내</Link>,
-        실제 활용 관점은 <Link to="/insights" className="font-bold text-blue-600 hover:text-blue-700">ETF 인사이트</Link>,
-        개인정보와 광고 안내는 <Link to="/policy" className="font-bold text-blue-600 hover:text-blue-700">정책 안내</Link>에서 함께 확인할 수 있습니다.
+        데이터 해석 방법은 <Link to="/guide/" className="font-bold text-blue-600 hover:text-blue-700">데이터 해석 안내</Link>,
+        실제 활용 관점은 <Link to="/insights/" className="font-bold text-blue-600 hover:text-blue-700">ETF 인사이트</Link>,
+        개인정보와 광고 안내는 <Link to="/policy/" className="font-bold text-blue-600 hover:text-blue-700">정책 안내</Link>에서 함께 확인할 수 있습니다.
       </section>
     </div>
   );

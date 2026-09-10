@@ -85,7 +85,7 @@ function ThemeEtfCard({ etf, period }) {
           <ETFIcon etf={etf} size="sm" />
           <div>
           <span className="text-xs font-mono text-slate-500">{etf.code}</span>
-          <Link to={`/etf/${etf.code}`} className="font-bold text-slate-900 hover:text-blue-600 block">
+          <Link to={`/etf/${etf.code}/`} className="font-bold text-slate-900 hover:text-blue-600 block">
             {etf.name}
           </Link>
           </div>
@@ -198,7 +198,7 @@ function ThemeSignalPanel({ signals, themeId }) {
                 </div>
                 <div className="space-y-1.5">
                   {signal.etfs.map(etf => (
-                    <Link key={etf.code} to={`/etf/${etf.code}`} className="flex items-center justify-between gap-3 text-xs text-slate-600 hover:text-blue-600">
+                    <Link key={etf.code} to={`/etf/${etf.code}/`} className="flex items-center justify-between gap-3 text-xs text-slate-600 hover:text-blue-600">
                       <span className="truncate">{etf.name}</span>
                       <span className="shrink-0 font-mono">
                         {quantitySignal

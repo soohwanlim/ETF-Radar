@@ -174,7 +174,7 @@ function ChangeCard({ change }) {
             {/* ETF 이름 + 코드 */}
             <div className="flex items-center gap-2 mb-1">
               <Link
-                to={`/etf/${change.code}`}
+                to={`/etf/${change.code}/`}
                 className="text-sm font-bold text-slate-900 hover:text-blue-600 transition-colors truncate"
               >
                 {change.etfName || change.code}

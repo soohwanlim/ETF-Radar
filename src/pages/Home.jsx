@@ -291,7 +291,7 @@ export default function Home() {
         </div>
         <div className="grid gap-3 md:grid-cols-3">
           {leaders.map((etf, index) => (
-            <Link key={etf.code} to={`/etf/${etf.code}`} className="group rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+            <Link key={etf.code} to={`/etf/${etf.code}/`} className="group rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
               <div className="mb-7 flex items-start justify-between">
                 <div className="flex items-center gap-2"><ETFIcon etf={etf} /><span className="text-xs font-bold text-slate-400">#{index + 1}</span></div>
                 <Rate value={getRate(etf, period)} large />
@@ -315,7 +315,7 @@ export default function Home() {
               <p className="text-sm font-semibold text-blue-600">최근 30일 · 1CU당 구성수량 증가</p>
               <h2 className="mt-1 text-xl font-bold text-slate-950">여러 ETF가 함께 늘린 종목</h2>
             </div>
-            <Link to="/changes?types=quantity_increase,quantity_decrease,quantity_decrease_weight_held" className="shrink-0 text-xs font-bold text-slate-500 hover:text-blue-600">전체 보기</Link>
+            <Link to="/changes/?types=quantity_increase,quantity_decrease,quantity_decrease_weight_held" className="shrink-0 text-xs font-bold text-slate-500 hover:text-blue-600">전체 보기</Link>
           </div>
           <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1 md:grid md:grid-cols-3 md:overflow-visible">
             {mainSignals.map(signal => {
@@ -356,7 +356,7 @@ export default function Home() {
               <p className="text-sm font-semibold text-red-600">최근 7일 · 많은 액티브 ETF에서 증가한 순</p>
               <h2 className="mt-1 text-xl font-bold text-slate-950">액티브 ETF가 함께 늘린 종목</h2>
             </div>
-            <Link to="/active" className="shrink-0 text-xs font-bold text-slate-500 hover:text-red-600">전체 보기</Link>
+            <Link to="/active/" className="shrink-0 text-xs font-bold text-slate-500 hover:text-red-600">전체 보기</Link>
           </div>
           <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1 md:grid md:grid-cols-3 md:overflow-visible">
             {activeCommonSignals.map(signal => (
@@ -404,7 +404,7 @@ export default function Home() {
           </div>
           <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1 md:grid md:grid-cols-4 md:overflow-visible">
             {recentListings.map(etf => (
-              <Link key={etf.code} to={`/etf/${etf.code}`} className="min-w-[240px] rounded-3xl border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/60 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md md:min-w-0">
+              <Link key={etf.code} to={`/etf/${etf.code}/`} className="min-w-[240px] rounded-3xl border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/60 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md md:min-w-0">
                 <span className="rounded-full bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white">{etf.listingDate} 상장</span>
                 <div className="mt-4 flex items-center gap-3"><ETFIcon etf={etf} size="sm" /><h3 className="truncate font-bold text-slate-950">{etf.name}</h3></div>
                 <p className="mt-1 truncate text-xs text-slate-500">{etf.provider || etf.code}</p>
@@ -497,7 +497,7 @@ export default function Home() {
                 return (
                   <div key={etf.code} className={`flex items-center gap-3 px-4 py-4 md:px-5 ${index > 0 ? 'border-t border-slate-200' : ''}`}>
                     <ETFIcon etf={etf} size="sm" />
-                    <Link to={`/etf/${etf.code}`} className="min-w-0 flex-1">
+                    <Link to={`/etf/${etf.code}/`} className="min-w-0 flex-1">
                       <div className="truncate text-sm font-bold text-slate-950 md:text-base">{etf.name}</div>
                       <div className="mt-1 text-xs text-slate-500">{etf.code} · {etf.asOf} 종가 {etf.price?.toLocaleString()}원</div>
                     </Link>
@@ -537,7 +537,7 @@ export default function Home() {
               <p className="text-sm text-slate-500">TOP 10 기준</p>
               <h2 className="mt-1 text-xl font-bold text-slate-950">최근 구성 변화</h2>
             </div>
-            <Link to="/changes" className="rounded-full border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-950" aria-label="변경사항 전체 보기"><ArrowRight size={17} /></Link>
+            <Link to="/changes/" className="rounded-full border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-950" aria-label="변경사항 전체 보기"><ArrowRight size={17} /></Link>
           </div>
 
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
@@ -555,7 +555,7 @@ export default function Home() {
                 ))}
               </div>
             ) : changes.length > 0 ? changes.slice(0, 5).map((change, index) => (
-              <Link key={`${change.code}-${index}`} to={`/etf/${change.code}`} className={`block p-4 transition-colors hover:bg-slate-100 ${index > 0 ? 'border-t border-slate-200' : ''}`}>
+              <Link key={`${change.code}-${index}`} to={`/etf/${change.code}/`} className={`block p-4 transition-colors hover:bg-slate-100 ${index > 0 ? 'border-t border-slate-200' : ''}`}>
                 <div className="flex items-start justify-between gap-3">
                   <span className="truncate text-sm font-bold text-slate-900">{change.etfName}</span>
                   <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${change.type === 'new' ? 'bg-emerald-500/10 text-emerald-600' : change.type === 'out' ? 'bg-red-500/10 text-red-600' : 'bg-amber-500/10 text-amber-600'}`}>{change.badge}</span>
@@ -598,12 +598,12 @@ export default function Home() {
           </div>
         </div>
         <div className="mt-5 flex flex-wrap gap-2 text-sm font-bold">
-          <Link to="/guide" className="rounded-full bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">데이터 해석 안내</Link>
-          <Link to="/about" className="rounded-full border border-slate-200 px-4 py-2 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">서비스 소개</Link>
-          <Link to="/compare" className="rounded-full border border-slate-200 px-4 py-2 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">ETF 비교하기</Link>
-          <Link to="/insights" className="rounded-full border border-slate-200 px-4 py-2 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">ETF 인사이트</Link>
-          <Link to="/methodology" className="rounded-full border border-slate-200 px-4 py-2 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">데이터 방법론</Link>
-          <Link to="/faq" className="rounded-full border border-slate-200 px-4 py-2 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">FAQ</Link>
+          <Link to="/guide/" className="rounded-full bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">데이터 해석 안내</Link>
+          <Link to="/about/" className="rounded-full border border-slate-200 px-4 py-2 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">서비스 소개</Link>
+          <Link to="/compare/" className="rounded-full border border-slate-200 px-4 py-2 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">ETF 비교하기</Link>
+          <Link to="/insights/" className="rounded-full border border-slate-200 px-4 py-2 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">ETF 인사이트</Link>
+          <Link to="/methodology/" className="rounded-full border border-slate-200 px-4 py-2 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">데이터 방법론</Link>
+          <Link to="/faq/" className="rounded-full border border-slate-200 px-4 py-2 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">FAQ</Link>
         </div>
       </section>
 

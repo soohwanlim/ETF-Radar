@@ -154,7 +154,7 @@ export default function Watchlist() {
             <Link to="/" className="rounded-full bg-amber-500 px-4 py-2 text-slate-950 hover:bg-amber-400">
               ETF 찾아보기
             </Link>
-            <Link to="/guide" className="rounded-full border border-slate-200 px-4 py-2 text-slate-700 hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700">
+            <Link to="/guide/" className="rounded-full border border-slate-200 px-4 py-2 text-slate-700 hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700">
               지표 해석 보기
             </Link>
           </div>
@@ -200,7 +200,7 @@ export default function Watchlist() {
                         <div className="flex items-center gap-3">
                           <ETFIcon etf={etf} size="sm" />
                           <div>
-                            <Link to={`/etf/${etf.code}`} className="block font-semibold text-slate-900 hover:text-amber-600">{etf.name}</Link>
+                            <Link to={`/etf/${etf.code}/`} className="block font-semibold text-slate-900 hover:text-amber-600">{etf.name}</Link>
                             <span className="font-mono text-xs text-slate-500">{etf.code}</span>
                           </div>
                         </div>

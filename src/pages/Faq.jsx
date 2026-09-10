@@ -75,7 +75,7 @@ export default function Faq() {
         </h1>
         <p className="mt-4 text-sm leading-relaxed text-slate-600">
           ETF Radar의 데이터 기준, 업데이트 시간, 구성종목 변화 해석, 액티브 ETF 신호의 의미를 정리했습니다.
-          처음 방문했다면 이 페이지와 <Link to="/guide" className="font-bold text-blue-600 hover:text-blue-700">데이터 해석 안내</Link>를 함께 보면 각 지표를 더 안전하게 이해할 수 있습니다.
+          처음 방문했다면 이 페이지와 <Link to="/guide/" className="font-bold text-blue-600 hover:text-blue-700">데이터 해석 안내</Link>를 함께 보면 각 지표를 더 안전하게 이해할 수 있습니다.
         </p>
       </section>
 
@@ -89,8 +89,8 @@ export default function Faq() {
       </section>
 
       <section className="rounded-3xl border border-slate-200 bg-slate-50 p-6 text-sm leading-relaxed text-slate-600">
-        더 자세한 서비스 구조는 <Link to="/about" className="font-bold text-blue-600 hover:text-blue-700">서비스 소개</Link>,
-        개인정보와 광고 관련 안내는 <Link to="/policy" className="font-bold text-blue-600 hover:text-blue-700">정책 및 이용 안내</Link>에서 확인할 수 있습니다.
+        더 자세한 서비스 구조는 <Link to="/about/" className="font-bold text-blue-600 hover:text-blue-700">서비스 소개</Link>,
+        개인정보와 광고 관련 안내는 <Link to="/policy/" className="font-bold text-blue-600 hover:text-blue-700">정책 및 이용 안내</Link>에서 확인할 수 있습니다.
       </section>
     </div>
   );

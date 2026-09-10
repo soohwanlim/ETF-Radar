@@ -5,6 +5,9 @@ import { Activity, ArrowLeftRight, BarChart3, Grid2X2, RefreshCw, ShieldAlert, S
 import { useCompareStore } from './store/compareStore';
 import DataStatus from './components/DataStatus';
 import { getInsightArticle } from './data/insightArticles';
+import { getEtfMeta, meetsEtfSearchQuality } from './data/etfSearchQuality';
+import { loadEtf, loadHoldings } from './data/staticData';
+import { canonicalPath, canonicalUrl } from './data/siteUrls';
 
 const LAZY_RELOAD_KEY = 'etf-radar-lazy-reload-attempted';
 
@@ -17,7 +20,10 @@ function isChunkLoadError(error) {
 }
 
 function lazyWithRetry(loadRoute) {
-  return lazy(() => loadRoute().catch(error => {
+  return lazy(() => loadRoute().then(module => {
+    sessionStorage.removeItem(LAZY_RELOAD_KEY);
+    return module;
+  }).catch(error => {
     if (isChunkLoadError(error) && !sessionStorage.getItem(LAZY_RELOAD_KEY)) {
       sessionStorage.setItem(LAZY_RELOAD_KEY, '1');
       window.location.reload();
@@ -48,14 +54,12 @@ const ROUTE_PREFETCHERS = [
 ];
 const NAV_ITEMS = [
   { to: '/', label: '홈', desktopLabel: '수익률', icon: BarChart3 },
-  { to: '/theme', label: '테마', desktopLabel: '테마 ETF', icon: Grid2X2 },
-  { to: '/active', label: '액티브', desktopLabel: '액티브', icon: Activity },
-  { to: '/compare', label: '비교', desktopLabel: '비교분석', icon: ArrowLeftRight },
-  { to: '/watchlist', label: '관심', desktopLabel: '즐겨찾기', icon: Star },
-  { to: '/changes', label: '변경', desktopLabel: '변경 감지', icon: RefreshCw },
+  { to: '/theme/', label: '테마', desktopLabel: '테마 ETF', icon: Grid2X2 },
+  { to: '/active/', label: '액티브', desktopLabel: '액티브', icon: Activity },
+  { to: '/compare/', label: '비교', desktopLabel: '비교분석', icon: ArrowLeftRight },
+  { to: '/watchlist/', label: '관심', desktopLabel: '즐겨찾기', icon: Star },
+  { to: '/changes/', label: '변경', desktopLabel: '변경 감지', icon: RefreshCw },
 ];
-const SITE_URL = 'https://etf-radar.net';
-
 const DEFAULT_META = {
   title: 'ETF Radar | 국내 ETF 비교와 구성종목 변화',
   description: '국내 주식형 ETF의 수익률, TOP 10 구성종목 변화, 신규 상장 ETF, 액티브 ETF 공통 증가 종목을 매일 종가 기준 데이터로 비교합니다.',
@@ -128,30 +132,55 @@ function RouteMeta() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    const insight = pathname.startsWith('/insights/') ? getInsightArticle(pathname.slice('/insights/'.length)) : null;
-    const routeKey = ROUTE_META[pathname] ? pathname : pathname.startsWith('/etf/') ? '/compare' : pathname.startsWith('/holding/') ? '/changes' : '/';
+    let active = true;
+    const applyMeta = (meta, requestedCanonicalPath = pathname) => {
+      if (!active) return;
+      const pageUrl = canonicalUrl(requestedCanonicalPath);
+
+      document.title = meta.title;
+      upsertMeta('meta[name="description"]', { name: 'description' }, meta.description);
+      upsertMeta('meta[name="robots"]', { name: 'robots' }, meta.robots || DEFAULT_META.robots);
+      upsertMeta('meta[property="og:title"]', { property: 'og:title' }, meta.title);
+      upsertMeta('meta[property="og:description"]', { property: 'og:description' }, meta.description);
+      upsertMeta('meta[property="og:url"]', { property: 'og:url' }, pageUrl);
+      upsertMeta('meta[name="twitter:title"]', { name: 'twitter:title' }, meta.title);
+      upsertMeta('meta[name="twitter:description"]', { name: 'twitter:description' }, meta.description);
+
+      let canonical = document.head.querySelector('link[rel="canonical"]');
+      if (!canonical) {
+        canonical = document.createElement('link');
+        canonical.setAttribute('rel', 'canonical');
+        document.head.appendChild(canonical);
+      }
+      canonical.setAttribute('href', pageUrl);
+    };
+
+    if (pathname.startsWith('/etf/')) {
+      const code = pathname.slice('/etf/'.length).replace(/\/$/, '');
+      Promise.all([loadEtf(code), loadHoldings(code)])
+        .then(([etf, holdings]) => applyMeta(getEtfMeta(etf, meetsEtfSearchQuality(etf, holdings))))
+        .catch(() => applyMeta(getEtfMeta(null)));
+      return () => { active = false; };
+    }
+
+    const normalizedPath = canonicalPath(pathname).replace(/\/$/, '') || '/';
+    const isInsightDetail = normalizedPath.startsWith('/insights/');
+    const insight = isInsightDetail ? getInsightArticle(normalizedPath.slice('/insights/'.length)) : null;
+    if (isInsightDetail && !insight) {
+      applyMeta({
+        title: '인사이트를 찾을 수 없습니다 | ETF Radar',
+        description: '요청한 ETF 인사이트를 찾을 수 없습니다.',
+        robots: 'noindex, follow',
+      });
+      return () => { active = false; };
+    }
+    const routeKey = ROUTE_META[normalizedPath] ? normalizedPath : normalizedPath.startsWith('/holding/') ? '/changes' : '/';
     const meta = insight
       ? { ...DEFAULT_META, title: `${insight.title} | ETF Radar`, description: insight.description }
       : { ...DEFAULT_META, ...ROUTE_META[routeKey] };
-    const canonicalPath = meta.robots?.includes('noindex') ? '/' : pathname;
-    const canonicalUrl = `${SITE_URL}${canonicalPath === '/' ? '/' : canonicalPath}`;
-
-    document.title = meta.title;
-    upsertMeta('meta[name="description"]', { name: 'description' }, meta.description);
-    upsertMeta('meta[name="robots"]', { name: 'robots' }, meta.robots);
-    upsertMeta('meta[property="og:title"]', { property: 'og:title' }, meta.title);
-    upsertMeta('meta[property="og:description"]', { property: 'og:description' }, meta.description);
-    upsertMeta('meta[property="og:url"]', { property: 'og:url' }, canonicalUrl);
-    upsertMeta('meta[name="twitter:title"]', { name: 'twitter:title' }, meta.title);
-    upsertMeta('meta[name="twitter:description"]', { name: 'twitter:description' }, meta.description);
-
-    let canonical = document.head.querySelector('link[rel="canonical"]');
-    if (!canonical) {
-      canonical = document.createElement('link');
-      canonical.setAttribute('rel', 'canonical');
-      document.head.appendChild(canonical);
-    }
-    canonical.setAttribute('href', canonicalUrl);
+    const canonicalTarget = meta.robots?.includes('noindex') ? '/' : pathname;
+    applyMeta(meta, canonicalTarget);
+    return () => { active = false; };
   }, [pathname]);
 
   return null;
@@ -203,7 +232,7 @@ function FloatingCompareBar() {
         <button type="button" onClick={clearSelected} className="rounded-xl p-2 text-slate-300 hover:bg-slate-800 hover:text-white" aria-label="비교 목록 전체 해제">
           <X size={17} />
         </button>
-        <Link to="/compare" className="rounded-xl bg-blue-500 px-4 py-2 text-sm font-bold hover:bg-blue-400">
+        <Link to="/compare/" className="rounded-xl bg-blue-500 px-4 py-2 text-sm font-bold hover:bg-blue-400">
           비교하기
         </Link>
       </div>
@@ -337,14 +366,14 @@ export default function App() {
                 <ShieldAlert size={14} /> 투자 유의사항
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-1 font-semibold text-slate-500">
-                <Link to="/about" className="hover:text-blue-600">서비스 소개</Link>
-                <Link to="/guide" className="hover:text-blue-600">데이터 해석 안내</Link>
-                <Link to="/methodology" className="hover:text-blue-600">데이터 방법론</Link>
-                <Link to="/insights" className="hover:text-blue-600">ETF 인사이트</Link>
-                <Link to="/faq" className="hover:text-blue-600">FAQ</Link>
-                <Link to="/policy" className="hover:text-blue-600">개인정보처리방침</Link>
-                <Link to="/policy" className="hover:text-blue-600">면책/투자 유의사항</Link>
-                <Link to="/contact" className="hover:text-blue-600">문의</Link>
+                <Link to="/about/" className="hover:text-blue-600">서비스 소개</Link>
+                <Link to="/guide/" className="hover:text-blue-600">데이터 해석 안내</Link>
+                <Link to="/methodology/" className="hover:text-blue-600">데이터 방법론</Link>
+                <Link to="/insights/" className="hover:text-blue-600">ETF 인사이트</Link>
+                <Link to="/faq/" className="hover:text-blue-600">FAQ</Link>
+                <Link to="/policy/" className="hover:text-blue-600">개인정보처리방침</Link>
+                <Link to="/policy/" className="hover:text-blue-600">면책/투자 유의사항</Link>
+                <Link to="/contact/" className="hover:text-blue-600">문의</Link>
               </div>
             </div>
             <p className="max-w-2xl leading-relaxed md:text-right">

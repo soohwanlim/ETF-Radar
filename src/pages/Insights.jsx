@@ -32,13 +32,13 @@ function useInsightsStructuredData() {
       '@type': 'CollectionPage',
       name: 'ETF Radar 인사이트',
       description: 'ETF TOP 10 구성종목 변화, 1CU당 구성수량 변화, 액티브 ETF 공통 증가 종목을 읽는 독립 해설을 모았습니다.',
-      url: `${SITE_URL}/insights`,
+      url: `${SITE_URL}/insights/`,
       hasPart: INSIGHT_ARTICLES.map((article, index) => ({
         '@type': 'Article',
         position: index + 1,
         headline: article.title,
         description: article.description,
-        url: `${SITE_URL}/insights/${article.slug}`,
+        url: `${SITE_URL}/insights/${article.slug}/`,
       })),
     });
     document.head.appendChild(script);
@@ -76,7 +76,7 @@ export default function Insights() {
               <p className="mt-4 flex-1 text-sm leading-relaxed text-slate-600">{article.summary}</p>
               <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
                 <span className="text-xs text-slate-500">약 {article.readingMinutes}분 · {article.updatedAt} 수정</span>
-                <Link to={`/insights/${article.slug}`} className="inline-flex items-center gap-1 text-sm font-bold text-blue-600 hover:text-blue-700">
+                <Link to={`/insights/${article.slug}/`} className="inline-flex items-center gap-1 text-sm font-bold text-blue-600 hover:text-blue-700">
                   전문 읽기 <ArrowRight size={15} />
                 </Link>
               </div>

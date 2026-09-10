@@ -44,8 +44,8 @@ export const INSIGHT_ARTICLES = [
       '최종 판단 전 운용사 공식 전체 구성종목 자료를 대조합니다.',
     ],
     relatedLinks: [
-      { to: '/changes', label: '최신 구성종목 변화 보기' },
-      { to: '/methodology', label: '변경 감지 방법론' },
+      { to: '/changes/', label: '최신 구성종목 변화 보기' },
+      { to: '/methodology/', label: '변경 감지 방법론' },
     ],
   },
   {
@@ -94,8 +94,8 @@ export const INSIGHT_ARTICLES = [
       '패시브와 액티브 ETF의 운용 방식을 구분해 해석합니다.',
     ],
     relatedLinks: [
-      { to: '/guide', label: '데이터 해석 안내' },
-      { to: '/changes', label: '수량 변화 확인하기' },
+      { to: '/guide/', label: '데이터 해석 안내' },
+      { to: '/changes/', label: '수량 변화 확인하기' },
     ],
   },
   {
@@ -144,8 +144,8 @@ export const INSIGHT_ARTICLES = [
       '공통 증가를 종목 매수 추천이나 수익률 예측으로 사용하지 않습니다.',
     ],
     relatedLinks: [
-      { to: '/active', label: '액티브 ETF 공통 변화 보기' },
-      { to: '/methodology', label: '데이터 방법론 확인' },
+      { to: '/active/', label: '액티브 ETF 공통 변화 보기' },
+      { to: '/methodology/', label: '데이터 방법론 확인' },
     ],
   },
   {
@@ -194,8 +194,8 @@ export const INSIGHT_ARTICLES = [
       '중요한 판단에는 KRX와 운용사 공식 자료를 함께 확인합니다.',
     ],
     relatedLinks: [
-      { to: '/about', label: '서비스 소개' },
-      { to: '/methodology', label: '수집 방법론 자세히 보기' },
+      { to: '/about/', label: '서비스 소개' },
+      { to: '/methodology/', label: '수집 방법론 자세히 보기' },
     ],
   },
 ];

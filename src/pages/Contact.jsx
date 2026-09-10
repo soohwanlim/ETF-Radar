@@ -57,8 +57,8 @@ export default function Contact() {
 
       <ContactCard title="광고·정책 관련 문의" icon={Mail}>
         <p>
-          개인정보처리방침, 광고와 쿠키, 투자 유의사항은 <Link to="/policy" className="font-bold text-blue-600 hover:text-blue-700">정책 및 이용 안내</Link>에 정리되어 있습니다.
-          데이터 해석 기준은 <Link to="/guide" className="font-bold text-blue-600 hover:text-blue-700">데이터 해석 안내</Link>와 <Link to="/faq" className="font-bold text-blue-600 hover:text-blue-700">FAQ</Link>를 참고해주세요.
+          개인정보처리방침, 광고와 쿠키, 투자 유의사항은 <Link to="/policy/" className="font-bold text-blue-600 hover:text-blue-700">정책 및 이용 안내</Link>에 정리되어 있습니다.
+          데이터 해석 기준은 <Link to="/guide/" className="font-bold text-blue-600 hover:text-blue-700">데이터 해석 안내</Link>와 <Link to="/faq/" className="font-bold text-blue-600 hover:text-blue-700">FAQ</Link>를 참고해주세요.
         </p>
         <p>
           ETF Radar는 특정 ETF, 주식, 금융상품의 매수·매도·보유를 권유하지 않으며 투자 자문을 제공하지 않습니다.

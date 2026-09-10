@@ -90,7 +90,7 @@ export default function About() {
 
       <section className="rounded-3xl border border-slate-200 bg-slate-50 p-6 text-sm leading-relaxed text-slate-600">
         지표 해석 기준이 궁금하다면{' '}
-        <Link to="/guide" className="font-bold text-blue-600 hover:text-blue-700">
+        <Link to="/guide/" className="font-bold text-blue-600 hover:text-blue-700">
           데이터 해석 안내
         </Link>
         에서 수익률, TOP 10 구성종목 변화, 1CU당 구성수량 변화, 액티브 ETF 신호의 의미와 한계를 확인할 수 있습니다.

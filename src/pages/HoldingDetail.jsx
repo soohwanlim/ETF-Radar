@@ -436,7 +436,7 @@ export default function HoldingDetail() {
                   const config = CHANGE_LABELS[change.type] || CHANGE_LABELS.weight;
                   const Icon = config.icon;
                   return (
-                    <Link key={`${change.code}-${change.date}-${change.type}-${index}`} to={`/etf/${change.code}`} className="block rounded-2xl border border-slate-100 bg-slate-50/60 p-4 hover:border-blue-200 hover:bg-blue-50/50">
+                    <Link key={`${change.code}-${change.date}-${change.type}-${index}`} to={`/etf/${change.code}/`} className="block rounded-2xl border border-slate-100 bg-slate-50/60 p-4 hover:border-blue-200 hover:bg-blue-50/50">
                       <div className="flex items-start gap-3">
                         <span className={`mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${config.tone}`}>
                           <Icon size={16} />
@@ -471,7 +471,7 @@ export default function HoldingDetail() {
             </div>
             <div className="divide-y divide-slate-100">
               {holding.etfs.map(etf => (
-                <Link key={etf.code} to={`/etf/${etf.code}`} className="flex items-center gap-3 py-3 hover:bg-slate-50">
+                <Link key={etf.code} to={`/etf/${etf.code}/`} className="flex items-center gap-3 py-3 hover:bg-slate-50">
                   <ETFIcon etf={etf} size="sm" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-extrabold text-slate-950">{etf.name}</div>
@@ -519,7 +519,7 @@ export default function HoldingDetail() {
             ) : (
               <div className="mt-4 space-y-2">
                 {activeEtfs.slice(0, 8).map(etf => (
-                  <Link key={etf.code} to={`/etf/${etf.code}`} className="block rounded-2xl bg-red-50/70 px-3 py-2 hover:bg-red-50">
+                  <Link key={etf.code} to={`/etf/${etf.code}/`} className="block rounded-2xl bg-red-50/70 px-3 py-2 hover:bg-red-50">
                     <div className="truncate text-xs font-extrabold text-slate-950">{etf.name}</div>
                     <div className="mt-1 text-[11px] font-bold text-red-600">비중 {formatWeight(etf.weight)}</div>
                   </Link>

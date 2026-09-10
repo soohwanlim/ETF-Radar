@@ -118,7 +118,7 @@ export default function Guide() {
 
       <section className="rounded-3xl border border-slate-200 bg-slate-50 p-6 text-sm leading-relaxed text-slate-600">
         서비스 구조와 데이터 출처가 궁금하다면{' '}
-        <Link to="/about" className="font-bold text-blue-600 hover:text-blue-700">
+        <Link to="/about/" className="font-bold text-blue-600 hover:text-blue-700">
           ETF Radar 소개
         </Link>
         에서 운영 방식과 업데이트 기준을 확인할 수 있습니다.

@@ -214,7 +214,7 @@ export default function ETFDetail() {
             {analysis.similarEtfs.length > 0 ? (
               <div className="mt-3 grid gap-2 md:grid-cols-3">
                 {analysis.similarEtfs.map(etf => (
-                  <Link key={etf.code} to={`/etf/${etf.code}`} className="rounded-xl border border-slate-200 bg-white px-4 py-3 hover:border-blue-200">
+                  <Link key={etf.code} to={`/etf/${etf.code}/`} className="rounded-xl border border-slate-200 bg-white px-4 py-3 hover:border-blue-200">
                     <span className="block truncate text-sm font-bold text-slate-900">{etf.name}</span>
                     <span className="mt-1 block text-[11px] text-slate-500">공통 {etf.commonCount}개 · 비중 중첩 {etf.weightedOverlap}%</span>
                   </Link>
