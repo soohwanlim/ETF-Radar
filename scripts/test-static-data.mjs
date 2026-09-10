@@ -10,6 +10,7 @@ import {
 } from './static-data-lib.mjs';
 import { buildThemeSignals } from './theme-signals.mjs';
 import { buildHoldingIndex } from './holding-index.mjs';
+import { getHoldingMeta, isLinkableHolding, meetsHoldingSearchQuality } from '../src/data/holdingSearchQuality.js';
 import { getKrxClosureName, isKrxTradingDate, previousKrxTradingDate } from '../src/data/marketCalendar.js';
 import { getInsightArticle, INSIGHT_ARTICLES } from '../src/data/insightArticles.js';
 import {
@@ -222,4 +223,11 @@ assert.equal(holdingIndex.items[0].code, '005930');
 assert.equal(holdingIndex.items[0].etfCount, 2);
 assert.equal(holdingIndex.items[0].activeEtfCount, 1);
 assert.equal(holdingIndex.items[0].etfs[0].code, 'B');
+assert.equal(isLinkableHolding({ code: '090430', name: '아모레퍼시픽' }), true);
+assert.equal(isLinkableHolding({ code: '', name: '원화현금' }), false);
+assert.equal(isLinkableHolding({ code: '0112X0', name: '마이티 200TR' }), false);
+assert.equal(isLinkableHolding({ code: 'KR1234', name: '국고채 10년' }), false);
+assert.equal(meetsHoldingSearchQuality({ ...holdingIndex.items[0], asOf: '2026-06-12' }), true);
+assert.equal(meetsHoldingSearchQuality({ ...holdingIndex.items[0], etfCount: 1, etfs: holdingIndex.items[0].etfs.slice(0, 1), asOf: '2026-06-12' }), false);
+assert.equal(getHoldingMeta({ ...holdingIndex.items[0], asOf: '2026-06-12' }, true).robots, 'index, follow');
 console.log('Static data tests passed');
