@@ -21,6 +21,28 @@ import {
   findSimilarEtfs,
 } from '../src/data/etfAnalysis.js';
 import { getEtfMeta, meetsEtfSearchQuality } from '../src/data/etfSearchQuality.js';
+import { validateSnapshot } from './validate-static-data.mjs';
+
+const validSnapshot = {
+  etfs: [{ code: '069500', name: 'KODEX 200', asOf: '2026-09-09', price: 50000, aum: 1000 }],
+  holdings: { '069500': [{ code: '005930', name: '삼성전자', asOf: '2026-09-09', shares: 10, weight: 30 }] },
+  manifest: { asOf: '2026-09-09', etfCount: 1 },
+  status: { asOf: '2026-09-09', etfCount: 1, holdingsCount: 1, failedCount: 0, failures: [] },
+  ohlcManifest: { etfCount: 1, items: [{ code: '069500', from: '2026-09-08', to: '2026-09-09', rowCount: 2 }] },
+  ohlcByCode: new Map([['069500', {
+    code: '069500', from: '2026-09-08', to: '2026-09-09', rowCount: 2,
+    rows: [['2026-09-08', 100, 110, 90, 105], ['2026-09-09', 105, 115, 100, 110]],
+  }]]),
+};
+assert.deepEqual(validateSnapshot(validSnapshot), []);
+assert.ok(validateSnapshot({
+  ...validSnapshot,
+  etfs: [...validSnapshot.etfs, { ...validSnapshot.etfs[0], price: -1 }],
+}).some(problem => problem.includes('duplicate code')));
+assert.ok(validateSnapshot({
+  ...validSnapshot,
+  ohlcByCode: new Map([['069500', { ...validSnapshot.ohlcByCode.get('069500'), rows: [['2026-09-09', 100, 90, 95, 105]] }]]),
+}).some(problem => problem.includes('high is below')));
 
 const qualityEtf = { code: '069500', name: 'KODEX 200', description: '가'.repeat(80), provider: '삼성자산운용', listingDate: '2002-10-14', asOf: '2026-09-09', price: 50000, rate1m: 1.2, rate3m: 3.4 };
 assert.equal(meetsEtfSearchQuality(qualityEtf, [{}, {}, {}]), true);

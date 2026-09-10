@@ -37,6 +37,7 @@ jobs:
       - run: npm run append:ohlc
         env:
           KRX_API_KEY: ${{ secrets.KRX_API_KEY }}
+      - run: npm run validate:data
 
       - name: Write collection summary
         shell: bash
