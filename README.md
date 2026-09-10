@@ -30,6 +30,10 @@ No runtime backend, Cloudflare Worker, or external database is required.
 
 ETF Radar is an informational service only. It does not provide investment advice. All displayed prices are closing prices based on the data date, not real-time quotes.
 
+## Roadmap
+
+남은 작업의 우선순위와 완료 기준은 [`docs/ROADMAP.md`](docs/ROADMAP.md)에서 관리합니다. 새 작업은 최신 `main`에서 시작하고, 현재 완료된 기능을 재구현하지 않는 것을 원칙으로 합니다.
+
 ## Local commands
 
 ```bash
