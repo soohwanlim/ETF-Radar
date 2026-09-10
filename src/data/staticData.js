@@ -39,8 +39,12 @@ export async function loadEtf(code) {
 }
 
 export async function loadHoldings(code) {
-  const holdings = await loadJson('/data/holdings.json');
+  const holdings = await loadAllHoldings();
   return holdings[code] || [];
+}
+
+export function loadAllHoldings() {
+  return loadJson('/data/holdings.json');
 }
 
 export function loadHoldingIndex() {

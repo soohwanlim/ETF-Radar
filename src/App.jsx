@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react
 import { Activity, ArrowLeftRight, BarChart3, Grid2X2, RefreshCw, ShieldAlert, Star, X } from 'lucide-react';
 import { useCompareStore } from './store/compareStore';
 import DataStatus from './components/DataStatus';
+import { getInsightArticle } from './data/insightArticles';
 
 const LAZY_RELOAD_KEY = 'etf-radar-lazy-reload-attempted';
 
@@ -36,6 +37,7 @@ const Methodology = lazyWithRetry(() => import('./pages/Methodology'));
 const Faq = lazyWithRetry(() => import('./pages/Faq'));
 const Contact = lazyWithRetry(() => import('./pages/Contact'));
 const Insights = lazyWithRetry(() => import('./pages/Insights'));
+const InsightDetail = lazyWithRetry(() => import('./pages/InsightDetail'));
 const Watchlist = lazyWithRetry(() => import('./pages/Watchlist'));
 const Policy = lazyWithRetry(() => import('./pages/Policy'));
 
@@ -126,8 +128,11 @@ function RouteMeta() {
   const { pathname } = useLocation();
 
   useEffect(() => {
+    const insight = pathname.startsWith('/insights/') ? getInsightArticle(pathname.slice('/insights/'.length)) : null;
     const routeKey = ROUTE_META[pathname] ? pathname : pathname.startsWith('/etf/') ? '/compare' : pathname.startsWith('/holding/') ? '/changes' : '/';
-    const meta = { ...DEFAULT_META, ...ROUTE_META[routeKey] };
+    const meta = insight
+      ? { ...DEFAULT_META, title: `${insight.title} | ETF Radar`, description: insight.description }
+      : { ...DEFAULT_META, ...ROUTE_META[routeKey] };
     const canonicalPath = meta.robots?.includes('noindex') ? '/' : pathname;
     const canonicalUrl = `${SITE_URL}${canonicalPath === '/' ? '/' : canonicalPath}`;
 
@@ -311,6 +316,7 @@ export default function App() {
               <Route path="/guide" element={<Guide />} />
               <Route path="/methodology" element={<Methodology />} />
               <Route path="/insights" element={<Insights />} />
+              <Route path="/insights/:slug" element={<InsightDetail />} />
               <Route path="/faq" element={<Faq />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/watchlist" element={<Watchlist />} />
