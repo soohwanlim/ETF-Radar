@@ -8,7 +8,7 @@ import {
   formatChange,
   isSupportedDomesticSpotEtf,
   normalizeIssueCode,
-  parseNaverHoldings,
+  parseNaverEtfAnalysis,
   parseNumber,
 } from './static-data-lib.mjs';
 import { buildThemeSignals } from './theme-signals.mjs';
@@ -17,6 +17,7 @@ import { isKrxTradingDate } from '../src/data/marketCalendar.js';
 
 const KRX_URL = 'https://data-dbg.krx.co.kr/svc/apis/etp/etf_bydd_trd';
 const NAVER_LIST_URL = 'https://finance.naver.com/api/sise/etfItemList.nhn';
+const NAVER_ETF_ANALYSIS_URL = 'https://m.stock.naver.com/api/stock/{code}/etfAnalysis';
 const DATA_DIR = new URL('../public/data/', import.meta.url);
 const REQUEST_DELAY_MS = Number(process.env.COLLECT_DELAY_MS || 350);
 const RETENTION_DAYS = 365;
@@ -274,9 +275,20 @@ async function main() {
     const current = marketMap.get(code);
     if (!current) continue;
     try {
-      const html = await fetchText(`https://finance.naver.com/item/main.naver?code=${code}`, 'utf-8');
-      const detail = parseDetail(html);
-      holdings[code] = parseNaverHoldings(html, market.asOf);
+      let detail = {};
+      try {
+        const html = await fetchText(`https://finance.naver.com/item/main.naver?code=${code}`, 'utf-8');
+        detail = parseDetail(html);
+      } catch (error) {
+        console.warn(`[detail skip] ${code}: ${error.message}`);
+      }
+      const analysisText = await fetchText(NAVER_ETF_ANALYSIS_URL.replace('{code}', code), 'utf-8');
+      const analysis = JSON.parse(analysisText);
+      const parsedHoldings = parseNaverEtfAnalysis(analysis, market.asOf);
+      if (parsedHoldings.length === 0) {
+        throw new Error('Naver ETF analysis returned no TOP 10 holdings');
+      }
+      holdings[code] = parsedHoldings;
       const previousHoldings = existingHoldings[code] || [];
       const previous = existingEtfMap.get(code) || {};
       if (previousHoldings.length > 0) {
@@ -354,6 +366,13 @@ async function main() {
   }
 
   const generatedAt = new Date().toISOString();
+  const populatedHoldingCount = Object.values(holdings)
+    .filter((items) => Array.isArray(items) && items.length > 0)
+    .length;
+  if (populatedHoldingCount === 0) {
+    throw new Error('Collection safety check failed: no TOP 10 holdings were collected');
+  }
+
   const holdingIndex = buildHoldingIndex(etfs, holdings, {
     asOf: market.asOf,
     generatedAt,
@@ -369,6 +388,7 @@ async function main() {
     etfCount: etfs.length,
     marketRowCount: marketRows.length,
     holdingsCount: Object.keys(holdings).length,
+    populatedHoldingCount,
     holdingIndexCount: holdingIndex.count,
     changeCount: changes.length,
     themeSignalCount: themeSignals.length,
@@ -390,6 +410,7 @@ async function main() {
       status: collectionState,
       failedCount: failures.length,
       holdingIndexCount: holdingIndex.count,
+      populatedHoldingCount,
       changeCount: changes.length,
       themeSignalCount: themeSignals.length,
       recentListingCount: listingCalendar.recent.length,

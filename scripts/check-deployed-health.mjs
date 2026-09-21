@@ -119,6 +119,9 @@ function evaluateStatus(status, now = new Date()) {
     problems.push(`failedCount is ${status.failedCount}`);
   }
 
+  if (Number(status.holdingIndexCount || 0) < 1) problems.push('holdingIndexCount is zero; reverse holding lookup is unavailable');
+  if (Number(status.populatedHoldingCount || 0) < 1) problems.push('populatedHoldingCount is zero; ETF holding snapshots are unavailable');
+
   return {
     ok: problems.length === 0,
     problems,

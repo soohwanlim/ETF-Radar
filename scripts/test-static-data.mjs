@@ -6,6 +6,7 @@ import {
   formatChange,
   isSupportedDomesticSpotEtf,
   normalizeIssueCode,
+  parseNaverEtfAnalysis,
   parseNaverHoldings,
 } from './static-data-lib.mjs';
 import { buildThemeSignals } from './theme-signals.mjs';
@@ -159,6 +160,16 @@ const html = `<div class="section etf_asset"><table><tbody>
 </tbody></table>`;
 const holdings = parseNaverHoldings(html, '2026-06-11');
 assert.equal(holdings.length, 2);
+const apiHoldings = parseNaverEtfAnalysis({
+  etfTop10MajorConstituentAssets: [
+    { itemCode: '005930', itemName: '삼성전자', etfWeight: '30.00%' },
+    { itemCode: '000660', itemName: 'SK하이닉스', etfWeight: '20.00%' },
+  ],
+}, '2026-06-11');
+assert.equal(apiHoldings.length, 2);
+assert.equal(apiHoldings[0].code, '005930');
+assert.equal(apiHoldings[0].weight, 30);
+assert.equal(apiHoldings[0].shares, null);
 assert.equal(holdings[0].code, '005930');
 
 const changes = compareHoldings(

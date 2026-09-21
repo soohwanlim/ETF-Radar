@@ -38,6 +38,10 @@ export function validateSnapshot({ etfs, holdings, manifest, status, ohlcManifes
   addProblem(problems, status?.failedCount === (status?.failures?.length || 0), `status failedCount ${status?.failedCount} does not match failures ${status?.failures?.length || 0}`);
 
   const holdingCodes = Object.keys(holdings || {});
+  const populatedHoldingCodes = holdingCodes.filter((code) => Array.isArray(holdings[code]) && holdings[code].length > 0);
+  addProblem(problems, populatedHoldingCodes.length > 0, 'holdings.json has no populated ETF holding snapshots');
+  if (status?.populatedHoldingCount != null) addProblem(problems, status.populatedHoldingCount === populatedHoldingCodes.length, 'status populatedHoldingCount does not match holdings.json');
+  if (status?.holdingIndexCount != null) addProblem(problems, status.holdingIndexCount > 0, 'status holdingIndexCount must be greater than zero');
   addProblem(problems, holdingCodes.length === status?.holdingsCount, `status holdingsCount ${status?.holdingsCount} does not match holdings.json ${holdingCodes.length}`);
   for (const code of holdingCodes) {
     addProblem(problems, codes.has(code), `holdings.json contains unknown ETF code: ${code}`);
@@ -51,7 +55,7 @@ export function validateSnapshot({ etfs, holdings, manifest, status, ohlcManifes
       itemCodes.add(item.code);
       addProblem(problems, isDate(item.asOf), `${label} has invalid asOf: ${item.asOf || 'missing'}`);
       addProblem(problems, item.asOf <= manifest?.asOf, `${label} asOf ${item.asOf} is after manifest ${manifest?.asOf}`);
-      addProblem(problems, Number.isFinite(item.shares) && item.shares >= 0, `${label} has invalid shares: ${item.shares}`);
+      addProblem(problems, item.shares == null || (Number.isFinite(item.shares) && item.shares >= 0), `${label} has invalid shares: ${item.shares}`);
       addProblem(problems, Number.isFinite(item.weight) && item.weight >= 0 && item.weight <= 100, `${label} has invalid weight: ${item.weight}`);
     }
   }

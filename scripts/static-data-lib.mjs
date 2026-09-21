@@ -49,18 +49,52 @@ export function decodeHtmlText(value = '') {
     .trim();
 }
 
-export function parseNaverHoldings(html, asOf) {
-  const section = html.match(/<div class="section etf_asset">([\s\S]*?)<\/table>/)?.[1] || '';
-  const rowPattern = /<a href="\/item\/main\.naver\?code=([0-9A-Z]+)">([\s\S]*?)<\/a>[\s\S]*?<td>\s*([\d,.-]+)\s*<\/td>[\s\S]*?<td class="per">\s*([\d,.]+)%/g;
+function normalizeNaverHolding(item, asOf) {
+  const rawWeight = item?.etfWeight ?? item?.weight ?? item?.value;
+  const weightText = String(rawWeight ?? '').trim().replace('%', '');
+  const weight = rawWeight == null || weightText === '' || weightText === '-'
+    ? null
+    : parseNumber(weightText);
+  const rawShares = item?.etfQuantity ?? item?.quantity ?? item?.shares;
+  return {
+    code: normalizeIssueCode(item?.itemCode ?? item?.code ?? item?.symbol),
+    name: decodeHtmlText(String(item?.itemName ?? item?.name ?? '').trim()),
+    shares: rawShares == null || rawShares === '' ? null : parseNumber(rawShares),
+    value: weight,
+    weight,
+    source: 'Naver Finance',
+    coverage: 'top10',
+    asOf,
+  };
+}
+
+export function parseNaverEtfAnalysis(payload, asOf) {
+  const root = typeof payload === 'string' ? JSON.parse(payload) : payload;
+  const items = root?.etfTop10MajorConstituentAssets
+    || root?.result?.etfTop10MajorConstituentAssets
+    || root?.data?.etfTop10MajorConstituentAssets
+    || [];
+  return items.slice(0, 10)
+    .map((item) => normalizeNaverHolding(item, asOf))
+    .filter((item) => item.code && item.name)
+    .sort((a, b) => (b.weight ?? -Infinity) - (a.weight ?? -Infinity));
+}
+
+export function parseNaverHoldings(source, asOf) {
+  if (source && typeof source === 'object') return parseNaverEtfAnalysis(source, asOf);
+  const html = String(source ?? '');
+  const section = html.match(/<div class="section etf_asset">([\\s\\S]*?)<\\/table>/)?.[1] || '';
+  const rowPattern = /<a href="\\/item\\/main\\.naver\\?code=([0-9A-Z]+)">([\\s\\S]*?)<\\/a>[\\s\\S]*?<td>\\s*([\\d,.-]+)\\s*<\\/td>[\\s\\S]*?<td class="per">\\s*([\\d,.]+)%/g;
   const holdings = [];
   let match;
   while ((match = rowPattern.exec(section)) !== null) {
+    const weight = parseNumber(match[4]);
     holdings.push({
-      code: match[1],
+      code: normalizeIssueCode(match[1]),
       name: decodeHtmlText(match[2]),
       shares: parseNumber(match[3]),
-      value: parseNumber(match[4]),
-      weight: parseNumber(match[4]),
+      value: weight,
+      weight,
       source: 'Naver Finance',
       coverage: 'top10',
       asOf,
@@ -107,8 +141,12 @@ export function compareHoldings(previous = [], current = []) {
     const before = previousMap.get(item.code);
     if (!before) continue;
     const weightDelta = item.weight - before.weight;
-    const shareChange = item.shares - before.shares;
-    const shareChangeRate = before.shares > 0 ? (shareChange / before.shares) * 100 : null;
+    const shareChange = Number.isFinite(item.shares) && Number.isFinite(before.shares)
+      ? item.shares - before.shares
+      : null;
+    const shareChangeRate = before.shares > 0 && Number.isFinite(shareChange)
+      ? (shareChange / before.shares) * 100
+      : null;
     const hasMaterialShareChange = Number.isFinite(shareChangeRate)
       && Math.abs(shareChange) >= 1
       && Math.abs(shareChangeRate) >= 0.5;
