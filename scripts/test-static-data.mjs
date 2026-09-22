@@ -170,6 +170,12 @@ assert.equal(apiHoldings.length, 2);
 assert.equal(apiHoldings[0].code, '005930');
 assert.equal(apiHoldings[0].weight, 30);
 assert.equal(apiHoldings[0].shares, null);
+const apiHoldingsWithoutWeight = parseNaverEtfAnalysis({
+  etfTop10MajorConstituentAssets: [
+    { itemCode: '0204D0', itemName: '예시 종목', etfWeight: '-' },
+  ],
+}, '2026-06-11');
+assert.equal(apiHoldingsWithoutWeight[0].weight, null);
 assert.equal(holdings[0].code, '005930');
 
 const changes = compareHoldings(
