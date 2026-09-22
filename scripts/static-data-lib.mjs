@@ -83,8 +83,8 @@ export function parseNaverEtfAnalysis(payload, asOf) {
 export function parseNaverHoldings(source, asOf) {
   if (source && typeof source === 'object') return parseNaverEtfAnalysis(source, asOf);
   const html = String(source ?? '');
-  const section = html.match(/<div class="section etf_asset">([\\s\\S]*?)<\\/table>/)?.[1] || '';
-  const rowPattern = /<a href="\\/item\\/main\\.naver\\?code=([0-9A-Z]+)">([\\s\\S]*?)<\\/a>[\\s\\S]*?<td>\\s*([\\d,.-]+)\\s*<\\/td>[\\s\\S]*?<td class="per">\\s*([\\d,.]+)%/g;
+  const section = html.match(/<div class="section etf_asset">([\s\S]*?)<\/table>/)?.[1] || '';
+  const rowPattern = /<a href="\/item\/main\.naver\?code=([0-9A-Z]+)">([\s\S]*?)<\/a>[\s\S]*?<td>\s*([\d,.-]+)\s*<\/td>[\s\S]*?<td class="per">\s*([\d,.]+)%/g;
   const holdings = [];
   let match;
   while ((match = rowPattern.exec(section)) !== null) {
