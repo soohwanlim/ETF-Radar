@@ -56,7 +56,7 @@ export function validateSnapshot({ etfs, holdings, manifest, status, ohlcManifes
       addProblem(problems, isDate(item.asOf), `${label} has invalid asOf: ${item.asOf || 'missing'}`);
       addProblem(problems, item.asOf <= manifest?.asOf, `${label} asOf ${item.asOf} is after manifest ${manifest?.asOf}`);
       addProblem(problems, item.shares == null || (Number.isFinite(item.shares) && item.shares >= 0), `${label} has invalid shares: ${item.shares}`);
-      addProblem(problems, Number.isFinite(item.weight) && item.weight >= 0 && item.weight <= 100, `${label} has invalid weight: ${item.weight}`);
+      addProblem(problems, item.weight == null || (Number.isFinite(item.weight) && item.weight >= 0 && item.weight <= 100), `${label} has invalid weight: ${item.weight}`);
     }
   }
 
