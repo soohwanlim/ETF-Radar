@@ -55,11 +55,15 @@ function normalizeNaverHolding(item, asOf) {
   const weight = rawWeight == null || weightText === '' || weightText === '-'
     ? null
     : parseNumber(weightText);
-  const rawShares = item?.etfQuantity ?? item?.quantity ?? item?.shares;
+  const rawShares = item?.stockCount ?? item?.etfQuantity ?? item?.quantity ?? item?.shares;
+  const sharesText = String(rawShares ?? '').replace(/,/g, '').trim();
+  const shares = sharesText !== '' && sharesText !== '-' && Number.isFinite(Number(sharesText)) && Number(sharesText) >= 0
+    ? Number(sharesText)
+    : null;
   return {
     code: normalizeIssueCode(item?.itemCode ?? item?.code ?? item?.symbol),
     name: decodeHtmlText(String(item?.itemName ?? item?.name ?? '').trim()),
-    shares: rawShares == null || rawShares === '' ? null : parseNumber(rawShares),
+    shares,
     value: weight,
     weight,
     source: 'Naver Finance',
