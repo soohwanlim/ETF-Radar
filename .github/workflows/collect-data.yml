@@ -4,7 +4,11 @@ on:
   workflow_dispatch:
   schedule:
     # KRX ETF close data can appear late. GitHub schedules may also run with delay.
-    - cron: '0 23 * * 1-5' # 08:00 KST Tue-Sat
+    - cron: '30 23 * * 1-5' # KST 08:30 (월~금 밤 11시 UTC)
+    - cron: '30 0 * * 2-6'  # KST 10:30 (화~토 새벽 0시 30분 UTC)
+    - cron: '30 2 * * 2-6'  # KST 11:30 (화~토 새벽 2시 30분 UTC)
+    - cron: '30 3 * * 2-6'  # KST 12:30 (화~토 새벽 3시 30분 UTC)
+
 
 permissions:
   contents: write
