@@ -170,6 +170,26 @@ assert.equal(apiHoldings.length, 2);
 assert.equal(apiHoldings[0].code, '005930');
 assert.equal(apiHoldings[0].weight, 30);
 assert.equal(apiHoldings[0].shares, null);
+// Current Naver response uses stockCount for the per-CU constituent quantity.
+const quantitySnapshot = (stockCount, date) => parseNaverEtfAnalysis({
+  etfTop10MajorConstituentAssets: [
+    { itemCode: '005930', itemName: '삼성전자', stockCount, etfWeight: '33.95%' },
+  ],
+}, date);
+assert.equal(quantitySnapshot('6,969', '2026-10-13')[0].shares, 6969);
+for (const missing of [undefined, null, '', '-', 'unknown']) {
+  assert.equal(quantitySnapshot(missing, '2026-10-13')[0].shares, null);
+}
+assert.equal(quantitySnapshot('0', '2026-10-13')[0].shares, 0);
+const restoredChanges = compareHoldings(
+  quantitySnapshot('6,900', '2026-10-12'),
+  quantitySnapshot('6,969', '2026-10-13'),
+);
+assert.equal(restoredChanges[0].classification, 'quantity_increase');
+assert.equal(restoredChanges[0].shareChange, 69);
+assert.equal(restoredChanges[0].shareChangeRate, 1);
+assert.equal(compareHoldings(apiHoldings, quantitySnapshot('6,969', '2026-10-13'))
+  .some(change => change.classification === 'quantity_increase'), false);
 const apiHoldingsWithoutWeight = parseNaverEtfAnalysis({
   etfTop10MajorConstituentAssets: [
     { itemCode: '0204D0', itemName: '예시 종목', etfWeight: '-' },
