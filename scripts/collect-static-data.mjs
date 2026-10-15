@@ -14,6 +14,7 @@ import {
 import { buildThemeSignals } from './theme-signals.mjs';
 import { buildHoldingIndex } from './holding-index.mjs';
 import { isKrxTradingDate } from '../src/data/marketCalendar.js';
+import { recoveryPlan, retryHoldings } from './collection-recovery.mjs';
 
 const KRX_URL = 'https://data-dbg.krx.co.kr/svc/apis/etp/etf_bydd_trd';
 const NAVER_LIST_URL = 'https://finance.naver.com/api/sise/etfItemList.nhn';
@@ -246,7 +247,8 @@ async function main() {
     }
     throw error;
   }
-  if (!process.env.FORCE_COLLECT && manifest.asOf === market.asOf && existingEtfs.length > 0) {
+  const recovery = recoveryPlan(manifest, existingStatus, market.asOf, existingHistory);
+  if (!process.env.FORCE_COLLECT && recovery.sameDate && recovery.failedCodes.size === 0 && existingEtfs.length > 0) {
     await writeCollectionCheck({
       manifest,
       status: existingStatus,
@@ -266,7 +268,7 @@ async function main() {
   const marketMap = new Map(marketRows.map(item => [item.code, item]));
   const holdings = {};
   const series = { ...existingSeries };
-  const changes = [];
+  const changes = [...recovery.changes];
   const etfs = [];
   const failures = [];
 
@@ -274,6 +276,11 @@ async function main() {
     const code = universeItem.itemcode;
     const current = marketMap.get(code);
     if (!current) continue;
+    if (recovery.sameDate && !process.env.FORCE_COLLECT && !recovery.failedCodes.has(code) && existingEtfMap.has(code)) {
+      etfs.push(existingEtfMap.get(code));
+      if (existingHoldings[code]) holdings[code] = existingHoldings[code];
+      continue;
+    }
     try {
       let detail = {};
       try {
@@ -282,16 +289,14 @@ async function main() {
       } catch (error) {
         console.warn(`[detail skip] ${code}: ${error.message}`);
       }
-      const analysisText = await fetchText(NAVER_ETF_ANALYSIS_URL.replace('{code}', code), 'utf-8');
-      const analysis = JSON.parse(analysisText);
-      const parsedHoldings = parseNaverEtfAnalysis(analysis, market.asOf);
-      if (parsedHoldings.length === 0) {
-        throw new Error('Naver ETF analysis returned no TOP 10 holdings');
-      }
+      const parsedHoldings = await retryHoldings(async () => {
+        const analysisText = await fetchText(NAVER_ETF_ANALYSIS_URL.replace('{code}', code), 'utf-8');
+        return parseNaverEtfAnalysis(JSON.parse(analysisText), market.asOf);
+      }, { warn: message => console.warn(`${code} ${message}`) });
       holdings[code] = parsedHoldings;
       const previousHoldings = existingHoldings[code] || [];
       const previous = existingEtfMap.get(code) || {};
-      if (previousHoldings.length > 0) {
+      if (previousHoldings.length > 0 && (!recovery.sameDate || previous.asOf !== market.asOf)) {
         for (const change of compareHoldings(previousHoldings, holdings[code])) {
           const listedShareChangeRate = previous.listedShares > 0 && current.listedShares > 0
             ? Number((((current.listedShares - previous.listedShares) / previous.listedShares) * 100).toFixed(2))
