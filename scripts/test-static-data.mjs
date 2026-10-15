@@ -267,4 +267,26 @@ assert.equal(isLinkableHolding({ code: 'KR1234', name: '국고채 10년' }), fal
 assert.equal(meetsHoldingSearchQuality({ ...holdingIndex.items[0], asOf: '2026-06-12' }), true);
 assert.equal(meetsHoldingSearchQuality({ ...holdingIndex.items[0], etfCount: 1, etfs: holdingIndex.items[0].etfs.slice(0, 1), asOf: '2026-06-12' }), false);
 assert.equal(getHoldingMeta({ ...holdingIndex.items[0], asOf: '2026-06-12' }, true).robots, 'index, follow');
+import { recoveryPlan, retryHoldings } from './collection-recovery.mjs';
+let recoveryAttempts = 0;
+const retryWaits = [];
+assert.deepEqual(await retryHoldings(async () => {
+  recoveryAttempts++;
+  if (recoveryAttempts === 1) return [];
+  if (recoveryAttempts === 2) throw new Error('temporary network failure');
+  return [{ code: '005930', shares: 100 }];
+}, { wait: async ms => retryWaits.push(ms), warn: () => {} }), [{ code: '005930', shares: 100 }]);
+assert.equal(recoveryAttempts, 3);
+assert.deepEqual(retryWaits, [1000, 2000]);
+let exhaustedAttempts = 0;
+await assert.rejects(retryHoldings(async () => {
+  exhaustedAttempts++;
+  return [];
+}, { wait: async () => {}, warn: () => {} }), /no TOP 10 holdings/);
+assert.equal(exhaustedAttempts, 3);
+const savedChanges = [{ code: 'A', date: '2026-10-14' }, { code: 'B', date: '2026-10-13' }];
+const sameDayRecovery = recoveryPlan({ asOf: '2026-10-14' }, { failures: [{ code: 'B' }] }, '2026-10-14', savedChanges);
+assert.deepEqual([...sameDayRecovery.failedCodes], ['B']);
+assert.deepEqual(sameDayRecovery.changes, [savedChanges[0]]);
+assert.deepEqual(recoveryPlan({ asOf: '2026-10-14' }, { failures: [{ code: 'B' }] }, '2026-10-15', savedChanges).changes, []);
 console.log('Static data tests passed');
